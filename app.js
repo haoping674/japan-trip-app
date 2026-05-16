@@ -155,6 +155,75 @@ const typeMeta = {
   shopping: { label: "購物", icon: "shopping-bag" },
 };
 
+const dayContent = {
+  1: {
+    focus: "抵達、取車、入住後只排伏見稻荷，今天不要硬塞晚餐名店。",
+    drive: "關西機場取車先確認 ETC、保險、兒童座椅與導航語言；京都市區停車以住宿附近停車場為優先。",
+    rain: "若班機延誤或下雨，伏見稻荷改成隔天清晨，今天只完成入住與便利商店補給。",
+    meal: "機場或京都車站先簡單吃；晚餐以住宿附近拉麵、定食、超市熟食作彈性備案。",
+  },
+  2: {
+    focus: "京都步行量最大的一天，清水寺周邊停車與人潮是關鍵。",
+    drive: "清水寺、祇園、錦市場一帶不建議臨時找路邊停車；先選外圍停車場，再用步行或計程車串點。",
+    rain: "清水寺保留，二年坂/三年坂縮短；增加京都車站、錦市場、百貨地下街作室內備案。",
+    meal: "午餐以錦市場小吃為主；熱門店請前一天查公休日與最後點餐時間。",
+  },
+  3: {
+    focus: "今天移動長，湖西到若狹請把油量、休息與日落時間抓寬。",
+    drive: "貴船山路窄、白鬚神社旁車流快；白鬚神社拍鳥居不要穿越車道，停車後走指定動線。",
+    rain: "雨大時減少白鬚神社停留，把時間留給若狹漁人碼頭、住宿休息與小濱室內餐廳。",
+    meal: "若狹段主打鯖壽司、海鮮丼、烤鯖；小濱店家晚餐選擇有限，建議先查營業時間。",
+  },
+  4: {
+    focus: "海之京都吃天氣，傘松公園與伊根舟屋都要先看風雨。",
+    drive: "天橋立與伊根停車場熱門時段容易滿；伊根聚落內道路窄，依官方停車場與步行動線移動。",
+    rain: "若風雨大，傘松公園與遊覽船可改成智恩寺、道之驛、宮津市區咖啡或提早入住。",
+    meal: "舞鶴港海鮮市場與宮津道之驛適合安排早午餐；冷藏伴手禮先確認車上保存方式。",
+  },
+  5: {
+    focus: "從海邊回大阪，重點是保津川活動是否受天候影響。",
+    drive: "山路與高速混合，先確認保津川遊船營運；大阪入城前完成加油與休息。",
+    rain: "保津川若停航，改成京丹波道之驛、勝尾寺短停或直接進大阪採買休息。",
+    meal: "京丹波道之驛適合補給黑豆、栗子與簡餐；Costco 需要會員卡與冷藏袋。",
+  },
+  6: {
+    focus: "天王寺、新世界、阿倍野都在市區，今天以短距離移動和親子節奏為主。",
+    drive: "大阪市區停車費高且路口複雜，若住宿附近有車位，建議今天改用電車/計程車。",
+    rain: "動物園遇雨可縮短，改去阿倍野 Harukas、商場、四天王寺周邊室內用餐。",
+    meal: "新世界串炸可作午餐候選；親子同行請避開排隊過久的店，準備第二選項。",
+  },
+  7: {
+    focus: "大阪城與梅田視野日，熱門設施票券和泡湯規定要先確認。",
+    drive: "大阪城公園範圍大，若開車請先決定停車場入口；梅田不建議臨停找車位。",
+    rain: "大阪城御座船受天氣影響，雨天改大阪生活今昔館、梅田商場或天然溫泉。",
+    meal: "天神橋筋、梅田地下街選擇多；避開尖峰用餐，保留泡湯前後補水時間。",
+  },
+  8: {
+    focus: "商店街與道頓堀日，購物多，行李與推車動線要簡化。",
+    drive: "今天大多在市區密集區，建議公共交通；若自駕，把車停固定點後步行。",
+    rain: "生活今昔館、天神橋筋商店街、心齋橋筋都可避雨；道頓堀船視天候調整。",
+    meal: "章魚燒、大阪燒、超市熟食都在這天順路；玉出超市適合買飲料與零食。",
+  },
+  9: {
+    focus: "大阪港親子日，海遊館與聖瑪麗亞號是主線，下午泡湯放鬆。",
+    drive: "港區停車比市中心友善，但熱門假日仍要早到；空庭溫泉停車與入館規定先查。",
+    rain: "雨天保留海遊館、Legoland、空庭溫泉；聖瑪麗亞號與摩天輪視風雨取消。",
+    meal: "木津市場適合早餐；港區午餐以商場餐廳為備案，避免孩子餓太久。",
+  },
+  10: {
+    focus: "USJ 整日，不排其他點，所有精力放在入園、熱門設施與回程。",
+    drive: "若自駕去 USJ，停車場費用與入場動線先查；更穩的是電車到 Universal City。",
+    rain: "雨天仍可玩，但備雨衣、防水鞋袋；戶外設施可能暫停，改排室內設施與表演。",
+    meal: "園內餐廳尖峰排隊長，先決定午餐區域；可準備小點心但遵守園區規定。",
+  },
+  11: {
+    focus: "返程日只做還車、整理行李、機場報到，不排新景點。",
+    drive: "還車時間要抓寬，預留加油、找還車入口、接駁與國際線報到時間。",
+    rain: "雨天把行李裝卸與還車時間再加 30 分鐘；機場內購物即可。",
+    meal: "關西機場內完成最後採買與用餐；液體、冷藏品與手提限制先確認。",
+  },
+};
+
 const guideNotes = [
   {
     title: "京都古都線",
@@ -242,6 +311,30 @@ const checklistItems = [
   ["offline", "離線開啟一次 App", "出發前用手機開一次，讓 PWA 快取行程。"],
 ];
 
+const reservationItems = [
+  ["航班去程", "2026/09/06", "關西機場抵達 12:40", ""],
+  ["航班回程", "2026/09/16", "請補航班號、起飛時間、航廈", ""],
+  ["租車", "09/06 - 09/16", "取還車地點、保險、ETC、車型", ""],
+  ["京都住宿", "09/06 - 09/08", "RESI STAY cotorune KYOTO", ""],
+  ["小濱住宿", "09/08 - 09/09", "Party&Resort ZERO'sHOUSE", ""],
+  ["伊根/宮津住宿", "09/09 - 09/10", "Private Villa 蒼 Lala & Lino", ""],
+  ["大阪住宿", "09/10 - 09/16", "天下茶屋周邊住宿名與地址", ""],
+  ["USJ", "2026/09/15", "門票、快速通關、入園 QR", ""],
+  ["海遊館/觀光船", "2026/09/14", "海遊館、聖瑪麗亞號、Legoland", ""],
+];
+
+const shoppingItems = [
+  ["yatsuhashi", "京都八橋 / 抹茶點心", "京都", "常溫好帶，適合分送。"],
+  ["shichimi", "七味粉 / 京漬物", "京都", "漬物注意冷藏與入境限制。"],
+  ["kiyomizu", "清水燒小物", "清水寺周邊", "易碎品用衣物包覆。"],
+  ["saba", "鯖壽司 / heshiko", "若狹小濱", "冷藏保存，回台限制需自行確認。"],
+  ["wakasa", "若狹塗箸", "小濱", "輕巧耐帶，適合長輩。"],
+  ["tango", "丹波黑豆 / 栗子點心", "京丹波道之驛", "道之驛適合一次補貨。"],
+  ["osaka-snack", "呼吸巧克力 / 地區限定零食", "大阪", "超市、藥妝、車站都好買。"],
+  ["551", "551 蓬萊", "大阪", "冷藏品注意保存與攜帶時間。"],
+  ["usj", "USJ 限定商品", "USJ", "入園後先看寄物與退稅動線。"],
+];
+
 const weatherCode = {
   0: "晴朗",
   1: "大致晴朗",
@@ -265,6 +358,14 @@ const $ = (selector) => document.querySelector(selector);
 
 function mapUrl(place) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place} 日本`)}`;
+}
+
+function escapeAttr(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function renderDays() {
@@ -295,6 +396,7 @@ function renderDays() {
               </div>
             </div>
           </header>
+          ${renderDayNotes(day.day)}
           <div class="timeline">
             ${day.stops.map(renderStop).join("")}
           </div>
@@ -302,6 +404,33 @@ function renderDays() {
       `,
     )
     .join("");
+}
+
+function renderDayNotes(dayNumber) {
+  const note = dayContent[dayNumber];
+  if (!note) return "";
+
+  const items = [
+    ["今日重點", note.focus, "flag"],
+    ["自駕停車", note.drive, "car"],
+    ["雨天備案", note.rain, "cloud-rain"],
+    ["用餐提醒", note.meal, "utensils"],
+  ];
+
+  return `
+    <section class="day-insights" aria-label="第 ${dayNumber} 天提醒">
+      ${items
+        .map(
+          ([label, text, icon]) => `
+            <article class="insight-card">
+              <span><i data-lucide="${icon}"></i>${label}</span>
+              <p>${text}</p>
+            </article>
+          `,
+        )
+        .join("")}
+    </section>
+  `;
 }
 
 function renderStop(stop) {
@@ -368,10 +497,38 @@ function renderTools() {
       `,
     )
     .join("");
+  const reservations = `
+    <article class="tool-card reservation-card">
+      <h3>預約代號表</h3>
+      <p>把航班、租車、住宿和票券代號集中在這裡；內容只存在此裝置瀏覽器。</p>
+      <div class="responsive-table">
+        <table class="budget-table">
+          <thead>
+            <tr><th>項目</th><th>日期</th><th>內容</th><th>代號</th></tr>
+          </thead>
+          <tbody id="reservation-body"></tbody>
+        </table>
+      </div>
+    </article>
+  `;
+  const shopping = `
+    <article class="tool-card shopping-card">
+      <div class="checklist-head">
+        <div>
+          <p class="kicker">Souvenir Run</p>
+          <h3>伴手禮採買清單</h3>
+        </div>
+        <div class="progress-ring" id="shopping-progress" style="--progress: 0deg"><span>0%</span></div>
+      </div>
+      <div class="checklist shopping-list" id="shopping-list"></div>
+    </article>
+  `;
 
   $("#tool-stack").innerHTML =
     checklist +
     cards +
+    reservations +
+    shopping +
     `
       <article class="tool-card budget">
         <h3>記帳 / 預算表</h3>
@@ -480,9 +637,9 @@ function setupBudget() {
   function addRow(row = { item: "", amount: "", memo: "" }) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><input name="budget-item" data-field="item" value="${row.item}" aria-label="項目" /></td>
-      <td><input name="budget-amount" data-field="amount" value="${row.amount}" inputmode="numeric" aria-label="金額" /></td>
-      <td><input name="budget-memo" data-field="memo" value="${row.memo}" aria-label="備註" /></td>
+      <td><input name="budget-item" data-field="item" value="${escapeAttr(row.item)}" aria-label="項目" /></td>
+      <td><input name="budget-amount" data-field="amount" value="${escapeAttr(row.amount)}" inputmode="numeric" aria-label="金額" /></td>
+      <td><input name="budget-memo" data-field="memo" value="${escapeAttr(row.memo)}" aria-label="備註" /></td>
     `;
     tr.addEventListener("input", persist);
     body.appendChild(tr);
@@ -493,6 +650,37 @@ function setupBudget() {
     addRow();
     persist();
   });
+  persist();
+}
+
+function setupReservations() {
+  const body = $("#reservation-body");
+  const saved = JSON.parse(localStorage.getItem("kansai-reservations") || "null");
+  const rows = saved ?? reservationItems.map(([item, date, detail, code]) => ({ item, date, detail, code }));
+
+  function persist() {
+    const nextRows = [...body.querySelectorAll("tr")].map((row) => ({
+      item: row.querySelector('[data-field="item"]').value,
+      date: row.querySelector('[data-field="date"]').value,
+      detail: row.querySelector('[data-field="detail"]').value,
+      code: row.querySelector('[data-field="code"]').value,
+    }));
+    localStorage.setItem("kansai-reservations", JSON.stringify(nextRows));
+  }
+
+  body.innerHTML = rows
+    .map(
+      (row) => `
+        <tr>
+          <td><input name="reservation-item" data-field="item" value="${escapeAttr(row.item)}" aria-label="預約項目" /></td>
+          <td><input name="reservation-date" data-field="date" value="${escapeAttr(row.date)}" aria-label="日期" /></td>
+          <td><input name="reservation-detail" data-field="detail" value="${escapeAttr(row.detail)}" aria-label="內容" /></td>
+          <td><input name="reservation-code" data-field="code" value="${escapeAttr(row.code)}" aria-label="代號" placeholder="填入代號" /></td>
+        </tr>
+      `,
+    )
+    .join("");
+  body.addEventListener("input", persist);
   persist();
 }
 
@@ -519,6 +707,40 @@ function setupChecklist() {
         <label class="check-item">
           <input name="trip-checklist" type="checkbox" value="${id}" ${saved[id] ? "checked" : ""} />
           <div><strong>${title}</strong><span>${note}</span></div>
+        </label>
+      `,
+    )
+    .join("");
+  body.addEventListener("change", persist);
+  persist();
+}
+
+function setupShoppingList() {
+  const body = $("#shopping-list");
+  const progress = $("#shopping-progress");
+  const saved = JSON.parse(localStorage.getItem("kansai-shopping") || "{}");
+
+  function persist() {
+    const checked = {};
+    body.querySelectorAll("input[type='checkbox']").forEach((input) => {
+      checked[input.value] = input.checked;
+    });
+    localStorage.setItem("kansai-shopping", JSON.stringify(checked));
+    const done = Object.values(checked).filter(Boolean).length;
+    const percent = Math.round((done / shoppingItems.length) * 100);
+    progress.style.setProperty("--progress", `${percent * 3.6}deg`);
+    progress.querySelector("span").textContent = `${percent}%`;
+  }
+
+  body.innerHTML = shoppingItems
+    .map(
+      ([id, title, place, note]) => `
+        <label class="check-item">
+          <input name="souvenir-checklist" type="checkbox" value="${id}" ${saved[id] ? "checked" : ""} />
+          <div>
+            <strong>${title}</strong>
+            <span>${place} · ${note}</span>
+          </div>
         </label>
       `,
     )
@@ -578,6 +800,8 @@ setupTabs();
 setupTodayMode();
 setupBudget();
 setupChecklist();
+setupReservations();
+setupShoppingList();
 setupNetworkStatus();
 loadWeather();
 

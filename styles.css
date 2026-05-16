@@ -356,6 +356,41 @@ h1 {
   padding: 6px 12px 14px;
 }
 
+.day-insights {
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 2px;
+}
+
+.insight-card {
+  border: 1px solid rgba(32, 32, 30, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 11px 12px;
+}
+
+.insight-card span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lacquer);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.insight-card svg {
+  width: 15px;
+  height: 15px;
+}
+
+.insight-card p {
+  margin: 5px 0 0;
+  color: #514c44;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
 .stop-card {
   position: relative;
   display: grid;
@@ -589,6 +624,12 @@ h1 {
   text-decoration-color: rgba(85, 116, 91, 0.5);
 }
 
+.shopping-card {
+  background:
+    linear-gradient(135deg, rgba(187, 132, 49, 0.13), rgba(186, 61, 44, 0.08)),
+    rgba(255, 250, 241, 0.9);
+}
+
 .info-row {
   display: grid;
   grid-template-columns: 86px 1fr;
@@ -612,6 +653,16 @@ h1 {
   background: rgba(255, 255, 255, 0.52);
 }
 
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.reservation-card .budget-table {
+  min-width: 620px;
+}
+
 .budget-table th,
 .budget-table td {
   border-bottom: 1px solid var(--line);
@@ -630,6 +681,14 @@ h1 {
   border-radius: 10px;
   background: #fffaf1;
   padding: 8px;
+}
+
+.reservation-card input {
+  min-width: 120px;
+}
+
+.reservation-card td:nth-child(3) input {
+  min-width: 220px;
 }
 
 .total-box {
@@ -656,8 +715,14 @@ h1 {
   }
 
   .tool-card.budget,
-  .tool-card.checklist-card {
+  .tool-card.checklist-card,
+  .tool-card.reservation-card,
+  .tool-card.shopping-card {
     grid-column: 1 / -1;
+  }
+
+  .day-insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
