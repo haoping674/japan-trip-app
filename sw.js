@@ -1,4 +1,4 @@
-const CACHE_NAME = "kansai-trip-v3";
+const CACHE_NAME = "kansai-trip-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
