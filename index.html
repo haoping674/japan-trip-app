@@ -78,6 +78,21 @@
       </section>
     </main>
 
+    <div class="sheet-backdrop" id="guide-backdrop" hidden></div>
+    <section class="guide-sheet" id="guide-sheet" aria-label="詳細導遊內容" aria-modal="true" role="dialog" hidden>
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="guide-sheet__header">
+        <div>
+          <p class="kicker" id="guide-sheet-kicker">Guide Detail</p>
+          <h2 id="guide-sheet-title">導遊內容</h2>
+        </div>
+        <button class="icon-button" id="guide-sheet-close" type="button" aria-label="關閉導遊內容">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="guide-sheet__body" id="guide-sheet-body"></div>
+    </section>
+
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="./app.js"></script>
   </body>

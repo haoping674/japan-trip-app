@@ -226,6 +226,7 @@ const dayContent = {
 
 const guideNotes = [
   {
+    id: "kyoto",
     title: "京都古都線",
     mark: "京",
     text: "伏見稻荷、清水寺、二年坂/三年坂、祇園與錦市場人潮都重疊，早出門比排更多點更重要。清水寺周邊坡道多，自駕要優先找外圍停車場。",
@@ -235,8 +236,21 @@ const guideNotes = [
       ["必買伴手禮", "八橋、抹茶點心、七味粉、清水燒小物", "gift"],
       ["重要預約代號", "PDF 未提供；住宿與餐廳代號請自行補入工具頁", "reserve"],
     ],
+    detail: {
+      subtitle: "D1-D2 · 京都市區與東山",
+      story: [
+        "京都這段的主角不是單一景點，而是從信仰、町家街道到市場飲食的連續體驗。伏見稻荷的千本鳥居代表商業繁盛與稻荷信仰，越往山上走人潮越少，傍晚拍照漂亮但回程要注意照明。",
+        "清水寺、二年坂、三年坂與祇園是京都最經典但也最容易塞住的區域。真正的攻略不是多排點，而是早到、少開車進核心區、把午餐和休息點安排在錦市場或京都車站周邊。",
+      ],
+      route: ["早上先清水寺", "順走二年坂/三年坂", "祇園花見小路短停", "錦市場午餐", "下午金閣寺與下鴨神社"],
+      food: ["錦市場玉子燒", "豆乳甜點", "京漬物", "抹茶點心", "伏見稻荷周邊稻荷壽司"],
+      shopping: ["八橋", "七味粉", "抹茶零食", "清水燒小物"],
+      drive: "東山、祇園、錦市場周邊道路窄、人潮密、停車場容易滿。建議選外圍停車場後步行或搭計程車，清水寺周邊不要臨時找車位。",
+      watch: ["清水寺坡道多，推車會辛苦。", "祇園私人巷弄和店家請避免打擾。", "錦市場部分店家不鼓勵邊走邊吃。"],
+    },
   },
   {
+    id: "wakasa",
     title: "若狹小濱線",
     mark: "若",
     text: "小濱是鯖街道起點之一，海產、鹽與京都飲食文化關聯很深。明通寺與小濱西組適合放慢節奏，若狹漁人碼頭可作為晚餐與伴手禮補給。",
@@ -246,8 +260,21 @@ const guideNotes = [
       ["必買伴手禮", "鯖壽司、heshiko 鯖魚糠漬、若狹塗箸", "gift"],
       ["重要預約代號", "Party&Resort ZERO'sHOUSE：PDF 未提供代號", "reserve"],
     ],
+    detail: {
+      subtitle: "D3 · 琵琶湖西岸到若狹小濱",
+      story: [
+        "若狹小濱是古代把海產送往京都的「鯖街道」起點之一，所以這裡的海鮮不是單純吃新鮮，而是跟京都飲食文化有很深連結。鯖壽司、鯖魚加工品、若狹塗箸都很適合放入伴手禮清單。",
+        "這一天從京都山路、琵琶湖湖岸一路進入日本海側，景色變化大，但駕駛負擔也高。白鬚神社湖上鳥居很美，不過旁邊車流速度快，安全比拍照角度重要。",
+      ],
+      route: ["貴船神社早到", "白鬚神社短停", "琵琶湖兒童之國放電", "明通寺", "若狹漁人碼頭", "小濱老街散步"],
+      food: ["鯖壽司", "烤鯖", "海鮮丼", "若狹甘鯛", "葛饅頭"],
+      shopping: ["heshiko 鯖魚糠漬", "小鯛笹漬", "若狹塗箸", "海鮮加工品"],
+      drive: "貴船山路窄，琵琶湖湖岸道路拍照點容易讓人分心。今天車程長，建議把加油、廁所與兒童休息點固定下來。",
+      watch: ["白鬚神社不要穿越車道到湖邊拍照。", "小濱晚餐店家選擇有限，先查營業時間。", "冷藏伴手禮需要保冷袋。"],
+    },
   },
   {
+    id: "kyoto-sea",
     title: "海之京都線",
     mark: "海",
     text: "天橋立是日本三景之一，傘松公園的股覗き視角是經典。伊根舟屋停車與遊覽船容易受天候影響，出發前先看風雨與末班時間。",
@@ -257,8 +284,21 @@ const guideNotes = [
       ["必買伴手禮", "丹波黑豆、栗子點心、海產加工品", "gift"],
       ["重要預約代號", "Private Villa 蒼 Lala & Lino：PDF 未提供代號", "reserve"],
     ],
+    detail: {
+      subtitle: "D4-D5 · 舞鶴、宮津、天橋立、伊根",
+      story: [
+        "天橋立是日本三景之一，重點是從高處看沙洲像一座連接天空的橋。傘松公園的股覗き視角是經典玩法，但纜車、吊椅與觀景品質很受天氣影響。",
+        "伊根舟屋是海邊生活聚落，不是大型觀光園區。最好把車停在指定停車場後步行，保持安靜，並把遊覽船當成天氣好時的加分項，而不是必達任務。",
+      ],
+      route: ["舞鶴港海鮮市場早午餐", "宮津道之驛補給", "智恩寺", "傘松公園", "伊根遊覽與舟屋散步", "隔天京丹波道之驛回大阪"],
+      food: ["舞鶴海鮮", "宮津海鮮定食", "丹後米", "在地清酒", "丹波黑豆甜點"],
+      shopping: ["丹波黑豆", "栗子點心", "海產加工品", "丹後米零食"],
+      drive: "海線道路天氣好很舒服，但伊根聚落內道路窄、停車有限。天橋立和伊根都要先決定停車場，不要到現場才繞。",
+      watch: ["強風或大雨時遊覽船、摩天輪、展望設施可能受影響。", "伊根舟屋是居民生活區，拍照請保持距離。", "晚間採買選擇少，住宿前先補給。"],
+    },
   },
   {
+    id: "osaka",
     title: "大阪親子美食線",
     mark: "阪",
     text: "大阪段點位密集，建議用天下茶屋作基地分區移動。新世界吃串炸、道頓堀吃章魚燒與大阪燒，木津市場排早餐最順。",
@@ -268,6 +308,18 @@ const guideNotes = [
       ["必買伴手禮", "Pocky 地區限定、呼吸巧克力、551 冷藏品需留意保存", "gift"],
       ["重要預約代號", "USJ、海遊館、觀光船票券代號請補入工具頁", "reserve"],
     ],
+    detail: {
+      subtitle: "D6-D10 · 大阪市區、港區與 USJ",
+      story: [
+        "大阪段的價值是密度高：新世界、天王寺、梅田、天神橋筋、道頓堀、港區、USJ 都各有不同節奏。建議把天下茶屋當作基地，依區域行動，不要每天開車穿越市中心。",
+        "親子行程的關鍵不是景點多，而是備案清楚。海遊館、Legoland、生活今昔館、商店街、溫泉都是雨天或體力下降時很好用的替代點。",
+      ],
+      route: ["天王寺動物園與新世界", "大阪城與梅田", "天神橋筋與道頓堀", "木津市場與大阪港", "USJ 整日"],
+      food: ["新世界串炸", "道頓堀章魚燒", "大阪燒", "木津市場早餐", "551 蓬萊"],
+      shopping: ["呼吸巧克力", "地區限定零食", "藥妝", "USJ 限定商品", "超市熟食"],
+      drive: "大阪市區停車費高、路口複雜，除港區與 USJ 外，多數天建議把車留在住宿附近，用電車或計程車移動。",
+      watch: ["USJ 不要排其他景點，專注入園和熱門設施。", "泡湯設施需確認刺青、兒童和入館規定。", "道頓堀與心齋橋人潮多，推車移動慢。"],
+    },
   },
 ];
 
@@ -455,7 +507,7 @@ function renderGuide() {
   $("#guide-grid").innerHTML = guideNotes
     .map(
       (note) => `
-        <article class="guide-card">
+        <article class="guide-card" data-guide-card="${note.id}">
           <div class="guide-card__top">
             <h3>${note.title}</h3>
             <span class="region-mark">${note.mark}</span>
@@ -466,10 +518,53 @@ function renderGuide() {
               .map(([label, value, type]) => `<span class="tag ${type}">${label}：${value}</span>`)
               .join("")}
           </div>
+          <button class="mini-button guide-detail-button" data-guide-id="${note.id}" type="button">
+            <i data-lucide="book-open"></i>詳細攻略
+          </button>
         </article>
       `,
     )
     .join("");
+}
+
+function renderGuideDetail(note) {
+  const detail = note.detail;
+  return `
+    <div class="guide-sheet__intro">
+      <span class="region-mark">${note.mark}</span>
+      <p>${note.text}</p>
+    </div>
+    <div class="sheet-section">
+      <h3><i data-lucide="scroll-text"></i>景點故事</h3>
+      ${detail.story.map((paragraph) => `<p>${paragraph}</p>`).join("")}
+    </div>
+    <div class="sheet-section">
+      <h3><i data-lucide="route"></i>建議走法</h3>
+      <ol class="sheet-steps">
+        ${detail.route.map((item) => `<li>${item}</li>`).join("")}
+      </ol>
+    </div>
+    <div class="sheet-section sheet-grid">
+      <div>
+        <h3><i data-lucide="utensils"></i>必吃美食</h3>
+        <div class="sheet-tags">${detail.food.map((item) => `<span class="tag food">${item}</span>`).join("")}</div>
+      </div>
+      <div>
+        <h3><i data-lucide="shopping-bag"></i>必買伴手禮</h3>
+        <div class="sheet-tags">${detail.shopping.map((item) => `<span class="tag gift">${item}</span>`).join("")}</div>
+      </div>
+    </div>
+    <div class="sheet-section">
+      <h3><i data-lucide="car"></i>自駕攻略</h3>
+      <p>${detail.drive}</p>
+    </div>
+    <div class="sheet-section">
+      <h3><i data-lucide="triangle-alert"></i>現場提醒</h3>
+      <ul class="sheet-list">
+        ${detail.watch.map((item) => `<li>${item}</li>`).join("")}
+      </ul>
+    </div>
+  `;
 }
 
 function renderTools() {
@@ -556,6 +651,54 @@ function setupTabs() {
       switchTab(button.dataset.tab);
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
+  });
+}
+
+function setupGuideSheet() {
+  const sheet = $("#guide-sheet");
+  const backdrop = $("#guide-backdrop");
+  const closeButton = $("#guide-sheet-close");
+  const title = $("#guide-sheet-title");
+  const kicker = $("#guide-sheet-kicker");
+  const body = $("#guide-sheet-body");
+
+  function openGuide(id) {
+    const note = guideNotes.find((item) => item.id === id);
+    if (!note) return;
+    title.textContent = note.title;
+    kicker.textContent = note.detail.subtitle;
+    body.innerHTML = renderGuideDetail(note);
+    sheet.hidden = false;
+    backdrop.hidden = false;
+    requestAnimationFrame(() => {
+      sheet.classList.add("is-open");
+      backdrop.classList.add("is-open");
+      document.body.classList.add("sheet-open");
+      closeButton.focus({ preventScroll: true });
+      if (window.lucide) window.lucide.createIcons();
+    });
+  }
+
+  function closeGuide() {
+    sheet.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+    document.body.classList.remove("sheet-open");
+    window.setTimeout(() => {
+      sheet.hidden = true;
+      backdrop.hidden = true;
+      body.innerHTML = "";
+    }, 220);
+  }
+
+  $("#guide-grid").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-guide-id]");
+    if (button) openGuide(button.dataset.guideId);
+  });
+
+  closeButton.addEventListener("click", closeGuide);
+  backdrop.addEventListener("click", closeGuide);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && sheet.classList.contains("is-open")) closeGuide();
   });
 }
 
@@ -797,6 +940,7 @@ renderDays();
 renderGuide();
 renderTools();
 setupTabs();
+setupGuideSheet();
 setupTodayMode();
 setupBudget();
 setupChecklist();
