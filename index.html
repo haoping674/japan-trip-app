@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>關西旅遊小工具</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2320201e'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%23ba3d2c'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero" aria-labelledby="trip-title">
+        <div class="hero__grain"></div>
+        <div class="hero__content">
+          <p class="kicker">Kansai Drive Companion</p>
+          <h1 id="trip-title">大阪第二版</h1>
+          <p class="hero__dates">2026.09.06 - 09.16 · 京都 / 若狹 / 天橋立 / 大阪</p>
+          <div class="hero__chips" aria-label="旅程摘要">
+            <span>11 天</span>
+            <span>自駕友善</span>
+            <span>即時天氣</span>
+          </div>
+        </div>
+      </section>
+
+      <nav class="top-tabs" aria-label="主要分頁">
+        <button class="tab-button is-active" data-tab="itinerary" type="button">
+          <i data-lucide="map"></i>
+          <span>行程</span>
+        </button>
+        <button class="tab-button" data-tab="guide" type="button">
+          <i data-lucide="sparkles"></i>
+          <span>導遊</span>
+        </button>
+        <button class="tab-button" data-tab="tools" type="button">
+          <i data-lucide="briefcase"></i>
+          <span>工具</span>
+        </button>
+      </nav>
+
+      <section class="tab-panel is-active" id="itinerary" aria-label="每日行程">
+        <div class="day-strip" id="day-strip"></div>
+        <div id="days"></div>
+      </section>
+
+      <section class="tab-panel" id="guide" aria-label="導遊筆記">
+        <div class="section-heading">
+          <p class="kicker">Local Notes</p>
+          <h2>必吃、必買、攻略重點</h2>
+        </div>
+        <div class="guide-grid" id="guide-grid"></div>
+      </section>
+
+      <section class="tab-panel" id="tools" aria-label="旅行工具">
+        <div class="section-heading">
+          <p class="kicker">Travel Desk</p>
+          <h2>航班、住宿、緊急電話、記帳</h2>
+        </div>
+        <div class="tool-stack" id="tool-stack"></div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
