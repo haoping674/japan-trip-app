@@ -163,6 +163,67 @@ h1 {
   backdrop-filter: blur(18px);
 }
 
+.status-banner,
+.today-panel {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0 12px;
+  border: 1px solid rgba(32, 32, 30, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 250, 241, 0.78);
+  color: #474139;
+  padding: 12px 14px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.status-banner svg,
+.today-panel svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--moss);
+}
+
+.status-banner.is-offline {
+  background: #f4d5d0;
+  color: #6f2a22;
+}
+
+.status-banner.is-offline svg {
+  color: #8f3024;
+}
+
+.today-panel {
+  justify-content: space-between;
+  align-items: stretch;
+}
+
+.today-panel__copy {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.today-panel__copy strong {
+  display: block;
+  color: var(--ink);
+}
+
+.today-panel__copy span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.today-panel .mini-button {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
 .tab-button {
   display: flex;
   min-width: 0;
@@ -215,6 +276,15 @@ h1 {
   text-decoration: none;
 }
 
+.day-pill.is-today {
+  background: var(--ink);
+  color: var(--paper-strong);
+}
+
+.day-pill.is-today small {
+  color: rgba(255, 250, 241, 0.72);
+}
+
 .day-pill small {
   display: block;
   color: var(--muted);
@@ -231,6 +301,11 @@ h1 {
   background: rgba(255, 250, 241, 0.86);
   box-shadow: 0 18px 50px rgba(52, 43, 31, 0.1);
   overflow: hidden;
+}
+
+.day-card.is-today {
+  border-color: rgba(186, 61, 44, 0.5);
+  box-shadow: 0 18px 54px rgba(186, 61, 44, 0.14);
 }
 
 .day-head {
@@ -431,6 +506,89 @@ h1 {
   margin-top: 12px;
 }
 
+.checklist-card {
+  background:
+    linear-gradient(135deg, rgba(85, 116, 91, 0.12), rgba(187, 132, 49, 0.1)),
+    rgba(255, 250, 241, 0.9);
+}
+
+.checklist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-ring {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--moss) var(--progress), rgba(32, 32, 30, 0.1) 0);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.progress-ring span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--paper-strong);
+}
+
+.checklist {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.check-item {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(32, 32, 30, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 10px;
+}
+
+.check-item input {
+  width: 19px;
+  height: 19px;
+  margin: 2px 0 0;
+  accent-color: var(--moss);
+}
+
+.check-item strong {
+  display: block;
+  line-height: 1.35;
+}
+
+.check-item span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.check-item:has(input:checked) {
+  border-color: rgba(85, 116, 91, 0.34);
+  background: rgba(215, 234, 219, 0.54);
+}
+
+.check-item:has(input:checked) strong {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(85, 116, 91, 0.5);
+}
+
 .info-row {
   display: grid;
   grid-template-columns: 86px 1fr;
@@ -497,7 +655,18 @@ h1 {
     gap: 14px;
   }
 
-  .tool-card.budget {
+  .tool-card.budget,
+  .tool-card.checklist-card {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 430px) {
+  .today-panel {
+    flex-direction: column;
+  }
+
+  .today-panel .mini-button {
+    width: 100%;
   }
 }

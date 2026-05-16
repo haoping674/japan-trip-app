@@ -231,6 +231,17 @@ const tools = [
   },
 ];
 
+const checklistItems = [
+  ["passport", "護照與護照影本", "確認效期、手機內存一份照片。"],
+  ["license", "台灣駕照、日文譯本、租車預約", "自駕必備，取車時一起出示。"],
+  ["tickets", "電子票券與預約 QR code", "USJ、海遊館、觀光船、住宿、溫泉。"],
+  ["insurance", "旅平險與租車保險資料", "把保單號碼和緊急電話放在工具頁。"],
+  ["cash", "日圓現金與信用卡", "鄉下道之驛、停車場、老店可能偏好現金。"],
+  ["mobile", "eSIM / Wi-Fi / 行動電源", "導航與天氣需要網路，行動電源放隨身包。"],
+  ["medicine", "常備藥、兒童用品、雨具", "山區與海邊天氣變化快。"],
+  ["offline", "離線開啟一次 App", "出發前用手機開一次，讓 PWA 快取行程。"],
+];
+
 const weatherCode = {
   0: "晴朗",
   1: "大致晴朗",
@@ -259,14 +270,18 @@ function mapUrl(place) {
 function renderDays() {
   const dayStrip = $("#day-strip");
   const days = $("#days");
+  const focusDay = getTripDayForToday();
   dayStrip.innerHTML = tripDays
-    .map((day) => `<a class="day-pill" href="#day-${day.day}">D${day.day}<small>${day.date.slice(5)}</small></a>`)
+    .map(
+      (day) =>
+        `<a class="day-pill ${day.day === focusDay.day ? "is-today" : ""}" href="#day-${day.day}">D${day.day}<small>${day.date.slice(5)}</small></a>`,
+    )
     .join("");
 
   days.innerHTML = tripDays
     .map(
       (day) => `
-        <article class="day-card" id="day-${day.day}">
+        <article class="day-card ${day.day === focusDay.day ? "is-today" : ""}" id="day-${day.day}">
           <header class="day-head">
             <div class="day-title-row">
               <div>
@@ -329,6 +344,18 @@ function renderGuide() {
 }
 
 function renderTools() {
+  const checklist = `
+    <article class="tool-card checklist-card">
+      <div class="checklist-head">
+        <div>
+          <p class="kicker">Before Departure</p>
+          <h3>行前檢查清單</h3>
+        </div>
+        <div class="progress-ring" id="check-progress" style="--progress: 0deg"><span>0%</span></div>
+      </div>
+      <div class="checklist" id="checklist"></div>
+    </article>
+  `;
   const cards = tools
     .map(
       (tool) => `
@@ -343,6 +370,7 @@ function renderTools() {
     .join("");
 
   $("#tool-stack").innerHTML =
+    checklist +
     cards +
     `
       <article class="tool-card budget">
@@ -360,16 +388,73 @@ function renderTools() {
     `;
 }
 
+function switchTab(tabId) {
+  document.querySelectorAll(".tab-button").forEach((item) => item.classList.toggle("is-active", item.dataset.tab === tabId));
+  document.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.toggle("is-active", panel.id === tabId));
+}
+
 function setupTabs() {
   document.querySelectorAll(".tab-button").forEach((button) => {
     button.addEventListener("click", () => {
-      document.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("is-active"));
-      document.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("is-active"));
-      button.classList.add("is-active");
-      document.getElementById(button.dataset.tab).classList.add("is-active");
+      switchTab(button.dataset.tab);
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   });
+}
+
+function parseTripDate(dateText) {
+  const [year, month, day] = dateText.split("/").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function getTripDayForToday(now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = tripDays.map((day) => ({ ...day, jsDate: parseTripDate(day.date) }));
+  const exact = days.find((day) => day.jsDate.getTime() === today.getTime());
+  if (exact) return { ...exact, mode: "today" };
+
+  const upcoming = days.find((day) => day.jsDate > today);
+  if (upcoming) return { ...upcoming, mode: "upcoming" };
+
+  return { ...days.at(-1), mode: "past" };
+}
+
+function focusTripDay(dayNumber, behavior = "smooth") {
+  switchTab("itinerary");
+  document.getElementById(`day-${dayNumber}`)?.scrollIntoView({ behavior, block: "start" });
+}
+
+function setupTodayMode() {
+  const target = getTripDayForToday();
+  const panel = $("#today-panel");
+  const label =
+    target.mode === "today"
+      ? `今天是第 ${target.day} 天`
+      : target.mode === "upcoming"
+        ? `下一個行程：第 ${target.day} 天`
+        : `旅程已結束，最後一天`;
+  const subcopy =
+    target.mode === "today"
+      ? `${target.date} · ${target.area}`
+      : target.mode === "upcoming"
+        ? `現在還沒到旅程日期，先定位到 ${target.date}`
+        : `${target.date} · 可回看返程資訊`;
+
+  panel.innerHTML = `
+    <div class="today-panel__copy">
+      <i data-lucide="calendar-check"></i>
+      <div>
+        <strong>${label}</strong>
+        <span>${subcopy}</span>
+      </div>
+    </div>
+    <button class="mini-button" id="jump-today" type="button"><i data-lucide="locate-fixed"></i>定位</button>
+  `;
+  $("#jump-today").addEventListener("click", () => focusTripDay(target.day));
+
+  if (target.mode === "today" && !location.hash) {
+    setTimeout(() => focusTripDay(target.day, "auto"), 250);
+  }
 }
 
 function setupBudget() {
@@ -411,6 +496,54 @@ function setupBudget() {
   persist();
 }
 
+function setupChecklist() {
+  const body = $("#checklist");
+  const progress = $("#check-progress");
+  const saved = JSON.parse(localStorage.getItem("kansai-checklist") || "{}");
+
+  function persist() {
+    const checked = {};
+    body.querySelectorAll("input[type='checkbox']").forEach((input) => {
+      checked[input.value] = input.checked;
+    });
+    localStorage.setItem("kansai-checklist", JSON.stringify(checked));
+    const done = Object.values(checked).filter(Boolean).length;
+    const percent = Math.round((done / checklistItems.length) * 100);
+    progress.style.setProperty("--progress", `${percent * 3.6}deg`);
+    progress.querySelector("span").textContent = `${percent}%`;
+  }
+
+  body.innerHTML = checklistItems
+    .map(
+      ([id, title, note]) => `
+        <label class="check-item">
+          <input name="trip-checklist" type="checkbox" value="${id}" ${saved[id] ? "checked" : ""} />
+          <div><strong>${title}</strong><span>${note}</span></div>
+        </label>
+      `,
+    )
+    .join("");
+  body.addEventListener("change", persist);
+  persist();
+}
+
+function setupNetworkStatus() {
+  const banner = $("#network-status");
+
+  function render() {
+    const online = navigator.onLine;
+    banner.classList.toggle("is-offline", !online);
+    banner.innerHTML = online
+      ? `<i data-lucide="wifi"></i><span>線上模式，天氣與導航可即時更新。</span>`
+      : `<i data-lucide="wifi-off"></i><span>離線模式：已快取行程、工具與記帳；天氣和外部導航需等恢復網路。</span>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  window.addEventListener("online", render);
+  window.addEventListener("offline", render);
+  render();
+}
+
 async function loadWeather() {
   await Promise.all(
     tripDays.map(async (day) => {
@@ -442,7 +575,10 @@ renderDays();
 renderGuide();
 renderTools();
 setupTabs();
+setupTodayMode();
 setupBudget();
+setupChecklist();
+setupNetworkStatus();
 loadWeather();
 
 if (window.lucide) {
