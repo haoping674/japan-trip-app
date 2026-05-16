@@ -568,6 +568,52 @@ function mapUrl(place) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place} 日本`)}`;
 }
 
+function routeUrl(day) {
+  const places = day.stops.map(([, name]) => name).filter(Boolean);
+  if (places.length < 2) return mapUrl(places[0] ?? day.weather.label);
+  const params = new URLSearchParams({
+    api: "1",
+    origin: `${places[0]} 日本`,
+    destination: `${places.at(-1)} 日本`,
+    travelmode: "driving",
+  });
+  const waypoints = places.slice(1, -1).slice(0, 8);
+  if (waypoints.length) params.set("waypoints", waypoints.map((place) => `${place} 日本`).join("|"));
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function timeToMinutes(time) {
+  if (!/^\d{2}:\d{2}$/.test(time)) return null;
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function durationText(from, to) {
+  const start = timeToMinutes(from);
+  const end = timeToMinutes(to);
+  if (start === null || end === null || end <= start) return "彈性";
+  const diff = end - start;
+  if (diff < 60) return `${diff} 分`;
+  return `${Math.floor(diff / 60)} 小時${diff % 60 ? ` ${diff % 60} 分` : ""}`;
+}
+
+function stopRecord(dayNumber, stopIndex) {
+  const day = tripDays.find((item) => item.day === Number(dayNumber));
+  if (!day) return null;
+  const stop = day.stops[Number(stopIndex)];
+  if (!stop) return null;
+  const [time, name, type, note] = stop;
+  return { day, stop, time, name, type, note, index: Number(stopIndex), next: day.stops[Number(stopIndex) + 1] };
+}
+
+function carInfoForStop(record) {
+  if (record.type === "hotel") return ["住宿附近停車場", "入住前確認卸行李位置與夜間出入口。", "車機電話以訂房頁/住宿訊息為準"];
+  if (record.type === "food") return ["周邊 Times / 市場停車場", "熱門用餐點先查最後點餐時間，市場冷藏品注意保存。", "可用店名搜尋導航"];
+  if (record.type === "transport") return ["官方停車/還車入口", "先確認 ETC、加油、還車動線與航廈接駁時間。", "可用地點名搜尋導航"];
+  if (record.type === "shopping") return ["商場或店鋪停車場", "採買前確認退稅、冷藏袋與車上空間。", "可用店名搜尋導航"];
+  return ["官方/周邊收費停車場", "景點周邊車位熱門，建議先開 Google Maps 看即時滿位與步行距離。", "可用地點名搜尋導航"];
+}
+
 function escapeAttr(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -605,8 +651,9 @@ function renderDays() {
             </div>
           </header>
           ${renderDayNotes(day.day)}
+          ${renderRouteMap(day)}
           <div class="timeline">
-            ${day.stops.map(renderStop).join("")}
+            ${day.stops.map((stop, index) => renderStop(stop, day, index)).join("")}
           </div>
         </article>
       `,
@@ -641,20 +688,50 @@ function renderDayNotes(dayNumber) {
   `;
 }
 
-function renderStop(stop) {
+function renderRouteMap(day) {
+  const visibleStops = day.stops.slice(0, 6);
+  return `
+    <section class="route-map" aria-label="第 ${day.day} 天路線地圖">
+      <div class="route-map__head">
+        <div>
+          <p class="kicker">${day.weather.label} route</p>
+          <h3>當日 Google Maps 路線</h3>
+        </div>
+        <span>${day.stops.length} 站</span>
+      </div>
+      <div class="route-map__canvas" aria-hidden="true">
+        <div class="route-map__path"></div>
+        ${visibleStops.map(([, name], index) => `<span class="map-pin pin-${index + 1}">${index + 1}<small>${escapeAttr(name)}</small></span>`).join("")}
+      </div>
+      <a class="route-map__link" href="${routeUrl(day)}" target="_blank" rel="noreferrer">
+        <i data-lucide="map"></i>開啟 Google Maps 導航
+      </a>
+    </section>
+  `;
+}
+
+function renderStop(stop, day, index) {
   const [time, name, type, note] = stop;
   const meta = typeMeta[type] ?? typeMeta.sight;
+  const nextStop = day.stops[index + 1];
   return `
-    <article class="stop-card">
+    <article class="stop-card" data-stop-day="${day.day}" data-stop-index="${index}">
       <time class="stop-time">${time}</time>
       <div class="stop-main">
         <span class="stop-type"><i data-lucide="${meta.icon}"></i>${meta.label}</span>
         <strong class="stop-name">${name}</strong>
         <p class="stop-note">${note}</p>
-        <a class="nav-link" href="${mapUrl(name)}" target="_blank" rel="noreferrer">
-          <i data-lucide="navigation"></i>導航
-        </a>
+        <div class="stop-actions">
+          <a class="nav-link" href="${mapUrl(name)}" target="_blank" rel="noreferrer" data-stop-nav>
+            <i data-lucide="navigation"></i>導航
+          </a>
+          <button class="detail-link" type="button" data-stop-detail><i data-lucide="book-open"></i>攻略</button>
+        </div>
       </div>
+      <aside class="stop-meta">
+        <span><i data-lucide="clock"></i>${nextStop ? nextStop[0] : "收尾"}</span>
+        <small>${nextStop ? durationText(time, nextStop[0]) : "完成"}</small>
+      </aside>
     </article>
   `;
 }
@@ -719,6 +796,58 @@ function renderGuideDetail(note) {
       <ul class="sheet-list">
         ${detail.watch.map((item) => `<li>${item}</li>`).join("")}
       </ul>
+    </div>
+  `;
+}
+
+function renderStopDetail(record) {
+  const meta = typeMeta[record.type] ?? typeMeta.sight;
+  const note = dayContent[record.day.day];
+  const [parking, parkingNote, phoneHint] = carInfoForStop(record);
+  const nextName = record.next?.[1] ?? "今日收尾";
+  const nextTime = record.next?.[0] ?? "完成";
+  const tags =
+    record.type === "food"
+      ? [["必點菜單", "先看招牌、季節限定與兒童可吃品項", "menu"]]
+      : record.type === "shopping"
+        ? [["必買伴手禮", "限定品、常溫好帶、退稅品優先", "gift"]]
+        : [["攻略重點", "停車、拍照、人潮與雨天備案", "reserve"]];
+
+  return `
+    <div class="guide-sheet__intro stop-sheet__intro">
+      <span class="stop-type"><i data-lucide="${meta.icon}"></i>${meta.label}</span>
+      <p>${record.note}</p>
+      <div class="sheet-tags">${tags.map(([label, value, type]) => `<span class="tag ${type}">${label}：${value}</span>`).join("")}</div>
+    </div>
+    <div class="stop-detail-grid">
+      <article>
+        <span>時間</span>
+        <strong>${record.time}</strong>
+        <small>下一站 ${nextTime} · ${durationText(record.time, nextTime)}</small>
+      </article>
+      <article>
+        <span>下一站</span>
+        <strong>${nextName}</strong>
+        <small>行程可依現場排隊與天氣調整。</small>
+      </article>
+    </div>
+    <div class="sheet-section point-box">
+      <h3><i data-lucide="map-pinned"></i>自駕資訊</h3>
+      <div class="info-row"><span>停車</span><strong>${parking}</strong></div>
+      <div class="info-row"><span>車機</span><strong>${phoneHint}</strong></div>
+      <p>${parkingNote}</p>
+    </div>
+    <div class="sheet-section">
+      <h3><i data-lucide="sparkles"></i>現場攻略</h3>
+      <ul class="sheet-list">
+        <li>${note?.focus ?? "依現場營業時間與天候調整停留順序。"}</li>
+        <li>${note?.drive ?? "自駕請先確認停車場、步行距離與回程方向。"}</li>
+        <li>${note?.rain ?? "雨天保留室內點與用餐備案，戶外點縮短停留。"}</li>
+      </ul>
+    </div>
+    <div class="sheet-actions">
+      <a class="mini-button" href="${mapUrl(record.name)}" target="_blank" rel="noreferrer"><i data-lucide="navigation"></i>單點導航</a>
+      <a class="mini-button" href="${routeUrl(record.day)}" target="_blank" rel="noreferrer"><i data-lucide="route"></i>今日路線</a>
     </div>
   `;
 }
@@ -820,6 +949,19 @@ function setupGuideSheet() {
     title.textContent = note.title;
     kicker.textContent = note.detail.subtitle;
     body.innerHTML = renderGuideDetail(note);
+    openSheet();
+  }
+
+  function openStop(dayNumber, stopIndex) {
+    const record = stopRecord(dayNumber, stopIndex);
+    if (!record) return;
+    title.textContent = record.name;
+    kicker.textContent = `Day ${record.day.day} · ${record.time} · ${record.day.area}`;
+    body.innerHTML = renderStopDetail(record);
+    openSheet();
+  }
+
+  function openSheet() {
     sheet.hidden = false;
     backdrop.hidden = false;
     requestAnimationFrame(() => {
@@ -845,6 +987,21 @@ function setupGuideSheet() {
   $("#guide-grid").addEventListener("click", (event) => {
     const button = event.target.closest("[data-guide-id]");
     if (button) openGuide(button.dataset.guideId);
+  });
+
+  $("#days").addEventListener("click", (event) => {
+    if (event.target.closest("[data-stop-nav]")) return;
+    const card = event.target.closest("[data-stop-day]");
+    if (card) openStop(card.dataset.stopDay, card.dataset.stopIndex);
+  });
+
+  $("#days").addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if (event.target.closest("[data-stop-nav]")) return;
+    const card = event.target.closest("[data-stop-day]");
+    if (!card) return;
+    event.preventDefault();
+    openStop(card.dataset.stopDay, card.dataset.stopIndex);
   });
 
   closeButton.addEventListener("click", closeGuide);
@@ -1142,15 +1299,27 @@ async function loadWeather() {
           latitude: day.weather.lat,
           longitude: day.weather.lon,
           current: "temperature_2m,weather_code,wind_speed_10m",
+          hourly: "temperature_2m,weather_code",
+          forecast_hours: "6",
           timezone: "Asia/Tokyo",
         });
         const response = await fetch(url);
         if (!response.ok) throw new Error("weather unavailable");
         const data = await response.json();
         const current = data.current;
+        const hourly = (data.hourly?.time ?? []).slice(0, 5).map((time, index) => ({
+          time: new Date(time).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false }),
+          temp: Math.round(data.hourly.temperature_2m[index]),
+          code: data.hourly.weather_code[index],
+        }));
         target.innerHTML = `
-          <strong>${Math.round(current.temperature_2m)}°</strong>
-          <span>${day.weather.label} · ${weatherCode[current.weather_code] ?? "即時"} · 風 ${Math.round(current.wind_speed_10m)} km/h</span>
+          <div class="weather-current">
+            <strong>${Math.round(current.temperature_2m)}°</strong>
+            <span>${day.weather.label} · ${weatherCode[current.weather_code] ?? "即時"} · 風 ${Math.round(current.wind_speed_10m)} km/h</span>
+          </div>
+          <div class="weather-hours">
+            ${hourly.map((item) => `<span><small>${item.time}</small><i data-lucide="${item.code >= 61 ? "cloud-rain" : item.code >= 2 ? "cloud-sun" : "sun"}"></i>${item.temp}°</span>`).join("")}
+          </div>
         `;
       } catch {
         target.innerHTML = `<strong>--°</strong><span>${day.weather.label} 天氣暫不可用</span>`;

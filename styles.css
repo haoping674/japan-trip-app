@@ -345,11 +345,16 @@ h1 {
 }
 
 .weather {
-  min-width: 112px;
+  min-width: 140px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.58);
   padding: 10px;
   text-align: right;
+}
+
+.weather-current {
+  display: grid;
+  gap: 2px;
 }
 
 .weather strong {
@@ -361,6 +366,35 @@ h1 {
   color: var(--muted);
   font-size: 0.74rem;
   font-weight: 800;
+}
+
+.weather-hours {
+  display: flex;
+  gap: 7px;
+  max-width: 210px;
+  margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.weather-hours span {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 42px;
+  color: var(--ink);
+  font-size: 0.72rem;
+}
+
+.weather-hours small {
+  color: var(--muted);
+  font-size: 0.64rem;
+}
+
+.weather-hours svg {
+  width: 15px;
+  height: 15px;
+  color: var(--lacquer);
 }
 
 .timeline {
@@ -402,15 +436,157 @@ h1 {
   line-height: 1.55;
 }
 
+.route-map {
+  margin: 12px;
+  border: 1px solid rgba(32, 32, 30, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  overflow: hidden;
+}
+
+.route-map__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px 8px;
+}
+
+.route-map__head h3 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+}
+
+.route-map__head > span {
+  border-radius: 999px;
+  background: #e7f0e7;
+  color: #315f3a;
+  padding: 5px 9px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.route-map__canvas {
+  position: relative;
+  height: 168px;
+  margin: 0 12px;
+  border: 1px solid rgba(32, 32, 30, 0.08);
+  border-radius: 16px;
+  background:
+    linear-gradient(30deg, transparent 46%, rgba(52, 83, 109, 0.16) 47%, transparent 49%),
+    linear-gradient(150deg, transparent 42%, rgba(108, 140, 89, 0.14) 43%, transparent 46%),
+    linear-gradient(90deg, rgba(32, 32, 30, 0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(32, 32, 30, 0.06) 1px, transparent 1px),
+    #f2efe6;
+  background-size:
+    100% 100%,
+    100% 100%,
+    34px 34px,
+    34px 34px;
+}
+
+.route-map__path {
+  position: absolute;
+  inset: 28px 48px 34px 38px;
+  border-left: 4px dashed rgba(186, 61, 44, 0.55);
+  border-bottom: 4px dashed rgba(186, 61, 44, 0.55);
+  border-radius: 0 0 0 44px;
+  transform: skewX(-12deg);
+}
+
+.map-pin {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #fffaf1;
+  border-radius: 50%;
+  background: var(--lacquer);
+  color: #fffaf1;
+  font-size: 0.76rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(52, 43, 31, 0.22);
+}
+
+.map-pin small {
+  position: absolute;
+  top: 27px;
+  left: 50%;
+  width: max-content;
+  max-width: 110px;
+  transform: translateX(-50%);
+  color: var(--ink);
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.pin-1 {
+  left: 10%;
+  top: 18%;
+}
+
+.pin-2 {
+  left: 31%;
+  top: 56%;
+}
+
+.pin-3 {
+  left: 49%;
+  top: 32%;
+}
+
+.pin-4 {
+  left: 65%;
+  top: 62%;
+}
+
+.pin-5 {
+  left: 78%;
+  top: 24%;
+}
+
+.pin-6 {
+  left: 86%;
+  top: 58%;
+}
+
+.route-map__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 12px 12px;
+  border-radius: 14px;
+  background: #fffaf1;
+  color: var(--indigo);
+  padding: 10px;
+  font-size: 0.84rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .stop-card {
   position: relative;
   display: grid;
-  grid-template-columns: 54px 1fr;
+  grid-template-columns: 54px 1fr 62px;
   gap: 10px;
   margin: 9px 0;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.62);
   padding: 12px;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.stop-card:focus-visible,
+.stop-card:hover {
+  outline: none;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(52, 43, 31, 0.12);
 }
 
 .stop-time {
@@ -452,6 +628,56 @@ h1 {
   color: #565149;
   font-size: 0.86rem;
   line-height: 1.5;
+}
+
+.stop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  margin-top: 10px;
+  border: 1px solid rgba(32, 32, 30, 0.13);
+  border-radius: 999px;
+  background: #fffaf1;
+  color: var(--ink);
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.detail-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.stop-meta {
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.stop-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink);
+}
+
+.stop-meta svg {
+  width: 13px;
+  height: 13px;
 }
 
 .nav-link,
@@ -506,6 +732,43 @@ h1 {
 .tag.reserve {
   background: #dce6fa;
   color: #274676;
+}
+
+.stop-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stop-detail-grid article {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 250, 241, 0.78);
+  padding: 12px;
+}
+
+.stop-detail-grid span,
+.stop-detail-grid small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.stop-detail-grid strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 1.05rem;
+}
+
+.point-box .info-row {
+  margin-top: 8px;
+}
+
+.sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .tag.warn {
@@ -1002,5 +1265,33 @@ h1 {
 
   .today-panel .mini-button {
     width: 100%;
+  }
+
+  .day-title-row {
+    flex-direction: column;
+  }
+
+  .weather {
+    width: 100%;
+    text-align: left;
+  }
+
+  .weather-hours {
+    max-width: 100%;
+  }
+
+  .stop-card {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .stop-meta {
+    grid-column: 2;
+    grid-row: 2;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .stop-detail-grid {
+    grid-template-columns: 1fr;
   }
 }
