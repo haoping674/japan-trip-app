@@ -1,4 +1,4 @@
-const CACHE_NAME = "kansai-trip-v5";
+const CACHE_NAME = "kansai-trip-v6";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -28,6 +28,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return;
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

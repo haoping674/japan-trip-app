@@ -23,3 +23,16 @@ python -m http.server 4173
 - 工具頁新增可編輯的預約代號表與可勾選的伴手禮採買清單。
 - 今日模式會在旅程期間自動定位當天行程；旅程前會定位到下一個行程日。
 - PWA 支援基本離線快取，離線時仍可閱讀行程與工具資料。
+- 部署到 Vercel 並設定 Neon `DATABASE_URL` 後，檢查清單、預約代號、記帳與採買清單會共用同步。
+
+## Neon / Vercel
+
+1. 在 Neon 建立 Postgres database。
+2. 到 Vercel 專案 `Settings → Environment Variables` 新增：
+
+```txt
+DATABASE_URL=postgresql://...
+```
+
+3. 部署到 Vercel。API 會自動建立 `trip_state` table，也可手動執行 `db/schema.sql`。
+4. 若要使用 `trip.haoping.tw`，請把 Cloudflare DNS 的 `trip` CNAME 指向 Vercel 提供的 target，而不是 GitHub Pages。

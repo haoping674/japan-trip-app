@@ -387,6 +387,124 @@ const shoppingItems = [
   ["usj", "USJ 限定商品", "USJ", "入園後先看寄物與退稅動線。"],
 ];
 
+const LOCAL_STATE_KEY = "kansai-trip-state";
+
+function getDefaultTripState() {
+  return {
+    checklist: {},
+    reservations: reservationItems.map(([item, date, detail, code]) => ({ item, date, detail, code })),
+    budget: [
+      { item: "餐飲", amount: "", memo: "" },
+      { item: "交通/停車", amount: "", memo: "" },
+      { item: "門票", amount: "", memo: "" },
+      { item: "伴手禮", amount: "", memo: "" },
+    ],
+    shopping: {},
+  };
+}
+
+function readJsonStorage(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function mergeTripState(value = {}) {
+  const defaults = getDefaultTripState();
+  return {
+    checklist: value.checklist && typeof value.checklist === "object" ? value.checklist : defaults.checklist,
+    reservations: Array.isArray(value.reservations) ? value.reservations : defaults.reservations,
+    budget: Array.isArray(value.budget) ? value.budget : defaults.budget,
+    shopping: value.shopping && typeof value.shopping === "object" ? value.shopping : defaults.shopping,
+  };
+}
+
+function loadTripState() {
+  const savedState = readJsonStorage(LOCAL_STATE_KEY, null);
+  if (savedState) return mergeTripState(savedState);
+
+  return mergeTripState({
+    checklist: readJsonStorage("kansai-checklist", {}),
+    reservations: readJsonStorage("kansai-reservations", null),
+    budget: readJsonStorage("kansai-budget", null),
+    shopping: readJsonStorage("kansai-shopping", {}),
+  });
+}
+
+let tripState = loadTripState();
+let syncTimer = null;
+let syncInFlight = false;
+
+function persistTripStateLocal() {
+  localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(tripState));
+  localStorage.setItem("kansai-checklist", JSON.stringify(tripState.checklist));
+  localStorage.setItem("kansai-reservations", JSON.stringify(tripState.reservations));
+  localStorage.setItem("kansai-budget", JSON.stringify(tripState.budget));
+  localStorage.setItem("kansai-shopping", JSON.stringify(tripState.shopping));
+}
+
+function setSyncStatus(message, state = "online") {
+  const banner = $("#network-status");
+  if (!banner) return;
+  banner.dataset.syncState = state;
+  banner.innerHTML = `<i data-lucide="${state === "offline" ? "wifi-off" : state === "error" ? "cloud-alert" : "cloud-check"}"></i><span>${message}</span>`;
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function updateTripState(section, value, options = {}) {
+  tripState = mergeTripState({ ...tripState, [section]: value });
+  persistTripStateLocal();
+  if (options.sync !== false) scheduleStateSync();
+}
+
+function scheduleStateSync() {
+  window.clearTimeout(syncTimer);
+  syncTimer = window.setTimeout(syncTripState, 650);
+}
+
+async function syncTripState() {
+  if (syncInFlight || !navigator.onLine) return;
+  syncInFlight = true;
+  try {
+    const response = await fetch("./api/state", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: tripState }),
+    });
+    if (!response.ok) throw new Error("sync failed");
+    const payload = await response.json();
+    tripState = mergeTripState(payload.data);
+    persistTripStateLocal();
+    setSyncStatus("已同步到 Neon，共用資料為最新。", "online");
+  } catch {
+    setSyncStatus("目前使用本機資料；部署到 Vercel 並設定 Neon 後會自動同步。", "error");
+  } finally {
+    syncInFlight = false;
+  }
+}
+
+async function hydrateSharedState() {
+  if (!navigator.onLine) return;
+  try {
+    const response = await fetch("./api/state", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("state unavailable");
+    const payload = await response.json();
+    tripState = mergeTripState(payload.data);
+    persistTripStateLocal();
+    renderTools();
+    setupBudget();
+    setupChecklist();
+    setupReservations();
+    setupShoppingList();
+    setSyncStatus("已載入 Neon 共用資料。", "online");
+    if (window.lucide) window.lucide.createIcons();
+  } catch {
+    setSyncStatus("目前使用本機資料；部署到 Vercel 並設定 Neon 後會自動同步。", "error");
+  }
+}
+
 const weatherCode = {
   0: "晴朗",
   1: "大致晴朗",
@@ -595,7 +713,7 @@ function renderTools() {
   const reservations = `
     <article class="tool-card reservation-card">
       <h3>預約代號表</h3>
-      <p>把航班、租車、住宿和票券代號集中在這裡；內容只存在此裝置瀏覽器。</p>
+      <p>把航班、租車、住宿和票券代號集中在這裡；部署 Neon 後會與同行成員同步，本機仍會保留備份。</p>
       <div class="responsive-table">
         <table class="budget-table">
           <thead>
@@ -627,7 +745,7 @@ function renderTools() {
     `
       <article class="tool-card budget">
         <h3>記帳 / 預算表</h3>
-        <p>金額會存在此裝置瀏覽器，適合旅途中快速記錄日圓支出。</p>
+        <p>金額會先存在手機，部署 Neon 後會同步成共用記帳表。</p>
         <table class="budget-table">
           <thead>
             <tr><th>項目</th><th>金額 JPY</th><th>備註</th></tr>
@@ -759,12 +877,20 @@ function setupTodayMode() {
 
 function setupBudget() {
   const body = $("#budget-body");
-  const saved = JSON.parse(localStorage.getItem("kansai-budget") || "null") ?? [
-    { item: "餐飲", amount: "", memo: "" },
-    { item: "交通/停車", amount: "", memo: "" },
-    { item: "門票", amount: "", memo: "" },
-    { item: "伴手禮", amount: "", memo: "" },
-  ];
+  const saved = tripState.budget;
+
+  function collectRows() {
+    return [...body.querySelectorAll("tr")].map((row) => ({
+      item: row.querySelector('[data-field="item"]').value,
+      amount: row.querySelector('[data-field="amount"]').value,
+      memo: row.querySelector('[data-field="memo"]').value,
+    }));
+  }
+
+  function updateTotal(rows = collectRows()) {
+    const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+    $("#budget-total").textContent = `¥${total.toLocaleString("ja-JP")}`;
+  }
 
   function persist() {
     const rows = [...body.querySelectorAll("tr")].map((row) => ({
@@ -772,9 +898,8 @@ function setupBudget() {
       amount: row.querySelector('[data-field="amount"]').value,
       memo: row.querySelector('[data-field="memo"]').value,
     }));
-    localStorage.setItem("kansai-budget", JSON.stringify(rows));
-    const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
-    $("#budget-total").textContent = `¥${total.toLocaleString("ja-JP")}`;
+    updateTotal(rows);
+    updateTripState("budget", rows);
   }
 
   function addRow(row = { item: "", amount: "", memo: "" }) {
@@ -793,13 +918,12 @@ function setupBudget() {
     addRow();
     persist();
   });
-  persist();
+  updateTotal(saved);
 }
 
 function setupReservations() {
   const body = $("#reservation-body");
-  const saved = JSON.parse(localStorage.getItem("kansai-reservations") || "null");
-  const rows = saved ?? reservationItems.map(([item, date, detail, code]) => ({ item, date, detail, code }));
+  const rows = tripState.reservations;
 
   function persist() {
     const nextRows = [...body.querySelectorAll("tr")].map((row) => ({
@@ -808,7 +932,7 @@ function setupReservations() {
       detail: row.querySelector('[data-field="detail"]').value,
       code: row.querySelector('[data-field="code"]').value,
     }));
-    localStorage.setItem("kansai-reservations", JSON.stringify(nextRows));
+    updateTripState("reservations", nextRows);
   }
 
   body.innerHTML = rows
@@ -824,24 +948,27 @@ function setupReservations() {
     )
     .join("");
   body.addEventListener("input", persist);
-  persist();
 }
 
 function setupChecklist() {
   const body = $("#checklist");
   const progress = $("#check-progress");
-  const saved = JSON.parse(localStorage.getItem("kansai-checklist") || "{}");
+  const saved = tripState.checklist;
+
+  function renderProgress(checked) {
+    const done = Object.values(checked).filter(Boolean).length;
+    const percent = Math.round((done / checklistItems.length) * 100);
+    progress.style.setProperty("--progress", `${percent * 3.6}deg`);
+    progress.querySelector("span").textContent = `${percent}%`;
+  }
 
   function persist() {
     const checked = {};
     body.querySelectorAll("input[type='checkbox']").forEach((input) => {
       checked[input.value] = input.checked;
     });
-    localStorage.setItem("kansai-checklist", JSON.stringify(checked));
-    const done = Object.values(checked).filter(Boolean).length;
-    const percent = Math.round((done / checklistItems.length) * 100);
-    progress.style.setProperty("--progress", `${percent * 3.6}deg`);
-    progress.querySelector("span").textContent = `${percent}%`;
+    renderProgress(checked);
+    updateTripState("checklist", checked);
   }
 
   body.innerHTML = checklistItems
@@ -855,24 +982,28 @@ function setupChecklist() {
     )
     .join("");
   body.addEventListener("change", persist);
-  persist();
+  renderProgress(saved);
 }
 
 function setupShoppingList() {
   const body = $("#shopping-list");
   const progress = $("#shopping-progress");
-  const saved = JSON.parse(localStorage.getItem("kansai-shopping") || "{}");
+  const saved = tripState.shopping;
+
+  function renderProgress(checked) {
+    const done = Object.values(checked).filter(Boolean).length;
+    const percent = Math.round((done / shoppingItems.length) * 100);
+    progress.style.setProperty("--progress", `${percent * 3.6}deg`);
+    progress.querySelector("span").textContent = `${percent}%`;
+  }
 
   function persist() {
     const checked = {};
     body.querySelectorAll("input[type='checkbox']").forEach((input) => {
       checked[input.value] = input.checked;
     });
-    localStorage.setItem("kansai-shopping", JSON.stringify(checked));
-    const done = Object.values(checked).filter(Boolean).length;
-    const percent = Math.round((done / shoppingItems.length) * 100);
-    progress.style.setProperty("--progress", `${percent * 3.6}deg`);
-    progress.querySelector("span").textContent = `${percent}%`;
+    renderProgress(checked);
+    updateTripState("shopping", checked);
   }
 
   body.innerHTML = shoppingItems
@@ -889,7 +1020,7 @@ function setupShoppingList() {
     )
     .join("");
   body.addEventListener("change", persist);
-  persist();
+  renderProgress(saved);
 }
 
 function setupNetworkStatus() {
@@ -947,6 +1078,7 @@ setupChecklist();
 setupReservations();
 setupShoppingList();
 setupNetworkStatus();
+hydrateSharedState();
 loadWeather();
 
 if (window.lucide) {
