@@ -42,7 +42,8 @@ body.sheet-open {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -831,6 +832,113 @@ h1 {
   border-radius: 10px;
   background: #fffaf1;
   padding: 8px;
+}
+
+.budget-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.person-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 250, 241, 0.72);
+  padding: 8px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.person-total strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.budget-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.budget-entry {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 86px;
+  gap: 9px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 10px;
+}
+
+.budget-entry__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  align-self: start;
+  border-radius: 14px;
+  background: #23302f;
+  color: #fffaf1;
+}
+
+.budget-entry__icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.budget-entry label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.budget-entry label span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.budget-entry input,
+.budget-entry select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(32, 32, 30, 0.13);
+  border-radius: 12px;
+  background: #fffaf1;
+  padding: 8px 9px;
+}
+
+.budget-entry select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 17px,
+    calc(100% - 10px) 17px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 26px;
+}
+
+.budget-entry__item,
+.budget-entry__memo {
+  grid-column: 2 / -1;
+}
+
+.budget-entry__delete {
+  width: 40px;
+  height: 40px;
+  align-self: end;
+  border-color: rgba(181, 70, 45, 0.22);
+  color: #a33d2d;
+  background: #fff5ec;
 }
 
 .reservation-card input {

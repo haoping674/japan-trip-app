@@ -388,16 +388,54 @@ const shoppingItems = [
 ];
 
 const LOCAL_STATE_KEY = "kansai-trip-state";
+const budgetPeople = ["煥", "英", "嘉", "銘", "評", "青"];
+const budgetCategories = [
+  { id: "food", label: "餐飲", icon: "utensils" },
+  { id: "transport", label: "交通/停車", icon: "car-front" },
+  { id: "ticket", label: "門票", icon: "ticket" },
+  { id: "stay", label: "住宿", icon: "bed" },
+  { id: "souvenir", label: "伴手禮", icon: "gift" },
+  { id: "market", label: "超市/採買", icon: "shopping-bag" },
+  { id: "fuel", label: "加油", icon: "fuel" },
+  { id: "other", label: "其他", icon: "wallet" },
+];
+
+function createBudgetRow(overrides = {}) {
+  return {
+    category: "food",
+    person: budgetPeople[0],
+    item: "",
+    amount: "",
+    memo: "",
+    ...overrides,
+  };
+}
+
+function normalizeBudgetRow(row = {}) {
+  const matchedCategory =
+    budgetCategories.find((category) => category.id === row.category) ||
+    budgetCategories.find((category) => category.label === row.item) ||
+    budgetCategories[0];
+  const person = budgetPeople.includes(row.person) ? row.person : budgetPeople[0];
+
+  return createBudgetRow({
+    category: matchedCategory.id,
+    person,
+    item: row.item || matchedCategory.label,
+    amount: row.amount ?? "",
+    memo: row.memo ?? "",
+  });
+}
 
 function getDefaultTripState() {
   return {
     checklist: {},
     reservations: reservationItems.map(([item, date, detail, code]) => ({ item, date, detail, code })),
     budget: [
-      { item: "餐飲", amount: "", memo: "" },
-      { item: "交通/停車", amount: "", memo: "" },
-      { item: "門票", amount: "", memo: "" },
-      { item: "伴手禮", amount: "", memo: "" },
+      createBudgetRow({ category: "food", item: "餐飲" }),
+      createBudgetRow({ category: "transport", item: "交通/停車" }),
+      createBudgetRow({ category: "ticket", item: "門票" }),
+      createBudgetRow({ category: "souvenir", item: "伴手禮" }),
     ],
     shopping: {},
   };
@@ -416,7 +454,7 @@ function mergeTripState(value = {}) {
   return {
     checklist: value.checklist && typeof value.checklist === "object" ? value.checklist : defaults.checklist,
     reservations: Array.isArray(value.reservations) ? value.reservations : defaults.reservations,
-    budget: Array.isArray(value.budget) ? value.budget : defaults.budget,
+    budget: Array.isArray(value.budget) ? value.budget.map(normalizeBudgetRow) : defaults.budget,
     shopping: value.shopping && typeof value.shopping === "object" ? value.shopping : defaults.shopping,
   };
 }
@@ -746,12 +784,8 @@ function renderTools() {
       <article class="tool-card budget">
         <h3>記帳 / 預算表</h3>
         <p>金額會先存在手機，部署 Neon 後會同步成共用記帳表。</p>
-        <table class="budget-table">
-          <thead>
-            <tr><th>項目</th><th>金額 JPY</th><th>備註</th></tr>
-          </thead>
-          <tbody id="budget-body"></tbody>
-        </table>
+        <div class="budget-summary" id="budget-summary"></div>
+        <div class="budget-list" id="budget-body"></div>
         <button class="mini-button" id="add-row" type="button"><i data-lucide="plus"></i>新增一列</button>
         <div class="total-box"><span>目前合計</span><span id="budget-total">¥0</span></div>
       </article>
@@ -880,37 +914,95 @@ function setupBudget() {
   const saved = tripState.budget;
 
   function collectRows() {
-    return [...body.querySelectorAll("tr")].map((row) => ({
+    return [...body.querySelectorAll(".budget-entry")].map((row) => ({
+      category: row.querySelector('[data-field="category"]').value,
+      person: row.querySelector('[data-field="person"]').value,
       item: row.querySelector('[data-field="item"]').value,
       amount: row.querySelector('[data-field="amount"]').value,
       memo: row.querySelector('[data-field="memo"]').value,
-    }));
+    })).map(normalizeBudgetRow);
   }
 
   function updateTotal(rows = collectRows()) {
     const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
     $("#budget-total").textContent = `¥${total.toLocaleString("ja-JP")}`;
+
+    const summary = $("#budget-summary");
+    summary.innerHTML = budgetPeople
+      .map((person) => {
+        const subtotal = rows
+          .filter((row) => row.person === person)
+          .reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+        return `<span class="person-total"><strong>${person}</strong>¥${subtotal.toLocaleString("ja-JP")}</span>`;
+      })
+      .join("");
   }
 
   function persist() {
-    const rows = [...body.querySelectorAll("tr")].map((row) => ({
-      item: row.querySelector('[data-field="item"]').value,
-      amount: row.querySelector('[data-field="amount"]').value,
-      memo: row.querySelector('[data-field="memo"]').value,
-    }));
+    const rows = collectRows();
     updateTotal(rows);
     updateTripState("budget", rows);
   }
 
-  function addRow(row = { item: "", amount: "", memo: "" }) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><input name="budget-item" data-field="item" value="${escapeAttr(row.item)}" aria-label="項目" /></td>
-      <td><input name="budget-amount" data-field="amount" value="${escapeAttr(row.amount)}" inputmode="numeric" aria-label="金額" /></td>
-      <td><input name="budget-memo" data-field="memo" value="${escapeAttr(row.memo)}" aria-label="備註" /></td>
+  function refreshEntryIcon(entry) {
+    const category = budgetCategories.find((item) => item.id === entry.querySelector('[data-field="category"]').value) ?? budgetCategories[0];
+    entry.querySelector(".budget-entry__icon").innerHTML = `<i data-lucide="${category.icon}"></i>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  function addRow(row = createBudgetRow()) {
+    const normalized = normalizeBudgetRow(row);
+    const entry = document.createElement("article");
+    entry.className = "budget-entry";
+    entry.innerHTML = `
+      <div class="budget-entry__icon" aria-hidden="true"><i data-lucide="utensils"></i></div>
+      <label>
+        <span>分類</span>
+        <select name="budget-category" data-field="category" aria-label="分類">
+          ${budgetCategories
+            .map((category) => `<option value="${category.id}" ${category.id === normalized.category ? "selected" : ""}>${category.label}</option>`)
+            .join("")}
+        </select>
+      </label>
+      <label>
+        <span>人</span>
+        <select name="budget-person" data-field="person" aria-label="付款人">
+          ${budgetPeople.map((person) => `<option value="${person}" ${person === normalized.person ? "selected" : ""}>${person}</option>`).join("")}
+        </select>
+      </label>
+      <label class="budget-entry__item">
+        <span>項目</span>
+        <input name="budget-item" data-field="item" value="${escapeAttr(normalized.item)}" aria-label="項目" />
+      </label>
+      <label>
+        <span>金額 JPY</span>
+        <input name="budget-amount" data-field="amount" value="${escapeAttr(normalized.amount)}" inputmode="numeric" pattern="[0-9]*" aria-label="金額" />
+      </label>
+      <label class="budget-entry__memo">
+        <span>備註</span>
+        <input name="budget-memo" data-field="memo" value="${escapeAttr(normalized.memo)}" aria-label="備註" />
+      </label>
+      <button class="icon-button budget-entry__delete" type="button" aria-label="刪除此筆"><i data-lucide="trash-2"></i></button>
     `;
-    tr.addEventListener("input", persist);
-    body.appendChild(tr);
+    entry.addEventListener("input", persist);
+    entry.addEventListener("change", (event) => {
+      if (event.target.matches('[data-field="category"]')) {
+        const previous = budgetCategories.find((item) => item.id === entry.dataset.category)?.label;
+        const next = budgetCategories.find((item) => item.id === event.target.value) ?? budgetCategories[0];
+        const itemInput = entry.querySelector('[data-field="item"]');
+        if (!itemInput.value || itemInput.value === previous) itemInput.value = next.label;
+        entry.dataset.category = next.id;
+        refreshEntryIcon(entry);
+      }
+      persist();
+    });
+    entry.querySelector(".budget-entry__delete").addEventListener("click", () => {
+      entry.remove();
+      persist();
+    });
+    body.appendChild(entry);
+    entry.dataset.category = normalized.category;
+    refreshEntryIcon(entry);
   }
 
   saved.forEach(addRow);
