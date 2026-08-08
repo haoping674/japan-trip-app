@@ -170,6 +170,34 @@ const activeTripDays = [
   { day: 11, date: "2026/09/16", area: "大阪 → 關西機場", weather: { label: "關西機場", lat: 34.4347, lon: 135.2442 }, stops: [["08:00", "鹿の宿", "hotel", "退房與最後確認。"], ["09:35", "關西機場站", "transport", "PDF 未列班機；補入航班號、航廈與起飛時間。"]] },
 ];
 
+const rainTripDays = [
+  { day: 1, date: "2026/09/06", area: "關西機場 → 京都站（雨天版）", weather: { label: "京都", lat: 35.0116, lon: 135.7681 }, stops: [["12:40", "關西機場", "transport", "抵達、入境後直赴京都；不安排戶外鳥居。"], ["16:17", "Guest House Kyoan", "hotel", "入住與放行李。"], ["17:30", "京都站大樓 / Porta", "shopping", "室內晚餐、藥妝與隔日補給。"], ["18:40", "Guest House Kyoan", "hotel", "提早回住宿休息。"]] },
+  { day: 2, date: "2026/09/07", area: "京都站 → 梅小路（雨天版）", weather: { label: "京都", lat: 35.0116, lon: 135.7681 }, stops: [["07:30", "Guest House Kyoan", "hotel", "不走東山坡道，改梅小路室內日。"], ["08:10", "京都鐵道博物館", "sight", "先看室內常設展；保留 2 小時。"], ["10:30", "京都水族館", "activity", "室內水族館，雨勢最大時段安排在此。"], ["12:15", "京都站 Porta", "food", "地下街午餐，不必冒雨找店。"], ["13:30", "Guest House Kyoan", "hotel", "回住宿休息與烘乾雨具。"], ["15:30", "京都站伊勢丹", "shopping", "室內採買、甜點與晚餐備案。"], ["18:30", "Guest House Kyoan", "hotel", "回住宿。"]] },
+  { day: 3, date: "2026/09/08", area: "京都 → 琵琶湖博物館 → 小濱（雨天版）", weather: { label: "小濱", lat: 35.4958, lon: 135.7466 }, stops: [["09:00", "Guest House Kyoan", "hotel", "自駕段第 1 天；避開湖畔拍照點。"], ["10:10", "滋賀縣立琵琶湖博物館", "sight", "全室內展覽，替代白鬚神社與公園。"], ["12:30", "道之驛 若狹おばま", "food", "室內熟食、物產與午餐。"], ["14:20", "Party&Resort ZERO'sHOUSE", "hotel", "提早入住，整理濕衣物。"], ["15:30", "御食國若狹おばま食文化館", "sight", "室內展示與若狹食文化。"], ["17:00", "Party&Resort ZERO'sHOUSE", "hotel", "住宿自煮，取消海邊散步。"]] },
+  { day: 4, date: "2026/09/09", area: "小濱 → 舞鶴 → 宮津（雨天版）", weather: { label: "宮津", lat: 35.5356, lon: 135.1956 }, stops: [["09:00", "Party&Resort ZERO'sHOUSE", "hotel", "自駕段第 2 天；伊根、傘松公園暫停。"], ["09:50", "舞鶴赤煉瓦博物館", "sight", "室內紅磚與港都歷史展。"], ["11:15", "舞鶴港とれとれ中心", "food", "室內市場午餐與海產採買。"], ["13:00", "Roadside Station Kyoto by the Sea MIYAZU", "shopping", "室內物產、咖啡與伴手禮。"], ["14:30", "KYOTO TANGO MIYAZU inn", "hotel", "提早入住，保留住宿內休息緩衝。"], ["16:30", "宮津市街室內咖啡 / 超市", "food", "只在雨勢轉小時出門補給；否則留在住宿。"]] },
+  { day: 5, date: "2026/09/10", area: "宮津 → 池田 → 門真 → 大阪（雨天版）", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "KYOTO TANGO MIYAZU inn", "hotel", "自駕段第 3 天，直走高速南返。"], ["10:10", "杯麵博物館 大阪池田", "sight", "室內製作體驗，替代勝尾寺與箕面瀑布。"], ["12:00", "三井購物中心 LaLaport 門真", "food", "室內午餐與休息。"], ["13:40", "Costco 好市多 門真倉庫店", "shopping", "照原計畫採買，控制冷藏品。"], ["15:30", "鹿の宿", "hotel", "進大阪前還車，提早入住。"]] },
+  { day: 6, date: "2026/09/11", area: "大阪港 → 弁天町（雨天版）", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "地鐵出發；以室內為主。"], ["09:20", "木津市場", "food", "室內市場早餐。"], ["10:59", "海遊館", "activity", "主線保留，預約入館。"], ["13:20", "天保山 Market Place", "food", "取消船與摩天輪，改室內午餐。"], ["15:00", "空庭溫泉", "activity", "提早入館，泡湯與室內休息。"], ["19:00", "鹿の宿", "hotel", "回住宿。"]] },
+  { day: 7, date: "2026/09/12", area: "大阪城 → 難波（雨天版）", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "取消御座船，改博物館路線。"], ["09:00", "大阪歷史博物館", "sight", "全室內看大阪城市史。"], ["10:50", "大阪城天守閣", "sight", "以館內展覽為主，雨小再短暫看外觀。"], ["12:30", "難波 Parks", "shopping", "室內午餐與購物。"], ["15:00", "道頓堀室內餐廳", "food", "下午不搭船；Wonder Cruise 是否運航以業者通知為準。"], ["16:30", "鹿の宿", "hotel", "回住宿，等待晚間預約確認。"]] },
+  { day: 8, date: "2026/09/13", area: "天王寺 → 阿倍野（雨天版）", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "取消動物園與通天閣外觀行程。"], ["09:15", "大阪市立美術館", "sight", "室內展覽；出發前確認特展與休館。"], ["10:45", "阿倍野 Q's Mall", "shopping", "室內咖啡、午餐與採買。"], ["12:15", "Harukas 300", "activity", "以室內展望台為主；直升機坪依天候取消。"], ["13:40", "鹿の宿", "hotel", "回住宿，保留 USJ 前整備時間。"]] },
+  { day: 9, date: "2026/09/14", area: "梅田 → 天神橋（雨天版）", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "北大阪室內日。"], ["09:30", "Grand Front Osaka", "shopping", "室內早餐、書店與商場。"], ["10:45", "HEP FIVE", "shopping", "商場為主；摩天輪依天候暫停。"], ["11:30", "大阪生活今昔館", "sight", "原計畫保留的室內主景點。"], ["13:00", "天神橋筋商店街", "food", "有遮棚商店街午餐與散步。"], ["15:00", "大阪站地下街", "shopping", "補齊 USJ、返程採買。"], ["16:30", "鹿の宿", "hotel", "回住宿。"]] },
+  { day: 10, date: "2026/09/15", area: "大阪 → 日本環球影城（雨天版）", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["05:05", "鹿の宿", "hotel", "雨衣、防水袋與替換襪先帶好。"], ["06:16", "日本環球影城 USJ", "activity", "優先室內設施、秀與餐廳；戶外設施依現場運行。"]] },
+  { day: 11, date: "2026/09/16", area: "大阪 → 關西機場（雨天版）", weather: { label: "關西機場", lat: 34.4347, lon: 135.2442 }, stops: [["08:00", "鹿の宿", "hotel", "雨天裝卸行李多留 30 分鐘。"], ["09:35", "關西機場站", "transport", "不排景點；直接報到與室內採買。"]] },
+];
+
+const rainDayBriefs = {
+  1: "取消伏見稻荷，直接用京都站大樓完成晚餐與補給；抵達日只保留室內移動。",
+  2: "東山石階、花見小路全數換成梅小路的鐵道博物館與水族館，雨勢最大時段不走戶外。",
+  3: "改琵琶湖博物館與小濱食文化館；若狹漁人碼頭的 15:30 船班必須先確認是否取消。",
+  4: "取消伊根舟屋、傘松公園與智恩寺，改舞鶴紅磚博物館、室內市場、道之驛與提早入住。",
+  5: "取消山區勝尾寺與箕面瀑布，改池田杯麵博物館、LaLaport 門真與 Costco。",
+  6: "保留海遊館與空庭溫泉；取消聖瑪麗亞號與摩天輪，讓下午改為完整室內休息。",
+  7: "取消御座船，改大阪歷史博物館與難波商場；Wonder Cruise 僅在業者確認運航後前往。",
+  8: "取消動物園與通天閣外觀，改美術館、Q's Mall 與 Harukas 室內展望台。",
+  9: "取消梅田空中庭園與摩天輪，改 Grand Front、今昔館、天神橋有遮棚商店街與地下街。",
+  10: "USJ 不取消；先衝室內設施與表演，戶外設施只在恢復運作時補位。",
+  11: "不排景點，將雨天緩衝全部留給行李、交通與機場報到。",
+};
+
 const dayPlans = {
   1: { mode: "JR 特急 Haruka + 地鐵/步行", budget: "交通基準 ¥3,640/人（Haruka ¥3,220 + 京都市內 ¥420）", amenities: "Kyoan：京都站步行 8 分，附近有便利商店、商場與餐廳；若自駕，使用附近投幣停車場。", overspend: "機場租車與市區停車容易超支；本日不取車，改 D3 取車可省 2 天租金與京都停車。", meals: [["早餐", "機上 / 關西機場", "¥700–1,200"], ["午餐", "關西機場第 1 航廈餐飲", "¥1,000–1,800"], ["晚餐", "京都拉麵小路或京都站食堂街", "¥1,100–1,800"]] },
   2: { mode: "地鐵 / 公車 + 步行", budget: "交通基準 ¥1,000/人（京都市巴士・地鐵一日券）", amenities: "Kyoan 回站休息後，京都站地下街可買飲水、熟食與藥妝。", overspend: "東山臨停與計程車最容易失控；東山改全步行，僅回京都站時搭地鐵。", meals: [["早餐", "清水寺參道麵包 / 咖啡", "¥500–900"], ["午餐", "錦市場：生牡蠣、玉子燒、豆乳甜點", "¥1,500–2,200"], ["晚餐", "京都站 Porta 定食", "¥1,100–1,800"]] },
@@ -609,6 +637,20 @@ const weatherCode = {
 };
 
 const $ = (selector) => document.querySelector(selector);
+let itineraryMode = localStorage.getItem("kansai-itinerary-mode") === "rain" ? "rain" : "normal";
+
+function displayedTripDays() {
+  return itineraryMode === "rain" ? rainTripDays : activeTripDays;
+}
+
+function travelFor(day, index) {
+  if (!day.stops[index + 1]) return null;
+  const normalTravel = travelEstimates[day.day]?.[index];
+  if (itineraryMode !== "rain") return normalTravel;
+  if (normalTravel) return normalTravel;
+  const mode = [3, 4, 5].includes(day.day) ? "自駕" : "地鐵 + 步行";
+  return [mode, "20 分", "0.5 km"];
+}
 
 function mapUrl(place) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place} 日本`)}`;
@@ -645,7 +687,7 @@ function durationText(from, to) {
 }
 
 function stopRecord(dayNumber, stopIndex) {
-  const day = activeTripDays.find((item) => item.day === Number(dayNumber));
+  const day = displayedTripDays().find((item) => item.day === Number(dayNumber));
   if (!day) return null;
   const stop = day.stops[Number(stopIndex)];
   if (!stop) return null;
@@ -754,22 +796,23 @@ function renderDays() {
   const dayStrip = $("#day-strip");
   const days = $("#days");
   const focusDay = getTripDayForToday();
-  dayStrip.innerHTML = activeTripDays
+  const daysToRender = displayedTripDays();
+  dayStrip.innerHTML = daysToRender
     .map(
       (day) =>
         `<a class="day-pill ${day.day === focusDay.day ? "is-today" : ""}" href="#day-${day.day}">D${day.day}<small>${day.date.slice(5)}</small></a>`,
     )
     .join("");
 
-  days.innerHTML = activeTripDays
+  days.innerHTML = daysToRender
     .map(
       (day) => `
-        <article class="day-card ${day.day === focusDay.day ? "is-today" : ""}" id="day-${day.day}">
+        <article class="day-card ${day.day === focusDay.day ? "is-today" : ""} ${itineraryMode === "rain" ? "is-rain-plan" : ""}" id="day-${day.day}">
           <header class="day-head">
             <div class="day-title-row">
               <div>
                 <p class="kicker">${day.date}</p>
-                <h2>第 ${day.day} 天</h2>
+                <h2>第 ${day.day} 天 ${itineraryMode === "rain" ? "· 雨天備案" : ""}</h2>
                 <p class="route">${day.area}</p>
               </div>
               <div class="weather" data-weather="${day.day}">
@@ -793,8 +836,11 @@ function renderDayNotes(dayNumber) {
   const plan = dayPlans[dayNumber];
   if (!plan) return "";
 
+  const rainBrief = itineraryMode === "rain" ? `<article class="rain-brief"><span><i data-lucide="umbrella"></i>雨天替換邏輯</span><p>${rainDayBriefs[dayNumber]}</p></article>` : "";
+
   return `
     <section class="day-plan" aria-label="第 ${dayNumber} 天節奏與預算">
+      ${rainBrief}
       <div class="day-plan__top">
         <span><i data-lucide="route"></i>${plan.mode}</span>
         <strong><i data-lucide="wallet-cards"></i>${plan.budget}</strong>
@@ -834,7 +880,7 @@ function renderStop(stop, day, index) {
   const [time, name, type, note] = stop;
   const meta = typeMeta[type] ?? typeMeta.sight;
   const nextStop = day.stops[index + 1];
-  const travel = travelEstimates[day.day]?.[index];
+  const travel = travelFor(day, index);
   return `
     <article class="stop-card" data-stop-day="${day.day}" data-stop-index="${index}">
       <time class="stop-time">${time}</time>
@@ -925,7 +971,7 @@ function renderGuideDetail(note) {
 function renderStopDetail(record) {
   const meta = typeMeta[record.type] ?? typeMeta.sight;
   const plan = dayPlans[record.day.day];
-  const travel = travelEstimates[record.day.day]?.[record.index];
+  const travel = travelFor(record.day, record.index);
   const [stay, bestWindow] = visitAdvice(record);
   const [parking, parkingNote, phoneHint] = carInfoForStop(record);
   const nextName = record.next?.[1] ?? "今日收尾";
@@ -1065,6 +1111,30 @@ function setupTabs() {
   });
 }
 
+function setupItineraryMode() {
+  const toggle = $("#itinerary-mode-toggle");
+  if (!toggle) return;
+
+  function updateToggle() {
+    const isRain = itineraryMode === "rain";
+    toggle.classList.toggle("is-rain", isRain);
+    toggle.setAttribute("aria-pressed", String(isRain));
+    toggle.innerHTML = `<i data-lucide="${isRain ? "map" : "umbrella"}"></i><span>${isRain ? "原始\n行程" : "雨天\n備案"}</span>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  toggle.addEventListener("click", () => {
+    itineraryMode = itineraryMode === "rain" ? "normal" : "rain";
+    localStorage.setItem("kansai-itinerary-mode", itineraryMode);
+    renderDays();
+    updateToggle();
+    if (window.lucide) window.lucide.createIcons();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  updateToggle();
+}
+
 function setupGuideSheet() {
   const sheet = $("#guide-sheet");
   const backdrop = $("#guide-backdrop");
@@ -1148,7 +1218,7 @@ function parseTripDate(dateText) {
 
 function getTripDayForToday(now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = activeTripDays.map((day) => ({ ...day, jsDate: parseTripDate(day.date) }));
+  const days = displayedTripDays().map((day) => ({ ...day, jsDate: parseTripDate(day.date) }));
   const exact = days.find((day) => day.jsDate.getTime() === today.getTime());
   if (exact) return { ...exact, mode: "today" };
 
@@ -1462,6 +1532,7 @@ renderDays();
 renderGuide();
 renderTools();
 setupTabs();
+setupItineraryMode();
 setupGuideSheet();
 setupTodayMode();
 setupBudget();
