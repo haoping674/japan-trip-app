@@ -1117,9 +1117,12 @@ function setupItineraryMode() {
 
   function updateToggle() {
     const isRain = itineraryMode === "rain";
+    const label = isRain ? "切換回原始行程" : "切換雨天備案";
     toggle.classList.toggle("is-rain", isRain);
     toggle.setAttribute("aria-pressed", String(isRain));
-    toggle.innerHTML = `<i data-lucide="${isRain ? "map" : "umbrella"}"></i><span>${isRain ? "原始\n行程" : "雨天\n備案"}</span>`;
+    toggle.setAttribute("aria-label", label);
+    toggle.title = label;
+    toggle.innerHTML = `<i data-lucide="${isRain ? "map" : "umbrella"}"></i>`;
     if (window.lucide) window.lucide.createIcons();
   }
 
@@ -1129,7 +1132,6 @@ function setupItineraryMode() {
     renderDays();
     updateToggle();
     if (window.lucide) window.lucide.createIcons();
-    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   updateToggle();

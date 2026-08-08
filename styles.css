@@ -273,29 +273,21 @@ h1 {
   right: max(0px, calc((100vw - 760px) / 2));
   z-index: 9;
   display: grid;
-  gap: 5px;
   place-items: center;
-  width: 48px;
-  min-height: 102px;
+  width: 46px;
+  height: 46px;
   border: 1px solid rgba(32, 32, 30, 0.18);
   border-right: 0;
   border-radius: 14px 0 0 14px;
   background: var(--indigo);
   color: #fffaf1;
   box-shadow: -8px 12px 24px rgba(32, 24, 18, 0.18);
-  padding: 10px 6px;
+  padding: 0;
 }
 
 .itinerary-mode-toggle svg {
   width: 19px;
   height: 19px;
-}
-
-.itinerary-mode-toggle span {
-  font-size: 0.72rem;
-  font-weight: 900;
-  line-height: 1.25;
-  text-align: center;
 }
 
 .itinerary-mode-toggle.is-rain {
