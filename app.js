@@ -155,6 +155,50 @@ const typeMeta = {
   shopping: { label: "購物", icon: "shopping-bag" },
 };
 
+// Updated from the latest itinerary PDF. The older source list remains below as a historical fallback.
+const activeTripDays = [
+  { day: 1, date: "2026/09/06", area: "關西機場 → 京都市", weather: { label: "京都", lat: 35.0116, lon: 135.7681 }, stops: [["12:40", "關西機場", "transport", "抵達、入境與前往京都。"], ["16:17", "Guest House Kyoan", "hotel", "京都站步行約 8 分鐘的住宿基地。"], ["17:29", "伏見稻荷大社", "sight", "傍晚走千本鳥居，天黑前折返。"], ["18:40", "Guest House Kyoan", "hotel", "回住宿休息。"]] },
+  { day: 2, date: "2026/09/07", area: "京都市東山 → 京都站", weather: { label: "京都", lat: 35.0116, lon: 135.7681 }, stops: [["07:00", "Guest House Kyoan", "hotel", "清晨出發，避開東山人潮。"], ["07:29", "清水寺", "sight", "先看舞台與音羽瀑布。"], ["09:39", "二年坂 / 三年坂", "sight", "慢走拍街景與逛小店。"], ["10:53", "祇園花見小路", "sight", "町家街景，勿打擾住戶。"], ["11:37", "錦市場", "food", "午餐與京都小吃。"], ["13:06", "Guest House Kyoan", "hotel", "回去休息，保留下午體力。"], ["15:07", "京都鐵道博物館", "sight", "室內展館與蒸汽火車。"], ["19:13", "Guest House Kyoan", "hotel", "回住宿；可視體力加梅小路公園。"]] },
+  { day: 3, date: "2026/09/08", area: "京都 → 高島 → 小濱", weather: { label: "小濱", lat: 35.4958, lon: 135.7466 }, stops: [["09:00", "Guest House Kyoan", "hotel", "自駕段第 1 天，取車後離開京都。"], ["09:53", "白鬚神社", "sight", "琵琶湖鳥居拍照。"], ["11:05", "琵琶湖兒童之國公園", "sight", "野餐與遊具放電。"], ["13:00", "若狹漁人碼頭", "activity", "PDF 備註：預約 15:30 搭船，請確認報到點。"], ["14:33", "Party&Resort ZERO'sHOUSE", "hotel", "小濱住宿，先辦入住與採買。"], ["15:35", "小濱市三丁町歷史街區", "sight", "保留江戶町家街景。"]] },
+  { day: 4, date: "2026/09/09", area: "小濱 → 舞鶴 → 伊根 → 宮津", weather: { label: "宮津", lat: 35.5356, lon: 135.1956 }, stops: [["09:00", "Party&Resort ZERO'sHOUSE", "hotel", "自駕段第 2 天，北上丹後海岸。"], ["09:51", "舞鶴港海鮮市場", "food", "海鮮早午餐。"], ["13:11", "伊根浦觀光案內", "sight", "舟屋街景與港灣散步。"], ["14:32", "天橋立傘松公園", "sight", "纜車或吊椅上山看昇龍觀。"], ["15:51", "智恩寺", "sight", "文殊堂與天橋立南側入口。"], ["16:56", "Roadside Station Kyoto by the Sea MIYAZU", "shopping", "晚餐前補給與伴手禮。"], ["17:59", "KYOTO TANGO MIYAZU inn", "hotel", "宮津住宿。"]] },
+  { day: 5, date: "2026/09/10", area: "宮津 → 箕面 → 門真 → 大阪", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "KYOTO TANGO MIYAZU inn", "hotel", "自駕段第 3 天，南返大阪。"], ["08:52", "高速公路休息站", "transport", "咖啡、洗手間與加油緩衝。"], ["10:51", "勝尾寺", "sight", "達摩寺與山門。"], ["11:58", "箕面大滝", "sight", "瀑布步道，雨後注意濕滑。"], ["13:31", "Costco 好市多 門真倉庫店", "shopping", "大型採買，控制冷藏品。"], ["15:02", "鹿の宿", "hotel", "抵達大阪住宿；租車建議進市區前歸還。"]] },
+  { day: 6, date: "2026/09/11", area: "大阪市區 → 大阪港", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "轉為地鐵與步行移動。"], ["09:20", "木津市場", "food", "市場早餐。"], ["10:59", "海遊館", "activity", "預約時段入館。"], ["13:32", "帆船型觀光船 聖瑪麗亞號", "activity", "港灣日間巡航。"], ["14:34", "天保山大摩天輪", "activity", "大阪港視野。"], ["15:52", "空庭溫泉", "activity", "泡湯與晚餐彈性。"], ["19:31", "鹿の宿", "hotel", "回住宿。"]] },
+  { day: 7, date: "2026/09/12", area: "大阪城 → 難波 → 道頓堀", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "市區觀光日。"], ["08:48", "大阪城", "sight", "開館前抵達。"], ["10:26", "大阪城御座船乘船處", "activity", "石垣水上視角。"], ["11:31", "難波八阪神社", "sight", "巨大獅子頭。"], ["12:51", "心齋橋筋商店街", "shopping", "午餐與採買。"], ["14:55", "道頓堀 / Wonder Cruise", "activity", "PDF 備註為 20:00–20:30 已預約；下午改為彈性，需確認搭船時段。"], ["16:23", "鹿の宿", "hotel", "先回住宿休息，晚間再赴遊船。"]] },
+  { day: 8, date: "2026/09/13", area: "大阪市區 → 天王寺", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "輕量城市日。"], ["09:28", "大阪市天王寺動物園", "sight", "上午看動物。"], ["11:04", "通天閣", "sight", "展望台採時段制。"], ["12:17", "Harukas 300 Helipad", "activity", "先入展望台，再現場登記直升機坪行程。"], ["13:30", "鹿の宿", "hotel", "下午留白與補貨。"]] },
+  { day: 9, date: "2026/09/14", area: "梅田 → 天神橋 → 扇町", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["08:00", "鹿の宿", "hotel", "北大阪文化與超市日。"], ["09:41", "梅田藍天大廈 空中庭園展望台", "sight", "先登高避人潮。"], ["10:42", "HEP FIVE 摩天輪", "activity", "梅田紅色摩天輪。"], ["11:21", "天神橋筋商店街", "food", "午餐與商店街散步。"], ["12:31", "大阪生活今昔館", "sight", "室內江戶大阪街景。"], ["14:36", "扇町公園", "sight", "公園緩衝休息。"], ["16:11", "玉出超市 天神橋店", "shopping", "晚餐食材與零食。"], ["17:29", "鹿の宿", "hotel", "回住宿。"]] },
+  { day: 10, date: "2026/09/15", area: "大阪 → 日本環球影城", weather: { label: "大阪", lat: 34.6937, lon: 135.5023 }, stops: [["05:05", "鹿の宿", "hotel", "提早出發避開入園人潮。"], ["06:16", "日本環球影城 USJ", "activity", "全日園區，整理券與快速通關優先。"]] },
+  { day: 11, date: "2026/09/16", area: "大阪 → 關西機場", weather: { label: "關西機場", lat: 34.4347, lon: 135.2442 }, stops: [["08:00", "鹿の宿", "hotel", "退房與最後確認。"], ["09:35", "關西機場站", "transport", "PDF 未列班機；補入航班號、航廈與起飛時間。"]] },
+];
+
+const dayPlans = {
+  1: { mode: "JR 特急 Haruka + 地鐵/步行", budget: "交通基準 ¥3,640/人（Haruka ¥3,220 + 京都市內 ¥420）", amenities: "Kyoan：京都站步行 8 分，附近有便利商店、商場與餐廳；若自駕，使用附近投幣停車場。", overspend: "機場租車與市區停車容易超支；本日不取車，改 D3 取車可省 2 天租金與京都停車。", meals: [["早餐", "機上 / 關西機場", "¥700–1,200"], ["午餐", "關西機場第 1 航廈餐飲", "¥1,000–1,800"], ["晚餐", "京都拉麵小路或京都站食堂街", "¥1,100–1,800"]] },
+  2: { mode: "地鐵 / 公車 + 步行", budget: "交通基準 ¥1,000/人（京都市巴士・地鐵一日券）", amenities: "Kyoan 回站休息後，京都站地下街可買飲水、熟食與藥妝。", overspend: "東山臨停與計程車最容易失控；東山改全步行，僅回京都站時搭地鐵。", meals: [["早餐", "清水寺參道麵包 / 咖啡", "¥500–900"], ["午餐", "錦市場：生牡蠣、玉子燒、豆乳甜點", "¥1,500–2,200"], ["晚餐", "京都站 Porta 定食", "¥1,100–1,800"]] },
+  3: { mode: "租車自駕 D1", budget: "自駕封頂 ¥12,000/車（租金 ¥6,000 + 油資 ¥3,000 + ETC ¥2,000 + 停車 ¥1,000）", amenities: "ZERO'sHOUSE 有免費 1 車位、廚房、洗衣與 BBQ 設備；先在小濱超市買晚餐食材與瓦斯罐。", overspend: "若狹搭船與海鮮現點最容易加價；搭船訂位未確認前不預付，晚餐改超市食材控制在 ¥1,500/人。", meals: [["早餐", "京都站便利商店補給", "¥500–800"], ["午餐", "琵琶湖兒童之國：超市野餐", "¥900–1,300"], ["晚餐", "小濱海鮮丼 / 住宿自煮", "¥1,500–3,000"]] },
+  4: { mode: "租車自駕 D2", budget: "自駕封頂 ¥11,000/車（油資 ¥3,500 + ETC ¥4,000 + 停車 ¥1,500 + 傘松 ¥800/人）", amenities: "宮津 inn 有免費停車與廚房；住宿評論顯示附近有超市，入房前在道之驛完成採買。", overspend: "伊根遊船、舟屋咖啡與海鮮容易連續消費；本日只選一種付費船程，傘松纜車成人來回固定 ¥800。", meals: [["早餐", "ZERO'sHOUSE 自煮", "¥500–900"], ["午餐", "舞鶴港海鮮市場", "¥1,800–3,200"], ["晚餐", "道之驛熟食 + 住宿自煮", "¥1,200–2,000"]] },
+  5: { mode: "租車自駕 D3 → 入大阪前還車", budget: "自駕封頂 ¥13,000/車（油資 ¥4,000 + ETC ¥5,000 + 停車 ¥2,000 + 勝尾寺 ¥500/人）", amenities: "鹿の宿位於玉出中，距超市與路面電車站步行 3 分，周邊有便利商店、藥妝與玉出本通商店街。", overspend: "Costco 的大包裝與冷藏品最容易失控；先設採買清單 ¥12,000/車，租車在進市區前歸還可免大阪停車。", meals: [["早餐", "宮津住宿自煮", "¥500–900"], ["午餐", "箕面瀑布步道周邊輕食", "¥900–1,500"], ["晚餐", "玉出商店街 / 超市熟食", "¥900–1,600"]] },
+  6: { mode: "大阪 Metro + 步行", budget: "交通基準 ¥820/人（平日 Enjoy Eco Card）+ 聖瑪麗亞 ¥1,800/人 + 空庭早得 ¥1,950/人（含入湯稅）", amenities: "鹿の宿步行 3 分可補貨；今晚回宿前買隔日早餐與飲水。", overspend: "海遊館為浮動票價，預算先鎖 ¥3,500/人；餐廳與紀念照改天保山商場套餐，餐費封頂 ¥2,000/人。", meals: [["早餐", "木津市場食堂", "¥1,200–2,000"], ["午餐", "天保山 Market Place", "¥1,200–1,800"], ["晚餐", "空庭溫泉食いだおれ橫丁", "¥1,300–2,200"]] },
+  7: { mode: "大阪 Metro + 步行", budget: "交通基準 ¥620/人（週六 Enjoy Eco Card）+ 大阪城 ¥1,200/人 + 御座船 ¥1,800/人", amenities: "道頓堀逛完先回鹿の宿，晚間 Wonder Cruise 前再從玉出出發，避免整天背購物袋。", overspend: "下午到夜間的兩次道頓堀消費最容易重複；下午只逛不吃正餐，晚間遊船後才選一間店。", meals: [["早餐", "玉出站周邊咖啡 / 超市", "¥500–900"], ["午餐", "心齋橋烏龍麵或定食", "¥1,000–1,800"], ["晚餐", "道頓堀章魚燒 + 串炸", "¥1,300–2,300"]] },
+  8: { mode: "大阪 Metro + 步行", budget: "交通基準 ¥620/人（週日 Enjoy Eco Card）+ 天王寺動物園 ¥800/人 + 通天閣 ¥1,800/人 + Harukas 前售 ¥1,980/人 + Helipad ¥1,500/人", amenities: "下午 13:30 回鹿の宿，直接用玉出商店街與超市處理晚餐，保留洗衣與 USJ 整理時間。", overspend: "Harukas 直升機坪是展望台門票外加 ¥1,500，且只限現場名額；未取得名額就不再買其他高空景點。", meals: [["早餐", "新世界喫茶店", "¥600–1,000"], ["午餐", "新世界串炸套餐", "¥1,300–2,200"], ["晚餐", "玉出超市自煮", "¥700–1,300"]] },
+  9: { mode: "大阪 Metro + 步行", budget: "交通基準 ¥820/人（平日 Enjoy Eco Card）+ 空中庭園 ¥2,000/人 + HEP FIVE ¥800/人 + 今昔館 ¥600/人", amenities: "天神橋玉出超市是本日最後一站；一次買完 9/15 USJ 早餐、飲水與回程零食。", overspend: "梅田高樓咖啡與商店街零食容易多筆累積；飲料預算固定 ¥500/人，伴手禮只在超市結帳一次。", meals: [["早餐", "梅田地下街早餐", "¥600–1,000"], ["午餐", "天神橋筋商店街定食", "¥900–1,500"], ["晚餐", "玉出超市熟食 / 自煮", "¥700–1,300"]] },
+  10: { mode: "南海 + JR 夢咲線", budget: "交通基準 ¥580/人單程 + USJ 票價依 9/15 官方日曆；本 App 預算上限 ¥11,900/人（門票 ¥9,900 + 餐食 ¥2,000）", amenities: "USJ 前一晚在鹿の宿備好水、雨衣、行動電源；回程使用 Universal City 站。", overspend: "快速通關與園區商品最容易超支；若未預購快速通關，不在現場加購，商品預算硬上限 ¥3,000/人。", meals: [["早餐", "住宿自備 / Universal City 便利商店", "¥500–900"], ["午餐", "USJ 園區套餐", "¥1,800–2,500"], ["晚餐", "USJ 園區輕食或 Universal City", "¥1,500–2,500"]] },
+  11: { mode: "南海電鐵機場急行", budget: "交通基準 ¥970/人（天下茶屋 → 關西機場）；特急 Rapi:t 則 ¥1,450/人。", amenities: "鹿の宿周邊超市與便利商店可在前一晚完成伴手禮與早餐，避免機場高價採買。", overspend: "機場餐飲與最後採買溢價高；早餐在住宿附近買，機場只留 ¥1,500/人現金。", meals: [["早餐", "玉出站周邊便利商店", "¥500–800"], ["午餐", "關西機場第 1 航廈餐飲", "¥1,000–1,800"], ["晚餐", "機上 / 返家", "¥0"]] },
+};
+
+// Values below are the travel slots reserved in the itinerary, not live navigation ETAs.
+const travelEstimates = {
+  1: [["Haruka + 地鐵", "150 分", "0.8 km"], ["JR 奈良線", "9 分", "0.6 km"], ["JR + 步行", "25 分", "0.5 km"]],
+  2: [["公車 + 步行", "29 分", "0.7 km"], ["步行", "18 分", "1.2 km"], ["步行", "14 分", "0.9 km"], ["公車 + 步行", "24 分", "1.4 km"], ["地鐵", "23 分", "0.5 km"], ["JR + 步行", "20 分", "0.8 km"], ["JR + 步行", "23 分", "0.7 km"]],
+  3: [["自駕", "53 分", "0.3 km"], ["自駕", "32 分", "0.4 km"], ["自駕", "44 分", "0.2 km"], ["自駕", "33 分", "0.2 km"], ["自駕 + 步行", "18 分", "0.9 km"]],
+  4: [["自駕", "51 分", "0.2 km"], ["自駕", "80 分", "0.5 km"], ["自駕", "34 分", "0.6 km"], ["自駕", "20 分", "0.5 km"], ["自駕", "24 分", "0.3 km"], ["自駕", "28 分", "0.2 km"]],
+  5: [["自駕", "52 分", "0.2 km"], ["自駕", "119 分", "0.5 km"], ["自駕 + 步行", "17 分", "1.1 km"], ["自駕", "43 分", "0.3 km"], ["自駕", "91 分", "0.4 km"]],
+  6: [["地鐵 + 步行", "45 分", "0.7 km"], ["地鐵 + 步行", "39 分", "0.6 km"], ["步行", "8 分", "0.5 km"], ["步行", "7 分", "0.4 km"], ["地鐵", "42 分", "0.3 km"], ["地鐵 + 步行", "44 分", "0.5 km"]],
+  7: [["地鐵 + 步行", "36 分", "0.6 km"], ["步行", "18 分", "0.9 km"], ["地鐵 + 步行", "29 分", "0.7 km"], ["步行", "20 分", "1.3 km"], ["步行", "0 分", "0.0 km"], ["地鐵 + 步行", "28 分", "0.5 km"]],
+  8: [["地鐵 + 步行", "42 分", "0.6 km"], ["步行", "12 分", "0.8 km"], ["地鐵 + 步行", "18 分", "0.4 km"], ["地鐵 + 步行", "35 分", "0.5 km"]],
+  9: [["地鐵 + 步行", "46 分", "0.6 km"], ["步行", "9 分", "0.5 km"], ["地鐵 + 步行", "24 分", "0.8 km"], ["步行", "11 分", "0.7 km"], ["步行", "15 分", "1.0 km"], ["步行", "18 分", "1.1 km"], ["地鐵 + 步行", "47 分", "0.4 km"]],
+  10: [["南海 + JR 夢咲線", "71 分", "0.7 km"]],
+  11: [["南海電鐵機場急行", "95 分", "0.5 km"]],
+};
+
 const dayContent = {
   1: {
     focus: "抵達、取車、入住後只排伏見稻荷，今天不要硬塞晚餐名店。",
@@ -329,16 +373,16 @@ const tools = [
     rows: [
       ["抵達", "2026/09/06 12:40 關西機場"],
       ["返程", "2026/09/16 PDF 未提供航班時間"],
-      ["自駕提醒", "取車時確認 ETC、保險、還車油量、MapCode/電話導航。"],
+      ["租車段", "2026/09/08 09:00 至 09/10 15:00；取還車店、車型與代號待填。"],
     ],
   },
   {
     title: "住宿資訊",
     rows: [
-      ["京都", "RESI STAY cotorune KYOTO"],
+      ["京都", "Guest House Kyoan · 09/06–09/08"],
       ["小濱", "Party&Resort ZERO'sHOUSE"],
-      ["伊根/宮津", "Private Villa 蒼 Lala & Lino"],
-      ["大阪", "天下茶屋周邊住宿/基地，PDF 未列正式飯店名。"],
+      ["宮津", "KYOTO TANGO MIYAZU inn · 09/09–09/10"],
+      ["大阪", "鹿の宿（西成區玉出中）· 09/10–09/16"],
     ],
   },
   {
@@ -366,13 +410,15 @@ const checklistItems = [
 const reservationItems = [
   ["航班去程", "2026/09/06", "關西機場抵達 12:40", ""],
   ["航班回程", "2026/09/16", "請補航班號、起飛時間、航廈", ""],
-  ["租車", "09/06 - 09/16", "取還車地點、保險、ETC、車型", ""],
-  ["京都住宿", "09/06 - 09/08", "RESI STAY cotorune KYOTO", ""],
+  ["租車", "09/08 09:00 - 09/10 15:00", "D3–D5 自駕；取還車地點、保險、ETC、車型", ""],
+  ["京都住宿", "09/06 - 09/08", "Guest House Kyoan", ""],
   ["小濱住宿", "09/08 - 09/09", "Party&Resort ZERO'sHOUSE", ""],
-  ["伊根/宮津住宿", "09/09 - 09/10", "Private Villa 蒼 Lala & Lino", ""],
-  ["大阪住宿", "09/10 - 09/16", "天下茶屋周邊住宿名與地址", ""],
+  ["宮津住宿", "09/09 - 09/10", "KYOTO TANGO MIYAZU inn", ""],
+  ["大阪住宿", "09/10 - 09/16", "鹿の宿（西成區玉出中）", ""],
+  ["若狹搭船", "2026/09/08 15:30", "PDF 備註的搭船預約；請補業者與代號", ""],
+  ["Wonder Cruise", "2026/09/12 20:00 - 20:30", "PDF 與 14:55 行程不一致，需確認登船地與代號", ""],
   ["USJ", "2026/09/15", "門票、快速通關、入園 QR", ""],
-  ["海遊館/觀光船", "2026/09/14", "海遊館、聖瑪麗亞號、Legoland", ""],
+  ["海遊館/觀光船", "2026/09/11", "海遊館、聖瑪麗亞號、空庭溫泉", ""],
 ];
 
 const shoppingItems = [
@@ -571,11 +617,12 @@ function mapUrl(place) {
 function routeUrl(day) {
   const places = day.stops.map(([, name]) => name).filter(Boolean);
   if (places.length < 2) return mapUrl(places[0] ?? day.weather.label);
+  const travelmode = [3, 4, 5].includes(day.day) ? "driving" : "transit";
   const params = new URLSearchParams({
     api: "1",
     origin: `${places[0]} 日本`,
     destination: `${places.at(-1)} 日本`,
-    travelmode: "driving",
+    travelmode,
   });
   const waypoints = places.slice(1, -1).slice(0, 8);
   if (waypoints.length) params.set("waypoints", waypoints.map((place) => `${place} 日本`).join("|"));
@@ -598,7 +645,7 @@ function durationText(from, to) {
 }
 
 function stopRecord(dayNumber, stopIndex) {
-  const day = tripDays.find((item) => item.day === Number(dayNumber));
+  const day = activeTripDays.find((item) => item.day === Number(dayNumber));
   if (!day) return null;
   const stop = day.stops[Number(stopIndex)];
   if (!stop) return null;
@@ -614,6 +661,87 @@ function carInfoForStop(record) {
   return ["官方/周邊收費停車場", "景點周邊車位熱門，建議先開 Google Maps 看即時滿位與步行距離。", "可用地點名搜尋導航"];
 }
 
+function admissionFor(name) {
+  const prices = {
+    "伏見稻荷大社": "門票 ¥0",
+    "清水寺": "成人 ¥500",
+    "二年坂 / 三年坂": "門票 ¥0",
+    "祇園花見小路": "門票 ¥0",
+    "錦市場": "門票 ¥0",
+    "京都鐵道博物館": "成人 ¥1,500",
+    "白鬚神社": "門票 ¥0",
+    "琵琶湖兒童之國公園": "入園 ¥0",
+    "舞鶴港海鮮市場": "入場 ¥0",
+    "伊根浦觀光案內": "散步 ¥0；遊船另計",
+    "天橋立傘松公園": "纜車/吊椅來回 成人 ¥800",
+    "智恩寺": "境內 ¥0",
+    "勝尾寺": "成人 ¥500",
+    "箕面大滝": "步道 ¥0",
+    "海遊館": "成人：9/11 官方浮動票價，預算上限 ¥3,500",
+    "帆船型觀光船 聖瑪麗亞號": "日間巡航 成人 ¥1,800（至 9/30）",
+    "空庭溫泉": "App 早得平日 ¥1,800 + 入湯稅 ¥150",
+    "大阪城": "天守閣 成人 ¥1,200",
+    "大阪城御座船乘船處": "成人 ¥1,800",
+    "難波八阪神社": "門票 ¥0",
+    "通天閣": "展望台 成人 ¥1,800",
+    "大阪市天王寺動物園": "成人 ¥800",
+    "Harukas 300 Helipad": "展望台前售 ¥1,980 + Helipad ¥1,500",
+    "梅田藍天大廈 空中庭園展望台": "成人 ¥2,000",
+    "HEP FIVE 摩天輪": "成人 ¥800",
+    "大阪生活今昔館": "成人 ¥600",
+    "日本環球影城 USJ": "9/15 官方浮動票價；本行程門票預算 ¥9,900",
+  };
+  return prices[name] ?? "門票 ¥0 或依現場活動為準";
+}
+
+function visitAdvice(record) {
+  const advice = {
+    "伏見稻荷大社": ["60 分鐘", "16:30–17:30"],
+    "清水寺": ["90 分鐘", "07:30–09:00"],
+    "二年坂 / 三年坂": ["60 分鐘", "09:30–10:45"],
+    "祇園花見小路": ["30 分鐘", "10:45–11:20"],
+    "錦市場": ["70 分鐘", "11:30–12:40"],
+    "京都鐵道博物館": ["120 分鐘", "15:00–17:00"],
+    "白鬚神社": ["25 分鐘", "09:50–10:15"],
+    "琵琶湖兒童之國公園": ["75 分鐘", "11:05–12:20"],
+    "若狹漁人碼頭": ["60 分鐘", "15:15 報到前"],
+    "小濱市三丁町歷史街區": ["60 分鐘", "15:35–16:35"],
+    "舞鶴港海鮮市場": ["80 分鐘", "09:50–11:10"],
+    "伊根浦觀光案內": ["70 分鐘", "13:10–14:20"],
+    "天橋立傘松公園": ["60 分鐘", "14:30–15:30"],
+    "智恩寺": ["30 分鐘", "15:50–16:20"],
+    "勝尾寺": ["60 分鐘", "10:50–11:50"],
+    "箕面大滝": ["55 分鐘", "11:55–12:50"],
+    "Costco 好市多 門真倉庫店": ["60 分鐘", "13:30–14:30"],
+    "木津市場": ["50 分鐘", "09:20–10:10"],
+    "海遊館": ["120 分鐘", "11:00–13:00"],
+    "帆船型觀光船 聖瑪麗亞號": ["45 分鐘", "13:32 出航前 10 分"],
+    "天保山大摩天輪": ["18 分鐘", "14:35–14:55"],
+    "空庭溫泉": ["180 分鐘", "16:00–19:00"],
+    "大阪城": ["90 分鐘", "08:50–10:20"],
+    "大阪城御座船乘船處": ["20 分鐘", "10:20–10:45"],
+    "難波八阪神社": ["20 分鐘", "11:30–11:55"],
+    "心齋橋筋商店街": ["100 分鐘", "12:50–14:30"],
+    "道頓堀 / Wonder Cruise": ["120 分鐘", "20:00–20:30 登船前"],
+    "大阪市天王寺動物園": ["75 分鐘", "09:30–10:45"],
+    "通天閣": ["50 分鐘", "11:05–11:55"],
+    "Harukas 300 Helipad": ["40 分鐘", "12:15–13:00"],
+    "梅田藍天大廈 空中庭園展望台": ["60 分鐘", "09:40–10:35"],
+    "HEP FIVE 摩天輪": ["20 分鐘", "10:45–11:05"],
+    "天神橋筋商店街": ["70 分鐘", "11:20–12:30"],
+    "大阪生活今昔館": ["70 分鐘", "12:30–13:40"],
+    "扇町公園": ["45 分鐘", "14:35–15:20"],
+    "玉出超市 天神橋店": ["35 分鐘", "16:10–16:45"],
+    "日本環球影城 USJ": ["全日 10 小時", "06:16 入園隊列"],
+  };
+  if (advice[record.name]) return advice[record.name];
+  if (record.type === "hotel") return ["15 分鐘", "入住 / 出發前 15 分鐘"];
+  if (record.type === "food") return ["50 分鐘", "抵達後立即候位"];
+  if (record.type === "transport") return ["20 分鐘", "班次前 15 分鐘"];
+  if (record.type === "shopping") return ["45 分鐘", "最後一站前 45 分鐘"];
+  return ["45 分鐘", "抵達後前 45 分鐘"];
+}
+
 function escapeAttr(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -626,14 +754,14 @@ function renderDays() {
   const dayStrip = $("#day-strip");
   const days = $("#days");
   const focusDay = getTripDayForToday();
-  dayStrip.innerHTML = tripDays
+  dayStrip.innerHTML = activeTripDays
     .map(
       (day) =>
         `<a class="day-pill ${day.day === focusDay.day ? "is-today" : ""}" href="#day-${day.day}">D${day.day}<small>${day.date.slice(5)}</small></a>`,
     )
     .join("");
 
-  days.innerHTML = tripDays
+  days.innerHTML = activeTripDays
     .map(
       (day) => `
         <article class="day-card ${day.day === focusDay.day ? "is-today" : ""}" id="day-${day.day}">
@@ -662,28 +790,20 @@ function renderDays() {
 }
 
 function renderDayNotes(dayNumber) {
-  const note = dayContent[dayNumber];
-  if (!note) return "";
-
-  const items = [
-    ["今日重點", note.focus, "flag"],
-    ["自駕停車", note.drive, "car"],
-    ["雨天備案", note.rain, "cloud-rain"],
-    ["用餐提醒", note.meal, "utensils"],
-  ];
+  const plan = dayPlans[dayNumber];
+  if (!plan) return "";
 
   return `
-    <section class="day-insights" aria-label="第 ${dayNumber} 天提醒">
-      ${items
-        .map(
-          ([label, text, icon]) => `
-            <article class="insight-card">
-              <span><i data-lucide="${icon}"></i>${label}</span>
-              <p>${text}</p>
-            </article>
-          `,
-        )
-        .join("")}
+    <section class="day-plan" aria-label="第 ${dayNumber} 天節奏與預算">
+      <div class="day-plan__top">
+        <span><i data-lucide="route"></i>${plan.mode}</span>
+        <strong><i data-lucide="wallet-cards"></i>${plan.budget}</strong>
+      </div>
+      <div class="meal-plan">
+        ${plan.meals.map(([label, place, price]) => `<article><span>${label}</span><strong>${place}</strong><small>${price}</small></article>`).join("")}
+      </div>
+      <article class="plan-note amenities"><span><i data-lucide="store"></i>住宿補給</span><p>${plan.amenities}</p></article>
+      <article class="plan-note overspend"><span><i data-lucide="badge-alert"></i>防超支</span><p>${plan.overspend}</p></article>
     </section>
   `;
 }
@@ -714,6 +834,7 @@ function renderStop(stop, day, index) {
   const [time, name, type, note] = stop;
   const meta = typeMeta[type] ?? typeMeta.sight;
   const nextStop = day.stops[index + 1];
+  const travel = travelEstimates[day.day]?.[index];
   return `
     <article class="stop-card" data-stop-day="${day.day}" data-stop-index="${index}">
       <time class="stop-time">${time}</time>
@@ -721,6 +842,7 @@ function renderStop(stop, day, index) {
         <span class="stop-type"><i data-lucide="${meta.icon}"></i>${meta.label}</span>
         <strong class="stop-name">${name}</strong>
         <p class="stop-note">${note}</p>
+        ${travel ? `<p class="stop-logistics"><i data-lucide="${travel[0].includes("自駕") ? "car-front" : travel[0] === "步行" ? "footprints" : "train-front"}"></i><span>下一段 ${travel[0]}</span><strong>移動 ${travel[1]} · 步行 ${travel[2]}</strong></p>` : ""}
         <div class="stop-actions">
           <a class="nav-link" href="${mapUrl(name)}" target="_blank" rel="noreferrer" data-stop-nav>
             <i data-lucide="navigation"></i>導航
@@ -802,7 +924,9 @@ function renderGuideDetail(note) {
 
 function renderStopDetail(record) {
   const meta = typeMeta[record.type] ?? typeMeta.sight;
-  const note = dayContent[record.day.day];
+  const plan = dayPlans[record.day.day];
+  const travel = travelEstimates[record.day.day]?.[record.index];
+  const [stay, bestWindow] = visitAdvice(record);
   const [parking, parkingNote, phoneHint] = carInfoForStop(record);
   const nextName = record.next?.[1] ?? "今日收尾";
   const nextTime = record.next?.[0] ?? "完成";
@@ -823,13 +947,19 @@ function renderStopDetail(record) {
       <article>
         <span>時間</span>
         <strong>${record.time}</strong>
-        <small>下一站 ${nextTime} · ${durationText(record.time, nextTime)}</small>
+        <small>下一站 ${nextTime} · 時段 ${durationText(record.time, nextTime)}</small>
       </article>
       <article>
-        <span>下一站</span>
-        <strong>${nextName}</strong>
-        <small>行程可依現場排隊與天氣調整。</small>
+        <span>門票 / 付費</span>
+        <strong>${admissionFor(record.name)}</strong>
+        <small>現場營業與票券規則仍以官方頁面為準。</small>
       </article>
+    </div>
+    <div class="sheet-section point-box itinerary-facts">
+      <h3><i data-lucide="clock-3"></i>建議停留與移動</h3>
+      <div class="info-row"><span>建議停留</span><strong>${stay}</strong></div>
+      <div class="info-row"><span>最佳時段</span><strong>${bestWindow}</strong></div>
+      ${travel ? `<div class="info-row"><span>下一段排程</span><strong>${travel[0]} · 移動 ${travel[1]} · 步行 ${travel[2]}</strong></div>` : `<div class="info-row"><span>下一站</span><strong>${nextName}</strong></div>`}
     </div>
     <div class="sheet-section point-box">
       <h3><i data-lucide="map-pinned"></i>自駕資訊</h3>
@@ -840,9 +970,9 @@ function renderStopDetail(record) {
     <div class="sheet-section">
       <h3><i data-lucide="sparkles"></i>現場攻略</h3>
       <ul class="sheet-list">
-        <li>${note?.focus ?? "依現場營業時間與天候調整停留順序。"}</li>
-        <li>${note?.drive ?? "自駕請先確認停車場、步行距離與回程方向。"}</li>
-        <li>${note?.rain ?? "雨天保留室內點與用餐備案，戶外點縮短停留。"}</li>
+        <li>${record.note}</li>
+        <li>${plan?.overspend ?? "自駕請先確認停車場、步行距離與回程方向。"}</li>
+        <li>保留前後各 15 分鐘緩衝；若排隊超過 20 分鐘，縮短非核心景點而不壓縮交通時間。</li>
       </ul>
     </div>
     <div class="sheet-actions">
@@ -1018,7 +1148,7 @@ function parseTripDate(dateText) {
 
 function getTripDayForToday(now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const days = tripDays.map((day) => ({ ...day, jsDate: parseTripDate(day.date) }));
+  const days = activeTripDays.map((day) => ({ ...day, jsDate: parseTripDate(day.date) }));
   const exact = days.find((day) => day.jsDate.getTime() === today.getTime());
   if (exact) return { ...exact, mode: "today" };
 
@@ -1291,7 +1421,7 @@ function setupNetworkStatus() {
 
 async function loadWeather() {
   await Promise.all(
-    tripDays.map(async (day) => {
+    activeTripDays.map(async (day) => {
       const target = document.querySelector(`[data-weather="${day.day}"]`);
       try {
         const url = new URL("https://api.open-meteo.com/v1/forecast");
