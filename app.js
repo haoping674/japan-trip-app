@@ -1109,7 +1109,6 @@ function weatherLocationKey(day) {
 }
 
 const $ = (selector) => document.querySelector(selector);
-let openStopGuide = () => {};
 let itineraryMode = localStorage.getItem("kansai-itinerary-mode") === "rain" ? "rain" : "normal";
 let todayModeExpanded = false;
 
@@ -1611,7 +1610,7 @@ function renderStop(stop, day, index) {
   const nextStop = day.stops[index + 1];
   const travel = travelFor(day, index);
   return `
-    <article class="stop-card" data-stop-day="${day.day}" data-stop-index="${index}">
+    <article class="stop-card">
       <time class="stop-time">${time}</time>
       <div class="stop-main">
         <span class="stop-type"><i data-lucide="${meta.icon}"></i>${meta.label}</span>
@@ -1622,7 +1621,6 @@ function renderStop(stop, day, index) {
           <a class="nav-link" href="${mapUrl(name)}" target="_blank" rel="noreferrer" data-stop-nav>
             <i data-lucide="navigation"></i>導航
           </a>
-          <button class="detail-link" type="button" data-stop-detail><i data-lucide="book-open"></i>攻略</button>
         </div>
       </div>
       <aside class="stop-meta">
@@ -1634,19 +1632,7 @@ function renderStop(stop, day, index) {
 }
 
 function renderGuide() {
-  const target = getTripDayForToday();
-  const journey = target ? buildDayJourney(target, target.mode) : null;
-  const focus = journey?.current ?? journey?.next ?? null;
-  const companionCard = focus
-    ? `
-      <article class="guide-card guide-card--companion">
-        <div class="guide-card__top"><div><p class="guide-overline">Personal tour guide</p><h3>${journey?.current ? "現在這裡該看什麼？" : "下一站先看什麼？"}</h3></div><span class="region-mark"><i data-lucide="map-pin"></i></span></div>
-        <p><strong>Day ${focus.day.day} · ${focus.time}</strong>　${escapeAttr(focus.name)}。30 秒掌握重點，再依現場節奏往下走。</p>
-        <button class="mini-button guide-detail-button" data-guide-stop-day="${focus.day.day}" data-guide-stop-index="${focus.index}" type="button"><i data-lucide="compass"></i>開啟現場導遊</button>
-      </article>
-    `
-    : "";
-  $("#guide-grid").innerHTML = companionCard + guideNotes
+  $("#guide-grid").innerHTML = guideNotes
     .map(
       (note) => `
         <article class="guide-card" data-guide-card="${note.id}">
@@ -1900,40 +1886,14 @@ function setupGuideSheet() {
   const title = $("#guide-sheet-title");
   const kicker = $("#guide-sheet-kicker");
   const body = $("#guide-sheet-body");
-  let activeStopRecord = null;
-  let activeStopState = { depth: "quick", stopIndex: 0, view: "site" };
-
-  function renderActiveStop(resetScroll = false) {
-    if (!activeStopRecord) return;
-    title.textContent = activeStopRecord.name;
-    kicker.textContent = activeStopState.view === "between"
-      ? `Day ${activeStopRecord.day.day} · Between stops`
-      : `Day ${activeStopRecord.day.day} · ${activeStopRecord.time} · Personal Tour Guide`;
-    body.innerHTML = renderStopDetail(activeStopRecord, activeStopState);
-    if (resetScroll) body.scrollTop = 0;
-    if (window.lucide) window.lucide.createIcons();
-  }
-
   function openGuide(id) {
     const note = guideNotes.find((item) => item.id === id);
     if (!note) return;
-    activeStopRecord = null;
     title.textContent = note.title;
     kicker.textContent = note.detail.subtitle;
     body.innerHTML = renderGuideDetail(note);
     openSheet();
   }
-
-  function openStop(dayNumber, stopIndex) {
-    const record = stopRecord(dayNumber, stopIndex);
-    if (!record) return;
-    activeStopRecord = record;
-    activeStopState = { depth: "quick", stopIndex: 0, view: "site" };
-    renderActiveStop(true);
-    openSheet();
-  }
-
-  openStopGuide = openStop;
 
   function openSheet() {
     sheet.hidden = false;
@@ -1959,65 +1919,8 @@ function setupGuideSheet() {
   }
 
   $("#guide-grid").addEventListener("click", (event) => {
-    const stopButton = event.target.closest("[data-guide-stop-day]");
-    if (stopButton) {
-      openStop(stopButton.dataset.guideStopDay, stopButton.dataset.guideStopIndex);
-      return;
-    }
     const button = event.target.closest("[data-guide-id]");
     if (button) openGuide(button.dataset.guideId);
-  });
-
-  body.addEventListener("click", (event) => {
-    if (!activeStopRecord) return;
-    const depthButton = event.target.closest("[data-guide-depth]");
-    if (depthButton) {
-      activeStopState = { ...activeStopState, depth: depthButton.dataset.guideDepth, view: "site" };
-      renderActiveStop();
-      return;
-    }
-    const stopButton = event.target.closest("[data-guide-stop]");
-    if (stopButton) {
-      activeStopState = { ...activeStopState, stopIndex: Number(stopButton.dataset.guideStop), view: "site" };
-      renderActiveStop();
-      return;
-    }
-    const nextStopButton = event.target.closest("[data-guide-next-stop]");
-    if (nextStopButton) {
-      activeStopState = { ...activeStopState, stopIndex: Number(nextStopButton.dataset.guideNextStop), view: "site" };
-      renderActiveStop();
-      return;
-    }
-    if (event.target.closest("[data-guide-between]")) {
-      activeStopState = { ...activeStopState, view: "between" };
-      renderActiveStop(true);
-      return;
-    }
-    if (event.target.closest("[data-guide-back-to-site]")) {
-      activeStopState = { ...activeStopState, view: "site" };
-      renderActiveStop(true);
-      return;
-    }
-    const returnButton = event.target.closest("[data-guide-itinerary-day]");
-    if (returnButton) {
-      closeGuide();
-      focusTripDay(Number(returnButton.dataset.guideItineraryDay));
-    }
-  });
-
-  $("#days").addEventListener("click", (event) => {
-    if (event.target.closest("[data-stop-nav]")) return;
-    const card = event.target.closest("[data-stop-day]");
-    if (card) openStop(card.dataset.stopDay, card.dataset.stopIndex);
-  });
-
-  $("#days").addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    if (event.target.closest("[data-stop-nav]")) return;
-    const card = event.target.closest("[data-stop-day]");
-    if (!card) return;
-    event.preventDefault();
-    openStop(card.dataset.stopDay, card.dataset.stopIndex);
   });
 
   closeButton.addEventListener("click", closeGuide);
@@ -2106,7 +2009,6 @@ function renderTodayNext(day, journey) {
       ${drive ? `<p class="today-next__parking"><i data-lucide="parking-circle"></i><span><strong>${parking} · ${driveSummary.parkingFee}</strong><br />${parkingNote}</span></p>` : ""}
       <div class="today-next__actions">
         <a class="mini-button" href="${mapUrl(next.name)}" target="_blank" rel="noreferrer"><i data-lucide="navigation"></i>開始導航</a>
-        <button class="mini-button" type="button" data-today-detail="${next.index}" data-today-detail-day="${day.day}"><i data-lucide="book-open"></i>景點攻略</button>
       </div>
     </article>
   `;
@@ -2154,7 +2056,6 @@ function renderTodayMode(now = getTripNow()) {
 
   const journey = buildDayJourney(target, target.mode, now);
   const activity = currentActivityFor(journey, target, now);
-  const activityGuide = journey.current ?? journey.next;
   const done = journey.records.filter((record) => record.complete).length;
   const progress = journey.records.length ? Math.round((done / journey.records.length) * 100) : 0;
   const weather = liveWeatherByLocation.get(weatherLocationKey(target)) ?? { temperature: "--°", description: `${target.weather.label} 天氣讀取中` };
@@ -2165,6 +2066,7 @@ function renderTodayMode(now = getTripNow()) {
   const floatDetail = journey.current
     ? `下一站 ${journey.next?.name ?? "今日收尾"}${journey.next ? ` · ${journey.next.time}` : ""}`
     : `Day ${target.day} · ${floatFocus?.time ?? "待確認"} 出發`;
+  const showCurrentActivity = target.mode !== "upcoming";
   panel.classList.toggle("is-expanded", todayModeExpanded);
 
   panel.innerHTML = `
@@ -2179,25 +2081,24 @@ function renderTodayMode(now = getTripNow()) {
       <span class="today-float__chevron"><i data-lucide="${todayModeExpanded ? "chevron-down" : "chevron-up"}"></i></span>
     </button>
     <div class="today-mode__content" id="today-mode-content" ${todayModeExpanded ? "" : "inert"}>
-      <div class="today-mode__head">
-        <div>
+      <div class="today-mode__context">
+        <div class="today-mode__context-copy">
           <p class="today-mode__eyebrow"><i data-lucide="sparkles"></i>${modeLabel} · Japan time ${formatTripTime(now)}</p>
-          <h2>Day ${target.day} · ${escapeAttr(target.area)}</h2>
-          <p class="today-mode__date">${target.date} · ${itineraryMode === "rain" ? "雨天備案" : "原始行程"}</p>
+          <span>Day ${target.day} · ${itineraryMode === "rain" ? "雨天備案" : "原始行程"}</span>
         </div>
         <div class="today-weather" data-today-weather><strong>${weather.temperature}</strong><span>${weather.description}</span></div>
       </div>
       <div class="today-mode__progress"><span>今日進度</span><div class="today-mode__progress-track" style="--today-progress: ${progress}%"><span></span></div><strong>${done}/${journey.records.length}</strong></div>
       <div class="today-mode__summary">
-        <article class="today-activity">
+        ${showCurrentActivity ? `<article class="today-activity">
           <span class="today-activity__time">${activity.time}</span>
-          <div><span class="today-activity__label">Current activity</span><strong>${escapeAttr(activity.title)}</strong><p>${escapeAttr(activity.detail)}</p>${activityGuide ? `<button class="mini-button today-activity__guide" type="button" data-today-detail="${activityGuide.index}" data-today-detail-day="${target.day}"><i data-lucide="compass"></i>現場導遊</button>` : ""}</div>
-        </article>
+          <div><span class="today-activity__label">Current activity</span><strong>${escapeAttr(activity.title)}</strong><p>${escapeAttr(activity.detail)}</p></div>
+        </article>` : ""}
         ${renderTodayNext(target, journey)}
         ${renderDriveSummary(target)}
       </div>
       <section class="today-mode__timeline-wrap" aria-label="今日時間線">
-        <div class="today-mode__timeline-title"><h3>今日時間線</h3><span>點按完成即可往下推進</span></div>
+        <div class="today-mode__timeline-title"><h3>今日時間線</h3><span>完成即可推進</span></div>
         <ol class="today-timeline">${renderTodayTimeline(target, journey)}</ol>
       </section>
     </div>
@@ -2214,9 +2115,6 @@ function renderTodayMode(now = getTripNow()) {
       const index = Number(button.dataset.todayComplete);
       setStopCompleted(day, index, !isStopCompleted(day, index));
     });
-  });
-  panel.querySelectorAll("[data-today-detail]").forEach((button) => {
-    button.addEventListener("click", () => openStopGuide(button.dataset.todayDetailDay, button.dataset.todayDetail));
   });
   if (window.lucide) window.lucide.createIcons();
 }
