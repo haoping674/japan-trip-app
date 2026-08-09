@@ -21,7 +21,8 @@ const DEFAULT_STATE = {
     { item: "門票", amount: "", memo: "" },
     { item: "伴手禮", amount: "", memo: "" }
   ],
-  shopping: {}
+  shopping: {},
+  completedStops: {}
 };
 
 function parseBody(body) {

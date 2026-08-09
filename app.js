@@ -462,6 +462,7 @@ const shoppingItems = [
 ];
 
 const LOCAL_STATE_KEY = "kansai-trip-state";
+const tripMeta = { timeZone: "Asia/Tokyo" };
 const budgetPeople = ["煥", "英", "嘉", "銘", "評", "青"];
 const budgetCategories = [
   { id: "food", label: "餐飲", icon: "utensils" },
@@ -512,6 +513,7 @@ function getDefaultTripState() {
       createBudgetRow({ category: "souvenir", item: "伴手禮" }),
     ],
     shopping: {},
+    completedStops: {},
   };
 }
 
@@ -530,6 +532,7 @@ function mergeTripState(value = {}) {
     reservations: Array.isArray(value.reservations) ? value.reservations : defaults.reservations,
     budget: Array.isArray(value.budget) ? value.budget.map(normalizeBudgetRow) : defaults.budget,
     shopping: value.shopping && typeof value.shopping === "object" ? value.shopping : defaults.shopping,
+    completedStops: value.completedStops && typeof value.completedStops === "object" ? value.completedStops : defaults.completedStops,
   };
 }
 
@@ -542,6 +545,7 @@ function loadTripState() {
     reservations: readJsonStorage("kansai-reservations", null),
     budget: readJsonStorage("kansai-budget", null),
     shopping: readJsonStorage("kansai-shopping", {}),
+    completedStops: readJsonStorage("kansai-completed-stops", {}),
   });
 }
 
@@ -555,6 +559,7 @@ function persistTripStateLocal() {
   localStorage.setItem("kansai-reservations", JSON.stringify(tripState.reservations));
   localStorage.setItem("kansai-budget", JSON.stringify(tripState.budget));
   localStorage.setItem("kansai-shopping", JSON.stringify(tripState.shopping));
+  localStorage.setItem("kansai-completed-stops", JSON.stringify(tripState.completedStops));
 }
 
 function setSyncStatus(message, state = "online") {
@@ -610,6 +615,7 @@ async function hydrateSharedState() {
     setupChecklist();
     setupReservations();
     setupShoppingList();
+    renderTodayMode();
     setSyncStatus("已載入 Neon 共用資料。", "online");
     if (window.lucide) window.lucide.createIcons();
   } catch {
@@ -636,7 +642,14 @@ const weatherCode = {
   95: "雷雨",
 };
 
+const liveWeatherByLocation = new Map();
+
+function weatherLocationKey(day) {
+  return `${day.weather.lat},${day.weather.lon}`;
+}
+
 const $ = (selector) => document.querySelector(selector);
+let openStopGuide = () => {};
 let itineraryMode = localStorage.getItem("kansai-itinerary-mode") === "rain" ? "rain" : "normal";
 
 function displayedTripDays() {
@@ -684,6 +697,91 @@ function durationText(from, to) {
   const diff = end - start;
   if (diff < 60) return `${diff} 分`;
   return `${Math.floor(diff / 60)} 小時${diff % 60 ? ` ${diff % 60} 分` : ""}`;
+}
+
+function getTripNow(now = new Date()) {
+  const fields = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tripMeta.timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .formatToParts(now)
+    .reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
+  return new Date(Number(fields.year), Number(fields.month) - 1, Number(fields.day), Number(fields.hour), Number(fields.minute));
+}
+
+function formatTripTime(date) {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function timeFromMinutes(value) {
+  const normalized = ((value % 1440) + 1440) % 1440;
+  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+}
+
+function travelDurationMinutes(travel) {
+  if (!travel) return null;
+  const value = travel[1] ?? "";
+  const hours = Number(value.match(/(\d+)\s*小時/)?.[1] ?? 0);
+  const minutes = Number(value.match(/(\d+)\s*分/)?.[1] ?? 0);
+  const total = hours * 60 + minutes;
+  return total || null;
+}
+
+function isDriveDay(day) {
+  return dayPlans[day.day]?.mode?.includes("自駕") ?? false;
+}
+
+function completedStopKey(day, index) {
+  return `${itineraryMode}:${day.day}:${index}`;
+}
+
+function isStopCompleted(day, index) {
+  return Boolean(tripState.completedStops[completedStopKey(day, index)]);
+}
+
+function setStopCompleted(day, index, completed) {
+  const completedStops = { ...tripState.completedStops };
+  const key = completedStopKey(day, index);
+  if (completed) completedStops[key] = true;
+  else delete completedStops[key];
+  updateTripState("completedStops", completedStops);
+  renderTodayMode();
+}
+
+function buildDayJourney(day, mode, now = getTripNow()) {
+  const records = day.stops.map(([time, name, type, note], index) => ({ day, time, name, type, note, index, complete: isStopCompleted(day, index) }));
+  const firstIncomplete = records.find((record) => !record.complete) ?? null;
+  const allComplete = records.length > 0 && !firstIncomplete;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const firstTime = timeToMinutes(records[0]?.time ?? "");
+
+  if (mode === "upcoming") return { records, firstIncomplete, current: null, next: firstIncomplete, phase: "upcoming" };
+  if (mode === "past") return { records, firstIncomplete, current: null, next: firstIncomplete, phase: "past" };
+  if (allComplete) return { records, firstIncomplete, current: null, next: null, phase: "complete" };
+  if (firstTime !== null && nowMinutes < firstTime) return { records, firstIncomplete, current: null, next: firstIncomplete, phase: "before" };
+
+  const current = [...records].reverse().find((record) => !record.complete && timeToMinutes(record.time) !== null && timeToMinutes(record.time) <= nowMinutes) ?? firstIncomplete;
+  const next = current ? records.slice(current.index + 1).find((record) => !record.complete) ?? null : firstIncomplete;
+  return { records, firstIncomplete, current, next, phase: "active" };
+}
+
+function driveSummaryFor(day) {
+  const driveSegments = day.stops.map((_, index) => travelFor(day, index)).filter((travel) => travel?.[0].includes("自駕"));
+  const totalMinutes = driveSegments.reduce((total, travel) => total + (travelDurationMinutes(travel) ?? 0), 0);
+  const budget = dayPlans[day.day]?.budget ?? "";
+  const fuelEtc = budget.match(/(?:油資|ETC)\s*¥[\d,]+/g)?.join(" · ") ?? "加油 / ETC 依今日自駕預算確認";
+  const parkingFee = budget.match(/停車\s*¥[\d,]+/)?.[0] ?? "停車費依現場為準";
+  return {
+    driveTime: totalMinutes ? durationText("00:00", timeFromMinutes(totalMinutes)) : "依導航確認",
+    distance: "Google Maps 即時計算",
+    fuelEtc,
+    parkingFee,
+  };
 }
 
 function stopRecord(dayNumber, stopIndex) {
@@ -1130,6 +1228,7 @@ function setupItineraryMode() {
     itineraryMode = itineraryMode === "rain" ? "normal" : "rain";
     localStorage.setItem("kansai-itinerary-mode", itineraryMode);
     renderDays();
+    renderTodayMode();
     updateToggle();
     if (window.lucide) window.lucide.createIcons();
   });
@@ -1162,6 +1261,8 @@ function setupGuideSheet() {
     body.innerHTML = renderStopDetail(record);
     openSheet();
   }
+
+  openStopGuide = openStop;
 
   function openSheet() {
     sheet.hidden = false;
@@ -1218,7 +1319,7 @@ function parseTripDate(dateText) {
   return new Date(year, month - 1, day);
 }
 
-function getTripDayForToday(now = new Date()) {
+function getTripDayForToday(now = getTripNow()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const days = displayedTripDays().map((day) => ({ ...day, jsDate: parseTripDate(day.date) }));
   const exact = days.find((day) => day.jsDate.getTime() === today.getTime());
@@ -1235,37 +1336,157 @@ function focusTripDay(dayNumber, behavior = "smooth") {
   document.getElementById(`day-${dayNumber}`)?.scrollIntoView({ behavior, block: "start" });
 }
 
-function setupTodayMode() {
-  const target = getTripDayForToday();
+function currentActivityFor(journey, target, now) {
+  if (journey.phase === "upcoming") {
+    return { time: "待出發", title: "下一個行程日", detail: `${target.date} 從 ${journey.next?.time ?? "待確認"} 開始。` };
+  }
+  if (journey.phase === "past") {
+    return { time: "已結束", title: "旅程已結束", detail: "可回看最後一天的返程與行程紀錄。" };
+  }
+  if (journey.phase === "complete") {
+    return { time: "完成", title: "今日行程已完成", detail: "所有站點都已標記完成，辛苦了。" };
+  }
+  if (journey.phase === "before") {
+    return { time: formatTripTime(now), title: "準備出發", detail: `第一站 ${journey.next?.name ?? "待確認"} 預定 ${journey.next?.time ?? ""}。` };
+  }
+  if (!journey.current) {
+    return { time: formatTripTime(now), title: "下一站準備中", detail: `依現況前往 ${journey.next?.name ?? "下一站"}。` };
+  }
+  return { time: journey.current.time, title: journey.current.name, detail: journey.current.note };
+}
+
+function renderTodayNext(day, journey) {
+  const next = journey.next;
+  if (!next) {
+    return `
+      <article class="today-next">
+        <span class="today-next__label">Next stop</span>
+        <h3>今日行程收尾</h3>
+        <p class="today-next__location"><i data-lucide="circle-check-big"></i><span>目前沒有下一站；可在下方時間線取消勾選以調整進度。</span></p>
+      </article>
+    `;
+  }
+
+  const directTravel = journey.current && next.index === journey.current.index + 1 ? travelFor(day, journey.current.index) : null;
+  const travelMinutes = travelDurationMinutes(directTravel);
+  const arrivalMinutes = timeToMinutes(next.time);
+  const departure = directTravel && arrivalMinutes !== null && travelMinutes !== null ? timeFromMinutes(arrivalMinutes - travelMinutes) : journey.current ? "依現況" : next.time;
+  const travelLabel = directTravel ? `${directTravel[0]} · ${directTravel[1]}` : journey.current ? "接續安排 · 依現況" : "行程起點";
+  const [parking, parkingNote] = carInfoForStop(next);
+  const drive = isDriveDay(day);
+  const driveSummary = drive ? driveSummaryFor(day) : null;
+
+  return `
+    <article class="today-next">
+      <div class="today-next__top">
+        <div>
+          <span class="today-next__label">Next stop</span>
+          <h3>${escapeAttr(next.name)}</h3>
+        </div>
+        <span class="today-next__arrival">${next.time} 抵達</span>
+      </div>
+      <div class="today-next__facts">
+        <span>預計出發<strong>${departure}</strong></span>
+        <span>下一段移動<strong>${travelLabel}</strong></span>
+      </div>
+      <p class="today-next__location"><i data-lucide="map-pin"></i><span><strong>導航地點</strong><br />${escapeAttr(next.name)} · 日本</span></p>
+      ${drive ? `<p class="today-next__parking"><i data-lucide="parking-circle"></i><span><strong>${parking} · ${driveSummary.parkingFee}</strong><br />${parkingNote}</span></p>` : ""}
+      <div class="today-next__actions">
+        <a class="mini-button" href="${mapUrl(next.name)}" target="_blank" rel="noreferrer"><i data-lucide="navigation"></i>開始導航</a>
+        <button class="mini-button" type="button" data-today-detail="${next.index}" data-today-detail-day="${day.day}"><i data-lucide="book-open"></i>景點攻略</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderDriveSummary(day) {
+  if (!isDriveDay(day)) return "";
+  const summary = driveSummaryFor(day);
+  return `
+    <article class="today-drive" aria-label="今日自駕資訊">
+      <span class="today-drive__label"><i data-lucide="car-front"></i>Drive day</span>
+      <div class="today-drive__stats">
+        <span>今日總駕駛時間<strong>${summary.driveTime}</strong></span>
+        <span>今日總里程<strong>${summary.distance}</strong></span>
+      </div>
+      <span class="today-drive__note">加油 / ETC<strong>${summary.fuelEtc}</strong></span>
+    </article>
+  `;
+}
+
+function renderTodayTimeline(day, journey) {
+  return journey.records
+    .map((record) => {
+      const isCurrent = journey.current?.index === record.index;
+      const stateLabel = record.complete ? "已完成" : isCurrent ? "現在" : journey.next?.index === record.index ? "下一站" : "待前往";
+      return `
+        <li class="today-timeline__item ${record.complete ? "is-complete" : ""} ${isCurrent ? "is-current" : ""}">
+          <time class="today-timeline__time">${record.time}</time>
+          <div class="today-timeline__body"><strong>${escapeAttr(record.name)}</strong><span>${stateLabel}</span></div>
+          <button class="today-timeline__complete" type="button" data-today-complete="${record.index}" data-today-day="${day.day}" aria-pressed="${record.complete}" aria-label="${record.complete ? `取消 ${record.name} 的完成標示` : `標示 ${record.name} 已完成`}">${record.complete ? "已完成" : "完成"}</button>
+        </li>
+      `;
+    })
+    .join("");
+}
+
+function renderTodayMode(now = getTripNow()) {
   const panel = $("#today-panel");
-  const label =
-    target.mode === "today"
-      ? `今天是第 ${target.day} 天`
-      : target.mode === "upcoming"
-        ? `下一個行程：第 ${target.day} 天`
-        : `旅程已結束，最後一天`;
-  const subcopy =
-    target.mode === "today"
-      ? `${target.date} · ${target.area}`
-      : target.mode === "upcoming"
-        ? `現在還沒到旅程日期，先定位到 ${target.date}`
-        : `${target.date} · 可回看返程資訊`;
+  if (!panel) return;
+  const target = getTripDayForToday(now);
+  if (!target) {
+    panel.innerHTML = "";
+    return;
+  }
+
+  const journey = buildDayJourney(target, target.mode, now);
+  const activity = currentActivityFor(journey, target, now);
+  const done = journey.records.filter((record) => record.complete).length;
+  const progress = journey.records.length ? Math.round((done / journey.records.length) * 100) : 0;
+  const weather = liveWeatherByLocation.get(weatherLocationKey(target)) ?? { temperature: "--°", description: `${target.weather.label} 天氣讀取中` };
+  const modeLabel = target.mode === "today" ? "今天" : target.mode === "upcoming" ? "下一個行程日" : "最後一個行程日";
 
   panel.innerHTML = `
-    <div class="today-panel__copy">
-      <i data-lucide="calendar-check"></i>
+    <div class="today-mode__head">
       <div>
-        <strong>${label}</strong>
-        <span>${subcopy}</span>
+        <p class="today-mode__eyebrow"><i data-lucide="sparkles"></i>${modeLabel} · Japan time ${formatTripTime(now)}</p>
+        <h2>Day ${target.day} · ${escapeAttr(target.area)}</h2>
+        <p class="today-mode__date">${target.date} · ${itineraryMode === "rain" ? "雨天備案" : "原始行程"}</p>
       </div>
+      <div class="today-weather" data-today-weather><strong>${weather.temperature}</strong><span>${weather.description}</span></div>
     </div>
-    <button class="mini-button" id="jump-today" type="button"><i data-lucide="locate-fixed"></i>定位</button>
+    <div class="today-mode__progress"><span>今日進度</span><div class="today-mode__progress-track" style="--today-progress: ${progress}%"><span></span></div><strong>${done}/${journey.records.length}</strong></div>
+    <div class="today-mode__summary">
+      <article class="today-activity">
+        <span class="today-activity__time">${activity.time}</span>
+        <div><span class="today-activity__label">Current activity</span><strong>${escapeAttr(activity.title)}</strong><p>${escapeAttr(activity.detail)}</p></div>
+      </article>
+      ${renderTodayNext(target, journey)}
+      ${renderDriveSummary(target)}
+    </div>
+    <section class="today-mode__timeline-wrap" aria-label="今日時間線">
+      <div class="today-mode__timeline-title"><h3>今日時間線</h3><span>點按完成即可往下推進</span></div>
+      <ol class="today-timeline">${renderTodayTimeline(target, journey)}</ol>
+    </section>
   `;
-  $("#jump-today").addEventListener("click", () => focusTripDay(target.day));
 
-  if (target.mode === "today" && !location.hash) {
-    setTimeout(() => focusTripDay(target.day, "auto"), 250);
-  }
+  panel.querySelectorAll("[data-today-complete]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const day = displayedTripDays().find((item) => item.day === Number(button.dataset.todayDay));
+      if (!day) return;
+      const index = Number(button.dataset.todayComplete);
+      setStopCompleted(day, index, !isStopCompleted(day, index));
+    });
+  });
+  panel.querySelectorAll("[data-today-detail]").forEach((button) => {
+    button.addEventListener("click", () => openStopGuide(button.dataset.todayDetailDay, button.dataset.todayDetail));
+  });
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function setupTodayMode() {
+  renderTodayMode();
+  window.setInterval(() => renderTodayMode(), 60000);
 }
 
 function setupBudget() {
@@ -1491,9 +1712,81 @@ function setupNetworkStatus() {
   render();
 }
 
+function setupAppUpdates() {
+  if (!("serviceWorker" in navigator)) return;
+
+  const notice = $("#update-notice");
+  const updateButton = $("#update-now");
+  const dismissButton = $("#update-dismiss");
+  let registration = null;
+  let waitingWorker = null;
+  let updateRequested = false;
+  let dismissed = false;
+
+  function renderNotice(worker) {
+    if (!worker || dismissed || !navigator.serviceWorker.controller) return;
+    waitingWorker = worker;
+    notice.hidden = false;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  function checkForUpdate() {
+    if (!registration || !navigator.onLine) return;
+    registration.update().catch(() => {
+      // A failed background check should not interrupt an offline trip.
+    });
+  }
+
+  function watchInstalling(worker) {
+    if (!worker) return;
+    worker.addEventListener("statechange", () => {
+      if (worker.state === "installed") renderNotice(registration?.waiting ?? worker);
+    });
+  }
+
+  function watchRegistration(nextRegistration) {
+    registration = nextRegistration;
+    if (registration.waiting) renderNotice(registration.waiting);
+    if (registration.installing) watchInstalling(registration.installing);
+    registration.addEventListener("updatefound", () => watchInstalling(registration.installing));
+  }
+
+  updateButton.addEventListener("click", () => {
+    if (!waitingWorker) return;
+    updateRequested = true;
+    updateButton.disabled = true;
+    updateButton.textContent = "更新中…";
+    waitingWorker.postMessage({ type: "SKIP_WAITING" });
+  });
+
+  dismissButton.addEventListener("click", () => {
+    dismissed = true;
+    notice.hidden = true;
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (updateRequested) window.location.reload();
+  });
+
+  window.addEventListener("online", checkForUpdate);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkForUpdate();
+  });
+
+  window.addEventListener("load", async () => {
+    try {
+      watchRegistration(await navigator.serviceWorker.register("./sw.js"));
+      checkForUpdate();
+      window.setInterval(checkForUpdate, 30 * 60 * 1000);
+    } catch {
+      // The app remains usable without an offline shell or update checks.
+    }
+  });
+}
+
 async function loadWeather() {
   await Promise.all(
-    activeTripDays.map(async (day) => {
+    displayedTripDays().map(async (day) => {
       const target = document.querySelector(`[data-weather="${day.day}"]`);
       try {
         const url = new URL("https://api.open-meteo.com/v1/forecast");
@@ -1510,11 +1803,15 @@ async function loadWeather() {
         const data = await response.json();
         const current = data.current;
         const hourly = (data.hourly?.time ?? []).slice(0, 5).map((time, index) => ({
-          time: new Date(time).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", hour12: false }),
+          time: new Date(time).toLocaleTimeString("zh-TW", { timeZone: tripMeta.timeZone, hour: "2-digit", minute: "2-digit", hour12: false }),
           temp: Math.round(data.hourly.temperature_2m[index]),
           code: data.hourly.weather_code[index],
         }));
-        target.innerHTML = `
+        liveWeatherByLocation.set(weatherLocationKey(day), {
+          temperature: `${Math.round(current.temperature_2m)}°`,
+          description: `${day.weather.label} · ${weatherCode[current.weather_code] ?? "即時"}`,
+        });
+        if (target) target.innerHTML = `
           <div class="weather-current">
             <strong>${Math.round(current.temperature_2m)}°</strong>
             <span>${day.weather.label} · ${weatherCode[current.weather_code] ?? "即時"} · 風 ${Math.round(current.wind_speed_10m)} km/h</span>
@@ -1524,10 +1821,12 @@ async function loadWeather() {
           </div>
         `;
       } catch {
-        target.innerHTML = `<strong>--°</strong><span>${day.weather.label} 天氣暫不可用</span>`;
+        liveWeatherByLocation.set(weatherLocationKey(day), { temperature: "--°", description: `${day.weather.label} 天氣暫不可用` });
+        if (target) target.innerHTML = `<strong>--°</strong><span>${day.weather.label} 天氣暫不可用</span>`;
       }
     }),
   );
+  renderTodayMode();
 }
 
 renderDays();
@@ -1549,10 +1848,4 @@ if (window.lucide) {
   window.lucide.createIcons();
 }
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {
-      // The app still works without offline support.
-    });
-  });
-}
+setupAppUpdates();
