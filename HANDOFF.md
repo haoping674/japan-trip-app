@@ -2,9 +2,9 @@
 
 更新日期：2026-08-09  
 目前分支：`main`  
-最新已推送 commit：`fad2e6e feat(companion): add floating travel controls`
+最新已推送 commit：`56c4798 feat(companion): simplify travel controls`
 
-> **交接當下工作區有未提交變更，請先保留。** `app.js`、`index.html`、`styles.css`、`sw.js` 正在將 Today Mode 的展開內容再度精簡，並移除現場導覽；靜態資源版本與 Service Worker 已升到 **v20**；本 `HANDOFF.md` 的交接更新也尚未提交。詳情見「目前未提交工作」。
+> **交接當下工作區有未提交變更，請先保留。** `app.js`、`index.html`、`styles.css`、`sw.js` 正在將 Today Mode 的展開內容再度精簡，並將記帳改為工具頁快速輸入＋高密度帳本詳情；靜態資源版本與 Service Worker 已升到 **v22**；本 `HANDOFF.md` 的交接更新也尚未提交。詳情見「目前未提交工作」。
 
 ## 專案目的
 
@@ -140,7 +140,7 @@ trip.haoping.tw
 
 在 Vercel 先加入 `trip.haoping.tw`，再依 Vercel 顯示的 target 在 Cloudflare 建立 `trip` CNAME。若 Cloudflare 啟用 Proxy，先以 DNS only 完成 Vercel 驗證；之後是否開 Proxy 應依 Vercel 的 DNS 建議決定。
 
-每次改動 `index.html`、`styles.css`、`app.js`、manifest、icon 或 Service Worker 時，請把 `sw.js` 中的 `CACHE_NAME` 版本遞增（例如 `kansai-trip-v9`）。否則已安裝 PWA 可能繼續使用舊的靜態檔案。交接當下未提交版本是 `kansai-trip-v20`，`index.html` 的 `styles.css?v=20` 與 `app.js?v=20` 必須和它一致。
+每次改動 `index.html`、`styles.css`、`app.js`、manifest、icon 或 Service Worker 時，請把 `sw.js` 中的 `CACHE_NAME` 版本遞增（例如 `kansai-trip-v9`）。否則已安裝 PWA 可能繼續使用舊的靜態檔案。交接當下未提交版本是 `kansai-trip-v22`，`index.html` 的 `styles.css?v=22` 與 `app.js?v=22` 必須和它一致。
 
 Service Worker 有更新時，前端的更新提示會通知使用者；不要把 `/api/*` 放進 App Shell 或 runtime cache。
 
@@ -154,9 +154,9 @@ Service Worker 有更新時，前端的更新提示會通知使用者；不要�
 
 這些變更已完成檢查，但**尚未 commit 或 push**；下一個 session 若要提交，應和下列檔案一起檢查：
 
-- `app.js`：Today 展開區改為精簡狀態列；預覽日略過重複的 Current Activity，並移除現場導覽、單站攻略與路段導覽入口。
-- `styles.css`：縮小 Today 展開資訊的間距與字級，Next Stop 在手機維持雙欄；桌面單獨的 Next Stop 跨滿欄位。
-- `index.html`、`sw.js`：資源 query 與 cache name 已由 v17 更新到 v20。
+- `app.js`：Today 展開區改為精簡狀態列；預覽日略過重複的 Current Activity，移除現場導覽，並將記帳改為工具頁快速輸入與高密度詳情帳本。
+- `styles.css`：縮小 Today 展開資訊的間距與字級，Next Stop 在手機維持雙欄；記帳的金額輸入放大，詳情改為資料庫式緊湊欄位。
+- `index.html`、`sw.js`：資源 query 與 cache name 已由 v17 更新到 v22。
 - `HANDOFF.md`：記錄本次交接狀態、已推送版本與未提交的 UI 調整。
 - 已執行 `npm run check` 與 `git diff --check`，均通過。
 - Chrome 已檢查桌面與 390×844 手機：展開卡片在視窗內、沒有水平 overflow、內部可捲動；本站資源沒有 console error。唯一 error 來自 `chrome-extension://mfidniedemcgceagapgdekdbmanojomk/content.js`，不是 App 程式碼。

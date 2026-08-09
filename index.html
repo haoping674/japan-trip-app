@@ -17,7 +17,7 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20" />
+    <link rel="stylesheet" href="./styles.css?v=22" />
   </head>
   <body>
     <main class="app-shell">
@@ -105,8 +105,22 @@
       </div>
       <div class="guide-sheet__body" id="guide-sheet-body"></div>
     </section>
+    <div class="sheet-backdrop" id="budget-backdrop" hidden></div>
+    <section class="budget-sheet" id="budget-sheet" aria-label="消費詳情" aria-modal="true" role="dialog" hidden>
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="guide-sheet__header">
+        <div>
+          <p class="kicker">Expense details</p>
+          <h2>消費詳情</h2>
+        </div>
+        <button class="icon-button" id="budget-sheet-close" type="button" aria-label="關閉消費詳情">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="guide-sheet__body" id="budget-sheet-body"></div>
+    </section>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="./app.js?v=20"></script>
+    <script src="./app.js?v=22"></script>
   </body>
 </html>

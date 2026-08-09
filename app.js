@@ -1827,12 +1827,28 @@ function renderTools() {
     shopping +
     `
       <article class="tool-card budget">
-        <h3>記帳 / 預算表</h3>
-        <p>金額會先存在手機，部署 Neon 後會同步成共用記帳表。</p>
-        <div class="budget-summary" id="budget-summary"></div>
-        <div class="budget-list" id="budget-body"></div>
-        <button class="mini-button" id="add-row" type="button"><i data-lucide="plus"></i>新增一列</button>
-        <div class="total-box"><span>目前合計</span><span id="budget-total">¥0</span></div>
+        <div class="budget-card__head">
+          <div>
+            <h3>旅行記帳</h3>
+          </div>
+          <span id="budget-entry-count">尚無消費紀錄</span>
+        </div>
+        <button class="budget-overview" id="budget-open-details" type="button" aria-label="查看並修改消費詳情" aria-live="polite">
+          <span>目前總支出</span>
+          <strong id="budget-total">¥0</strong>
+          <small>查看所有消費明細 <i data-lucide="arrow-up-right"></i></small>
+        </button>
+        <form class="budget-quick-add" id="budget-quick-add">
+          <div class="budget-quick-add__head"><strong>新增消費</strong><span id="budget-quick-status" aria-live="polite"></span></div>
+          <div class="budget-quick-add__selects">
+            <label><span>分類</span><select name="category" aria-label="新增消費分類">${budgetCategories.map((category) => `<option value="${category.id}">${category.label}</option>`).join("")}</select></label>
+            <label><span>付款人</span><select name="person" aria-label="新增消費付款人">${budgetPeople.map((person) => `<option value="${person}">${person}</option>`).join("")}</select></label>
+          </div>
+          <label class="budget-quick-add__item"><span>消費項目</span><input name="item" autocomplete="off" placeholder="例如：午餐、停車費" aria-label="新增消費項目" /></label>
+          <label class="budget-quick-add__amount"><span>金額 JPY</span><div><b>¥</b><input name="amount" inputmode="numeric" pattern="[0-9]*" placeholder="0" aria-label="新增消費金額" required /></div></label>
+          <label class="budget-quick-add__memo"><span>備註（選填）</span><input name="memo" autocomplete="off" placeholder="可填店名或分帳說明" aria-label="新增消費備註" /></label>
+          <button class="mini-button" type="submit"><i data-lucide="plus"></i>加入帳本</button>
+        </form>
       </article>
     `;
 }
@@ -2125,8 +2141,17 @@ function setupTodayMode() {
 }
 
 function setupBudget() {
-  const body = $("#budget-body");
-  const saved = tripState.budget;
+  const body = $("#budget-sheet-body");
+  const sheet = $("#budget-sheet");
+  const backdrop = $("#budget-backdrop");
+  const closeButton = $("#budget-sheet-close");
+  const quickForm = $("#budget-quick-add");
+  const saved = tripState.budget.filter((row) => budgetAmount(row.amount) > 0);
+  let list;
+
+  function budgetAmount(value) {
+    return Number(String(value ?? "").replace(/[^\d]/g, "")) || 0;
+  }
 
   function collectRows() {
     return [...body.querySelectorAll(".budget-entry")].map((row) => ({
@@ -2139,15 +2164,17 @@ function setupBudget() {
   }
 
   function updateTotal(rows = collectRows()) {
-    const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+    const total = rows.reduce((sum, row) => sum + budgetAmount(row.amount), 0);
     $("#budget-total").textContent = `¥${total.toLocaleString("ja-JP")}`;
+    $("#budget-detail-total").textContent = `¥${total.toLocaleString("ja-JP")}`;
+    const recordedCount = rows.length;
+    $("#budget-entry-count").textContent = recordedCount ? `${recordedCount} 筆已記錄` : "尚無消費紀錄";
 
-    const summary = $("#budget-summary");
-    summary.innerHTML = budgetPeople
+    $("#budget-summary").innerHTML = budgetPeople
       .map((person) => {
         const subtotal = rows
           .filter((row) => row.person === person)
-          .reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+          .reduce((sum, row) => sum + budgetAmount(row.amount), 0);
         return `<span class="person-total"><strong>${person}</strong>¥${subtotal.toLocaleString("ja-JP")}</span>`;
       })
       .join("");
@@ -2159,19 +2186,12 @@ function setupBudget() {
     updateTripState("budget", rows);
   }
 
-  function refreshEntryIcon(entry) {
-    const category = budgetCategories.find((item) => item.id === entry.querySelector('[data-field="category"]').value) ?? budgetCategories[0];
-    entry.querySelector(".budget-entry__icon").innerHTML = `<i data-lucide="${category.icon}"></i>`;
-    if (window.lucide) window.lucide.createIcons();
-  }
-
   function addRow(row = createBudgetRow()) {
     const normalized = normalizeBudgetRow(row);
     const entry = document.createElement("article");
     entry.className = "budget-entry";
     entry.innerHTML = `
-      <div class="budget-entry__icon" aria-hidden="true"><i data-lucide="utensils"></i></div>
-      <label>
+      <label class="budget-entry__category">
         <span>分類</span>
         <select name="budget-category" data-field="category" aria-label="分類">
           ${budgetCategories
@@ -2179,7 +2199,7 @@ function setupBudget() {
             .join("")}
         </select>
       </label>
-      <label>
+      <label class="budget-entry__person">
         <span>人</span>
         <select name="budget-person" data-field="person" aria-label="付款人">
           ${budgetPeople.map((person) => `<option value="${person}" ${person === normalized.person ? "selected" : ""}>${person}</option>`).join("")}
@@ -2189,7 +2209,7 @@ function setupBudget() {
         <span>項目</span>
         <input name="budget-item" data-field="item" value="${escapeAttr(normalized.item)}" aria-label="項目" />
       </label>
-      <label>
+      <label class="budget-entry__amount">
         <span>金額 JPY</span>
         <input name="budget-amount" data-field="amount" value="${escapeAttr(normalized.amount)}" inputmode="numeric" pattern="[0-9]*" aria-label="金額" />
       </label>
@@ -2199,7 +2219,10 @@ function setupBudget() {
       </label>
       <button class="icon-button budget-entry__delete" type="button" aria-label="刪除此筆"><i data-lucide="trash-2"></i></button>
     `;
-    entry.addEventListener("input", persist);
+    entry.addEventListener("input", (event) => {
+      if (event.target.matches('[data-field="amount"]')) event.target.value = event.target.value.replace(/[^\d]/g, "");
+      persist();
+    });
     entry.addEventListener("change", (event) => {
       if (event.target.matches('[data-field="category"]')) {
         const previous = budgetCategories.find((item) => item.id === entry.dataset.category)?.label;
@@ -2207,7 +2230,6 @@ function setupBudget() {
         const itemInput = entry.querySelector('[data-field="item"]');
         if (!itemInput.value || itemInput.value === previous) itemInput.value = next.label;
         entry.dataset.category = next.id;
-        refreshEntryIcon(entry);
       }
       persist();
     });
@@ -2215,16 +2237,74 @@ function setupBudget() {
       entry.remove();
       persist();
     });
-    body.appendChild(entry);
+    list.appendChild(entry);
     entry.dataset.category = normalized.category;
-    refreshEntryIcon(entry);
+    return entry;
   }
 
+  function openSheet(entry) {
+    sheet.hidden = false;
+    backdrop.hidden = false;
+    requestAnimationFrame(() => {
+      sheet.classList.add("is-open");
+      backdrop.classList.add("is-open");
+      document.body.classList.add("sheet-open");
+      (entry?.querySelector('[data-field="item"]') ?? closeButton).focus({ preventScroll: true });
+      if (window.lucide) window.lucide.createIcons();
+    });
+  }
+
+  body.innerHTML = `<section class="budget-detail-summary"><div><span>帳本總額</span><strong id="budget-detail-total">¥0</strong><small>欄位可直接修改，會自動儲存。</small></div><div class="budget-summary" id="budget-summary"></div></section><div class="budget-ledger-head" aria-hidden="true"><span>分類</span><span>付款人</span><span>項目</span><span>金額</span><span>備註</span><span></span></div><div class="budget-list" id="budget-list"></div>`;
+  list = $("#budget-list");
   saved.forEach(addRow);
-  $("#add-row").addEventListener("click", () => {
-    addRow();
-    persist();
+
+  quickForm.elements.amount.addEventListener("input", (event) => {
+    event.target.value = event.target.value.replace(/[^\d]/g, "");
+    event.target.setCustomValidity("");
   });
+
+  quickForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(quickForm);
+    const amount = budgetAmount(formData.get("amount"));
+    if (!amount) {
+      quickForm.elements.amount.setCustomValidity("請輸入大於 0 的金額");
+      quickForm.elements.amount.reportValidity();
+      return;
+    }
+    quickForm.elements.amount.setCustomValidity("");
+    addRow(createBudgetRow({
+      category: formData.get("category"),
+      person: formData.get("person"),
+      item: String(formData.get("item") || "").trim(),
+      amount: String(amount),
+      memo: String(formData.get("memo") || "").trim(),
+    }));
+    persist();
+    quickForm.reset();
+    $("#budget-quick-status").textContent = `已加入 ¥${amount.toLocaleString("ja-JP")}`;
+    quickForm.elements.item.focus();
+  });
+  $("#budget-open-details").addEventListener("click", () => openSheet());
+
+  if (sheet.dataset.bound !== "true") {
+    const closeSheet = () => {
+      sheet.classList.remove("is-open");
+      backdrop.classList.remove("is-open");
+      document.body.classList.remove("sheet-open");
+      window.setTimeout(() => {
+        sheet.hidden = true;
+        backdrop.hidden = true;
+      }, 220);
+    };
+    closeButton.addEventListener("click", closeSheet);
+    backdrop.addEventListener("click", closeSheet);
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && sheet.classList.contains("is-open")) closeSheet();
+    });
+    sheet.dataset.bound = "true";
+  }
+
   updateTotal(saved);
 }
 
