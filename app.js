@@ -1111,6 +1111,7 @@ function weatherLocationKey(day) {
 const $ = (selector) => document.querySelector(selector);
 let openStopGuide = () => {};
 let itineraryMode = localStorage.getItem("kansai-itinerary-mode") === "rain" ? "rain" : "normal";
+let todayModeExpanded = false;
 
 function displayedTripDays() {
   return itineraryMode === "rain" ? rainTripDays : activeTripDays;
@@ -2158,31 +2159,54 @@ function renderTodayMode(now = getTripNow()) {
   const progress = journey.records.length ? Math.round((done / journey.records.length) * 100) : 0;
   const weather = liveWeatherByLocation.get(weatherLocationKey(target)) ?? { temperature: "--°", description: `${target.weather.label} 天氣讀取中` };
   const modeLabel = target.mode === "today" ? "今天" : target.mode === "upcoming" ? "下一個行程日" : "最後一個行程日";
+  const floatFocus = journey.current ?? journey.next;
+  const floatLabel = journey.current ? "Now" : "Next";
+  const floatTitle = journey.current?.name ?? floatFocus?.name ?? activity.title;
+  const floatDetail = journey.current
+    ? `下一站 ${journey.next?.name ?? "今日收尾"}${journey.next ? ` · ${journey.next.time}` : ""}`
+    : `Day ${target.day} · ${floatFocus?.time ?? "待確認"} 出發`;
+  panel.classList.toggle("is-expanded", todayModeExpanded);
 
   panel.innerHTML = `
-    <div class="today-mode__head">
-      <div>
-        <p class="today-mode__eyebrow"><i data-lucide="sparkles"></i>${modeLabel} · Japan time ${formatTripTime(now)}</p>
-        <h2>Day ${target.day} · ${escapeAttr(target.area)}</h2>
-        <p class="today-mode__date">${target.date} · ${itineraryMode === "rain" ? "雨天備案" : "原始行程"}</p>
+    <button class="today-float__toggle" type="button" data-today-toggle aria-expanded="${todayModeExpanded}" aria-controls="today-mode-content" aria-label="${todayModeExpanded ? "收合" : "展開"}今日行程：${escapeAttr(floatTitle)}">
+      <span class="today-float__mark"><i data-lucide="${journey.current ? "compass" : "route"}"></i></span>
+      <span class="today-float__copy">
+        <span class="today-float__eyebrow">${floatLabel} · Day ${target.day}</span>
+        <strong>${escapeAttr(floatTitle)}</strong>
+        <small>${escapeAttr(floatDetail)}</small>
+      </span>
+      <span class="today-float__meta"><strong>${weather.temperature}</strong><small>${done}/${journey.records.length}</small></span>
+      <span class="today-float__chevron"><i data-lucide="${todayModeExpanded ? "chevron-down" : "chevron-up"}"></i></span>
+    </button>
+    <div class="today-mode__content" id="today-mode-content" ${todayModeExpanded ? "" : "inert"}>
+      <div class="today-mode__head">
+        <div>
+          <p class="today-mode__eyebrow"><i data-lucide="sparkles"></i>${modeLabel} · Japan time ${formatTripTime(now)}</p>
+          <h2>Day ${target.day} · ${escapeAttr(target.area)}</h2>
+          <p class="today-mode__date">${target.date} · ${itineraryMode === "rain" ? "雨天備案" : "原始行程"}</p>
+        </div>
+        <div class="today-weather" data-today-weather><strong>${weather.temperature}</strong><span>${weather.description}</span></div>
       </div>
-      <div class="today-weather" data-today-weather><strong>${weather.temperature}</strong><span>${weather.description}</span></div>
+      <div class="today-mode__progress"><span>今日進度</span><div class="today-mode__progress-track" style="--today-progress: ${progress}%"><span></span></div><strong>${done}/${journey.records.length}</strong></div>
+      <div class="today-mode__summary">
+        <article class="today-activity">
+          <span class="today-activity__time">${activity.time}</span>
+          <div><span class="today-activity__label">Current activity</span><strong>${escapeAttr(activity.title)}</strong><p>${escapeAttr(activity.detail)}</p>${activityGuide ? `<button class="mini-button today-activity__guide" type="button" data-today-detail="${activityGuide.index}" data-today-detail-day="${target.day}"><i data-lucide="compass"></i>現場導遊</button>` : ""}</div>
+        </article>
+        ${renderTodayNext(target, journey)}
+        ${renderDriveSummary(target)}
+      </div>
+      <section class="today-mode__timeline-wrap" aria-label="今日時間線">
+        <div class="today-mode__timeline-title"><h3>今日時間線</h3><span>點按完成即可往下推進</span></div>
+        <ol class="today-timeline">${renderTodayTimeline(target, journey)}</ol>
+      </section>
     </div>
-    <div class="today-mode__progress"><span>今日進度</span><div class="today-mode__progress-track" style="--today-progress: ${progress}%"><span></span></div><strong>${done}/${journey.records.length}</strong></div>
-    <div class="today-mode__summary">
-      <article class="today-activity">
-        <span class="today-activity__time">${activity.time}</span>
-        <div><span class="today-activity__label">Current activity</span><strong>${escapeAttr(activity.title)}</strong><p>${escapeAttr(activity.detail)}</p>${activityGuide ? `<button class="mini-button today-activity__guide" type="button" data-today-detail="${activityGuide.index}" data-today-detail-day="${target.day}"><i data-lucide="compass"></i>現場導遊</button>` : ""}</div>
-      </article>
-      ${renderTodayNext(target, journey)}
-      ${renderDriveSummary(target)}
-    </div>
-    <section class="today-mode__timeline-wrap" aria-label="今日時間線">
-      <div class="today-mode__timeline-title"><h3>今日時間線</h3><span>點按完成即可往下推進</span></div>
-      <ol class="today-timeline">${renderTodayTimeline(target, journey)}</ol>
-    </section>
   `;
 
+  panel.querySelector("[data-today-toggle]")?.addEventListener("click", () => {
+    todayModeExpanded = !todayModeExpanded;
+    renderTodayMode();
+  });
   panel.querySelectorAll("[data-today-complete]").forEach((button) => {
     button.addEventListener("click", () => {
       const day = displayedTripDays().find((item) => item.day === Number(button.dataset.todayDay));
