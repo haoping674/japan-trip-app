@@ -395,6 +395,465 @@ const guideNotes = [
   },
 ];
 
+// On-site content intentionally contains only the guide layer. Route, timing, weather,
+// completion and navigation continue to come from the shared itinerary helpers below.
+// A future trip can add entries with the same schema without changing the guide UI.
+const onSiteGuides = {
+  "伏見稻荷大社": {
+    japaneseName: "伏見稲荷大社",
+    pronunciation: "ふしみいなりたいしゃ · Fushimi Inari Taisha",
+    quick: {
+      headline: "不是把鳥居拍完，而是走到人群忽然安靜下來。",
+      highlights: ["先在樓門前抬頭看狐狸與朱紅色層次", "進千本鳥居後選一段較空的路，不必硬攻山頂", "回望京都盆地前，先留意天色與返程照明"],
+      missed: "鳥居上的奉納者名字與日期，會讓這條隧道像一張商人們寫下的祈願名冊。",
+      photo: "第一段鳥居的轉彎處，側身避開正中央人流拍縱深。",
+    },
+    standard: ["稻荷信仰守護稻作，也守護生意。一路連續的鳥居不是裝飾，而是一間間公司與個人把願望留在山上的方式。", "今天傍晚不必把它走成健行任務：往上走到人潮變薄、拍完一段安靜的鳥居，再原路折返，會比趕登頂更舒服。"],
+    deep: ["狐狸在這裡是稻荷大神的使者，不是被祭祀的主角；留意牠們口中叼的鑰匙、稻穗或卷軸，各自象徵倉庫與豐收。", "鳥居一座接一座，是奉納文化最直觀的畫面。站在側邊讀一兩座的文字，就能把『千本』從打卡背景變成具體的人與願望。"],
+    utility: { icon: "hand", label: "參拜小提醒", title: "先淨手，再到本殿前鞠躬", text: "想拍照時別停在鳥居正中央；把中線留給參拜者通行。" },
+    stops: [
+      { title: "樓門", cue: "先別急著進鳥居", story: "朱紅色的入口把日常街道切成一條信仰的路。", next: "穿過本殿，往千本鳥居入口走" },
+      { title: "千本鳥居", cue: "找一段有轉彎的空隙", story: "每一座鳥居都是一份被留下的願望；讀一座背面的名字就夠。", next: "走到人潮變薄處後原路回頭" },
+      { title: "回望京都", cue: "回程前先看天色", story: "最好的收尾不是登得多高，而是帶著還有餘裕的腳力下山。", next: "回車站或住宿前補水" },
+    ],
+    audio: { duration: "3:00", script: "從樓門走進去時，先看狐狸口中叼著什麼。接著把腳步放慢，在鳥居轉彎處讀一座奉納者的名字；這裡不只是朱紅色的隧道，而是無數人把願望留在山上的路。" },
+  },
+  "清水寺": {
+    japaneseName: "清水寺",
+    pronunciation: "きよみずでら · Kiyomizu-dera",
+    quick: {
+      headline: "把舞台留到中段：先用一條上坡，讀懂整座寺。",
+      highlights: ["仁王門前回望京都，找紅塔與山勢的層次", "本堂外側看木構件如何把舞台撐出山坡", "音羽瀑布只選一股水，別把祈願變成排隊任務"],
+      missed: "舞台不是一根釘子撐起來的奇觀；靠的是密集交錯的木榫與支架。",
+      photo: "從奧之院回望本堂舞台，取到舞台、樹梢與城市的三層景深。",
+    },
+    standard: ["清水寺最迷人的地方，是你一路上坡才慢慢看見它怎麼貼著山勢長出來。先在仁王門停十秒，再走向本堂，舞台的尺度會在靠近時突然變得有感。", "今天早到的獎勵不是空景，而是有時間在奧之院回望一次；最後再去音羽瀑布，選一股水、好好許一個願就足夠。"],
+    deep: ["舞台的木構件以複雜的榫接疊成懸挑結構。站在側面看支柱與斜撐，能理解為何它不是平地上蓋一個大陽台而已。", "音羽瀑布常被說成學業、戀愛與長壽，但不同說法會略有差異；在現場把它當成一個整理願望的儀式，比追求『選對』更有意思。"],
+    utility: { icon: "hand", label: "參拜提示", title: "拍照前先讓出參拜動線", text: "本堂前以安靜、短暫停留為原則；瀑布的柄杓依現場指示使用。" },
+    stops: [
+      { title: "仁王門", cue: "回頭看一眼京都", story: "這裡像一個取景框，先把城市放進寺的山門之外。", next: "沿著參道往三重塔走" },
+      { title: "三重塔", cue: "看塔尖與屋簷的層次", story: "朱紅色不是單一色塊，近看才會看見每一層屋簷在山色中退開。", next: "往本堂前的平台走" },
+      { title: "本堂", cue: "從側面找木構件", story: "別只站在舞台中央，從旁邊看支柱，才看得見它如何撐在山坡上。", next: "走到舞台邊緣，先看遠景" },
+      { title: "清水舞台", cue: "先看近的木，再看遠的城", story: "腳下是木結構，眼前是京都；兩個尺度同時出現才是這一站的重點。", next: "往奧之院方向回望" },
+      { title: "音羽瀑布", cue: "只選一股水", story: "在水聲旁停一下，讓許願是收尾，不是趕行程。", next: "依坡道往二年坂方向慢慢下行" },
+    ],
+    audio: { duration: "3:00", script: "現在先站在仁王門前回頭看京都。走到本堂時，請從側面找木構件；清水舞台真正厲害的不是懸空感，而是它和山坡一起被撐起來。最後到音羽瀑布，選一個願望就好。" },
+  },
+  "二年坂 / 三年坂": {
+    japaneseName: "二年坂・産寧坂",
+    pronunciation: "にねんざか・さんねんざか · Ninen-zaka / Sannen-zaka",
+    quick: {
+      headline: "這不是一條通往下一站的捷徑，是京都把速度調慢的地方。",
+      highlights: ["先看石階的坡度與兩側低矮屋簷", "在沒有招牌的町家門面前停一下", "遇到八坂塔的縫隙再拍，不必在正中央卡位"],
+      missed: "石階旁的格子窗、暖簾與水缽，比網紅店的門口更像這條街真正的表情。",
+      photo: "向下走時，在沒有擋住行人的側邊取石階與八坂塔。",
+    },
+    standard: ["二年坂、三年坂最好的走法是留給眼睛，不是留給購物袋。先抬頭看屋簷高度與電線被藏起來的程度，再看門前的格子與暖簾。", "這裡仍是生活與商業混在一起的街區；慢走、靠邊拍、不要堵住狹窄石階，就是最好的旅人姿態。"],
+    deep: ["產寧坂的名字常被連到『產寧』與平安祈願，民間也流傳跌倒會折壽的說法。它的功能不只是趣聞，而是提醒人們在陡坡上放慢腳步。", "町家的正面窄、進深長，格子與屋簷同時處理採光、通風與隱私；看見這些細節，會比把整條街拍得沒有人更有收穫。"],
+    utility: { icon: "store", label: "逛店提示", title: "小店內先看是否能拍照", text: "買食物後找指定位置吃完；不要邊走邊吃，也別把石階當成休息座位。" },
+    stops: [
+      { title: "下坡第一段", cue: "先用腳感受坡度", story: "石階讓你自然慢下來，這正是它最有用的設計。", next: "留意兩側的格子窗" },
+      { title: "町家門面", cue: "看招牌以外的地方", story: "暖簾、格子與小小的門牌，才是街道沒有說出口的節奏。", next: "往八坂塔可見的巷口走" },
+      { title: "八坂塔視角", cue: "等一個人流的空隙", story: "塔不需要佔滿畫面；讓石階帶著視線走向它。", next: "繼續往祇園方向下行" },
+    ],
+    audio: { duration: "3:00", script: "先別急著找店。這段石階會讓人不自覺放慢，抬頭看兩側屋簷，再低頭看腳下的坡度。當八坂塔出現在巷尾時，讓它留在石階盡頭，不必塞滿鏡頭。" },
+  },
+  "祇園花見小路": {
+    japaneseName: "祇園花見小路",
+    pronunciation: "ぎおん はなみこうじ · Gion Hanamikoji",
+    quick: {
+      headline: "把這裡當成有人生活的街，而不是追逐藝伎的舞台。",
+      highlights: ["從格子窗與暖簾看町家的表情", "走在可通行的主路，保持低音量", "把『有沒有遇到藝伎』從今天的任務清單拿掉"],
+      missed: "門口掛著的店暖簾與小小招牌，往往比人群追逐的畫面更有故事。",
+      photo: "從主路較寬處拍屋簷連續線，不對著私人入口久候。",
+    },
+    standard: ["花見小路的魅力不在偶遇誰，而在你能看見一條街如何把茶屋、住家與觀光客放在很近的距離裡。先把步伐放慢，讓鏡頭離開私人門口。", "如果有人匆匆走過，最好的反應是讓出路。這樣的克制，反而會讓你真的看見祇園的節奏。"],
+    deep: ["花街的表演與接待有明確的工作與私人邊界。把它視為居民與從業者共用的街區，而非『捕捉人物』的場景，能讓旅程更接近它真正的氣質。"],
+    utility: { icon: "volume-x", label: "街區禮儀", title: "不追拍、不堵門、不進私人巷弄", text: "若有禁拍標示請遵守；把人像留給同行者，把街景留給這條街。" },
+    stops: [
+      { title: "主路入口", cue: "先把聲音放低", story: "這裡不是景區布景，而是每天仍在運作的街道。", next: "沿主路看連續屋簷" },
+      { title: "茶屋立面", cue: "看格子與暖簾", story: "一扇門、一塊暖簾，就能告訴你這裡的私密與距離。", next: "不久留在任何私人入口前" },
+      { title: "離開前", cue: "用街景收尾", story: "帶走的是街道的節奏，不是一張追拍到的照片。", next: "往錦市場方向移動" },
+    ],
+    audio: { duration: "3:00", script: "走進花見小路時，先把音量放低。請把注意力放在格子窗、暖簾與屋簷，不必等人出現。這裡最值得尊重的，是它仍然是一條有人工作、有人回家的街。" },
+  },
+  "錦市場": {
+    japaneseName: "錦市場",
+    pronunciation: "にしきいちば · Nishiki Market",
+    quick: {
+      headline: "先挑兩三樣吃得下的，讓市場還是午餐，不變成手上黏滿竹籤的任務。",
+      highlights: ["第一圈只看、不急著買", "選一樣熱食、一樣京都食材或甜點", "依店家規則在指定位置吃完再走"],
+      missed: "漬物、昆布、乾貨的香氣和包裝，是京都人把季節收進廚房的方式。",
+      photo: "拍店面與食材，不把鏡頭貼近正在工作的店員。",
+    },
+    standard: ["錦市場不是每家都要吃。先走一圈把想吃的圈成兩三樣，再找能站著吃或有座位的店，胃和行程都會比較舒服。", "熱食是當下的樂趣，乾貨與漬物則是可以帶回去的京都。兩種各選一樣，就能把市場逛得很完整。"],
+    deep: ["市場裡的魚、漬物、豆製品與乾貨，連著京都料理重視高湯、季節與保存的習慣。與其追網紅單品，不如觀察同一種食材被做成多少種形式。"],
+    utility: { icon: "utensils", label: "市場提示", title: "先看『店內飲食』規則", text: "多數店家不歡迎邊走邊吃；垃圾也盡量帶回購買店家處理。" },
+    stops: [
+      { title: "第一圈", cue: "先不下單", story: "看一圈是最省胃的攻略：你會知道自己真正想吃什麼。", next: "回到最想吃的兩間店" },
+      { title: "熱食一站", cue: "找可以停下來吃的地方", story: "市場的禮貌，常常就是不把走道變成餐桌。", next: "再挑一樣常溫好帶的食材" },
+      { title: "伴手食材", cue: "問保存方式", story: "把季節帶走不一定是甜點；一包漬物或乾貨也很京都。", next: "回住宿休息或前往下一站" },
+    ],
+    audio: { duration: "3:00", script: "先把第一圈當成聞香與觀察，不急著下單。接著選一樣現在吃、一樣可以帶走的京都味道；吃完後把垃圾交回店家，讓市場的走道繼續是走道。" },
+  },
+  "京都鐵道博物館": {
+    japaneseName: "京都鉄道博物館",
+    pronunciation: "きょうと てつどう はくぶつかん · Kyoto Railway Museum",
+    quick: {
+      headline: "先選一列車，再把它當成一段旅程而不是一件大模型。",
+      highlights: ["進館先看實車尺度，再看車頭細節", "用一台蒸汽機車理解速度如何改變城市", "孩子累了就把戶外月台留到最後"],
+      missed: "車門高度、座椅間距與車頭編號，都比整排合照更能看出年代感。",
+      photo: "側拍一台列車的車頭和軌道線條，避免在熱門車頭前久候。",
+    },
+    standard: ["這裡最容易逛成資訊量爆炸。先挑一台最吸引你的車，看看它的車頭、車廂與座椅，再把其他展品當成補充。", "如果行程時間有限，實車區、蒸汽機車和能看見列車進站的地方優先；其餘展板不是必修。"],
+    deep: ["交通工具不只縮短距離，也改變了誰能移動、貨物如何進城。站在不同年代的車廂前，最值得問的是：當時的人看見它，覺得是奢侈、效率，還是新的日常？"],
+    utility: { icon: "train-front", label: "館內節奏", title: "先確認蒸汽列車與體驗時段", text: "若有指定時段的體驗，先排進時間；熱門車廂請輪流拍照。" },
+    stops: [
+      { title: "實車入口", cue: "先挑一台車", story: "別急著全部看完；選一台，才會看見尺寸。", next: "往車頭與車輪細節走" },
+      { title: "蒸汽機車", cue: "看機械結構", story: "黑色鋼鐵曾經是速度的象徵，近看比照片更有重量。", next: "到月台邊看現役列車" },
+      { title: "月台視角", cue: "聽列車進站", story: "博物館的收藏與正在運行的鐵道在這裡接起來。", next: "依體力回京都站" },
+    ],
+    audio: { duration: "3:00", script: "請先選一台列車，靠近看它的車頭與車輪。當你看到一台蒸汽機車時，想像它曾經把人和貨物拉進新的城市；最後到月台邊，讓仍在運行的列車替這段故事收尾。" },
+  },
+  "白鬚神社": {
+    japaneseName: "白鬚神社",
+    pronunciation: "しらひげじんじゃ · Shirahige Shrine",
+    quick: {
+      headline: "湖上的鳥居很美，但今天最重要的是不為照片冒險。",
+      highlights: ["在安全側觀察鳥居與湖面", "先確認停車與過路動線", "拍完就走，把時間留給後段自駕"],
+      missed: "水面與鳥居之間的距離，比靠近它更能表現琵琶湖的尺度。",
+      photo: "從合法、安全的觀景側長焦或廣角取景，不跨越車道。",
+    },
+    standard: ["白鬚神社的畫面像一張明信片，但它旁邊是車流快的湖岸道路。今天最好的導覽只有一句：停好車、在安全處看一眼、拍完就走。", "把鳥居放在大片湖面裡，而不是逼近它，照片反而更安靜，也更接近這裡的氣氛。"],
+    deep: ["湖中鳥居把視線拉向水面與遠岸，也讓人感覺人站在陸地上的有限。這種留白，比『一定要到最近』更能說明風景的力量。"],
+    utility: { icon: "triangle-alert", label: "自駕安全", title: "不穿越車道、不臨停拍照", text: "以現場標示和官方停車動線為準；若人車太多，就把這站縮成安全短停。" },
+    stops: [
+      { title: "安全觀景點", cue: "先處理車與人", story: "在這裡，安全就是最好的取景框。", next: "把鳥居放進大片湖面" },
+      { title: "湖上鳥居", cue: "留一點空白", story: "鳥居不是前景道具，它讓湖面看起來更大。", next: "回車上，繼續下一段行程" },
+    ],
+    audio: { duration: "3:00", script: "今天先不要急著找最近的角度。確認安全後，把鳥居放在大片湖面裡；你會發現真正讓人停下來的，是湖的尺度，而不只是那一座紅色的門。" },
+  },
+  "舞鶴港海鮮市場": {
+    japaneseName: "舞鶴港とれとれセンター",
+    pronunciation: "まいづるこう とれとれセンター · Maizuru Port Tore Tore Center",
+    quick: {
+      headline: "先看整排魚貨，再決定今天只吃哪一種海味。",
+      highlights: ["第一圈比份量與價格", "選一份主食搭一樣小菜就好", "冷藏伴手禮最後再買，先想車上保存"],
+      missed: "店家料理方式的差異，比『最貴的是哪一份』更值得問。",
+      photo: "拍冰台上的魚貨與店牌，避開正在結帳的客人。",
+    },
+    standard: ["海鮮市場很容易每攤都想吃。先巡一圈，選一份能當主餐的，再加一樣季節小菜；這樣還能保留胃口給後面的海之京都。", "想買回去的海產先問保存，再看車上保冷空間。把冷藏袋當成行程的一部分，比到結帳才煩惱更實用。"],
+    deep: ["港邊市場最有趣的不只是新鮮，而是它把捕撈、處理、烹調和當地人的日常放在同一個空間。問一句『今天最推薦怎麼吃？』往往比照網路排行更好玩。"],
+    utility: { icon: "utensils", label: "點餐日語", title: "今日のおすすめは何ですか？", text: "意思是「今天推薦什麼？」選定後再確認份量與是否可在店內吃。" },
+    stops: [
+      { title: "第一圈", cue: "先看、不急著買", story: "把選擇留到看完，才不會第一攤就吃飽。", next: "回到最想吃的一攤" },
+      { title: "主食", cue: "一份就好", story: "海味要記得住，不需要把每種都塞進同一餐。", next: "查看冷藏伴手禮" },
+      { title: "伴手區", cue: "先問保存", story: "好吃的東西能安全帶到住宿，才算真的買到。", next: "回車上前確認保冷" },
+    ],
+    audio: { duration: "3:00", script: "先走一圈看魚貨，不急著在第一攤決定。選一份主食，再問店家今天推薦的做法；若想帶走冷藏海產，先確認保冷袋和車上的空間。" },
+  },
+  "伊根浦觀光案內": {
+    japaneseName: "伊根の舟屋",
+    pronunciation: "いねのふなや · Ine no Funaya",
+    quick: {
+      headline: "先把它當成居民的港灣，再把相機拿出來。",
+      highlights: ["從港邊遠看一樓貼著海的舟屋", "找一段安靜的水面與屋簷倒影", "不進私人範圍、不把道路卡成拍照區"],
+      missed: "舟屋一樓面向船，二樓才是生活；這種上下分工就是聚落最有趣的地方。",
+      photo: "從公共步道斜拍屋簷、船與水面，保留居民出入空間。",
+    },
+    standard: ["伊根不是一個把房子排好等你拍照的園區。它的好看來自生活還在發生：一樓收船、二樓住人，海與家沒有被分開。", "車先停在指定位置，接著用步行慢慢看。若天候或人流不好，就把它當短暫散步，不必硬湊遊船。"],
+    deep: ["舟屋因海岸地形和漁業生活而發展成這樣的垂直空間。一樓臨水方便船隻出入，二樓回到日常生活；理解這個結構，就不會只把它看成『京都版威尼斯』。"],
+    utility: { icon: "house", label: "聚落禮儀", title: "公共步道拍照，私人門口不久留", text: "保持低音量，勿探頭拍室內或餵食海鳥；車輛依指定停車場移動。" },
+    stops: [
+      { title: "案內與停車", cue: "先把車停對", story: "在窄路聚落裡，好的開始是讓居民能正常回家。", next: "步行到港邊公共視角" },
+      { title: "港灣視角", cue: "看一樓與二樓", story: "船貼著屋子，生活則在上面；這個垂直分工就是舟屋的核心。", next: "沿公共步道慢走" },
+      { title: "安靜收尾", cue: "等水面平下來", story: "留一點等待給倒影，也留一點安靜給聚落。", next: "回車上前確認下一段天候" },
+    ],
+    audio: { duration: "3:00", script: "先從遠處看舟屋：一樓讓船進出，二樓才住人。這裡的海不是背景，而是生活的一部分。請在公共步道慢慢走，把聲音放低，讓港灣還是港灣。" },
+  },
+  "天橋立傘松公園": {
+    japaneseName: "天橋立傘松公園",
+    pronunciation: "あまのはしだて かさまつこうえん · Amanohashidate Kasamatsu Park",
+    quick: {
+      headline: "先登高，再把世界倒過來看一次。",
+      highlights: ["上山後先找沙洲與松林的全貌", "股覗き只是換一個視角，不必勉強身體", "天氣好才把纜車與景觀當主線"],
+      missed: "沙洲不是一條細線；看松林怎麼把海分成兩種顏色。",
+      photo: "先拍正常視角，再試一次低機位或股覗き的倒轉構圖。",
+    },
+    standard: ["傘松公園的重點是尺度：上來以後，沙洲、松林與海灣突然在同一個畫面裡。先用正常視角看一遍，再決定要不要做經典的股覗き。", "若風大、雲層厚，別和視野硬碰硬。把這站縮短、留給智恩寺或海邊散步，才是順著天氣走。"],
+    deep: ["『天橋立』之所以有名，是因為從高處看沙洲像連到天上的橋。股覗き把景觀倒轉後，視覺會把遠近關係重新組合；有趣的是它改變觀看，不是增加一個必做姿勢。"],
+    utility: { icon: "cable-car", label: "上山前", title: "先確認末班與風況", text: "纜車、吊椅和觀景品質都受天候影響；不適合時直接改用室內／平地備案。" },
+    stops: [
+      { title: "上山前", cue: "先看風與末班", story: "今天的景色由天氣決定，先確認再排期待。", next: "上到觀景平台找沙洲" },
+      { title: "全景平台", cue: "先正常看一遍", story: "松林把海切成兩側，這一刻才能理解它為什麼叫『天橋』。", next: "再試倒轉視角" },
+      { title: "股覗き", cue: "舒服最重要", story: "倒過來看不是儀式，是讓眼睛重新排列遠近。", next: "下山往智恩寺方向" },
+    ],
+    audio: { duration: "3:00", script: "先站好，正常地看一次沙洲和松林。接著若身體舒服，再試股覗き；它不是必做姿勢，而是把遠近倒過來，讓這條沙洲真的像一座通往天空的橋。" },
+  },
+  "智恩寺": {
+    japaneseName: "智恩寺",
+    pronunciation: "ちおんじ · Chion-ji",
+    quick: {
+      headline: "在海邊的熱鬧之後，留十分鐘給一座安靜的文殊堂。",
+      highlights: ["先看山門與松樹的比例", "進文殊堂前把腳步放慢", "把抽籤、祈願做成一個短暫的停頓"],
+      missed: "寺門旁與松林的留白，讓這裡比『下一個景點』更像一個轉場。",
+      photo: "從山門外取屋簷與松樹，不妨礙參拜者。",
+    },
+    standard: ["智恩寺很適合當作天橋立的一個呼吸點。從高處下來後，把視線收回到山門、松樹與文殊堂，旅程會自然慢一個檔。", "不必把這站逛得很久；真正的作用是把海邊的視野，轉成一點安靜的時間。"],
+    deep: ["文殊在佛教中象徵智慧。把它放在這段行程裡，像是提醒人們：風景看完後，也可以花一小段時間整理自己接下來要去哪裡。"],
+    utility: { icon: "hand", label: "參拜提示", title: "主殿前安靜、短暫停留", text: "抽籤或御守依現場規則進行；把動線留給正在參拜的人。" },
+    stops: [
+      { title: "山門", cue: "讓眼睛慢下來", story: "從海邊回到寺門，景觀的尺度突然縮小。", next: "往文殊堂走" },
+      { title: "文殊堂", cue: "留十分鐘就好", story: "這一站不是要塞滿資訊，而是讓行程有一個安靜的逗點。", next: "回車上前確認補給與住宿" },
+    ],
+    audio: { duration: "3:00", script: "從天橋立下來後，請把腳步放慢。看山門、看松樹，再進文殊堂前停一下；這十分鐘不需要完成任何任務，它只是讓一天的海景有一個安靜的逗點。" },
+  },
+  "勝尾寺": {
+    japaneseName: "勝尾寺",
+    pronunciation: "かつおうじ · Katsuo-ji",
+    quick: {
+      headline: "達摩不是叫你一定要贏，而是提醒你把願望寫得具體。",
+      highlights: ["先看山門與山中寺院的距離感", "找一尊表情最有趣的達摩", "把『勝』解讀成今天願意完成的一件事"],
+      missed: "散落在石階與欄杆上的小達摩，像是前人留下的微型打氣。",
+      photo: "從有層次的石階拍達摩，不把整排達摩塞滿畫面。",
+    },
+    standard: ["勝尾寺的達摩會讓人很想拍，但先看看它們被放在哪裡：石階、欄杆、角落，像一群不同時間留下的鼓勵。", "這裡的『勝』不只指打敗別人。把它換成今天要安全開完這段路、陪家人走完步道，會讓祈願更貼近旅行。"],
+    deep: ["達摩與不倒翁的形象，把跌倒後再站起來的願望做成可以帶走的小物。旅行中看到大量達摩時，不妨問自己：我希望哪一件小事能有持續的力量？"],
+    utility: { icon: "footprints", label: "山寺提醒", title: "石階濕滑，鞋底與雨具先確認", text: "達摩是參拜與祈願的一部分；擺放、拍照都以不擋動線為原則。" },
+    stops: [
+      { title: "山門", cue: "先看山勢", story: "寺院藏在山裡，路程本身已經是一種轉換。", next: "沿石階找第一尊達摩" },
+      { title: "達摩群", cue: "選一尊看表情", story: "每一尊都像有人把願望放在這裡，然後繼續生活。", next: "往主殿方向走" },
+      { title: "主殿前", cue: "把願望縮小", story: "願望越具體，離開時越知道接下來怎麼做。", next: "回車上，出發往箕面" },
+    ],
+    audio: { duration: "3:00", script: "先別急著把達摩全拍一遍。找一尊表情最吸引你的，看看它被放在石階還是欄杆；再把今天的願望縮小成一件真正能完成的事，這就是這座山寺最實用的鼓勵。" },
+  },
+  "箕面大滝": {
+    japaneseName: "箕面大滝",
+    pronunciation: "みのおおたき · Minoh Falls",
+    quick: {
+      headline: "瀑布不是終點，沿著水聲走過去的那段路才是。",
+      highlights: ["先確認步道濕滑與回程時間", "靠近前聽水聲如何蓋過人聲", "拍照後留一分鐘不看螢幕"],
+      missed: "濕潤的石頭、苔與樹影，會比瀑布正面更有現場感。",
+      photo: "稍微退後，把前景樹葉或步道放進瀑布畫面。",
+    },
+    standard: ["走到箕面大滝前，先別急著舉相機。聽水聲在靠近時怎麼變大，再看濕潤石面與樹影；這些讓瀑布不是一張只有白色水流的照片。", "雨後地面更滑，回程時間也要算進去。今天還有自駕與採買，把這站走得舒服比走得更深更重要。"],
+    deep: ["瀑布的吸引力常在對比：從城市道路進入樹蔭、水聲蓋過引擎聲，身體會先感覺到環境變了。把注意力放在這個轉換，會比只確認『到了沒』更有記憶。"],
+    utility: { icon: "cloud-rain", label: "步道提醒", title: "雨後縮短停留，鞋底優先", text: "以現場封閉與天候公告為準；不跨越護欄，也別為取景踩進濕滑邊緣。" },
+    stops: [
+      { title: "步道入口", cue: "先確認回程時間", story: "瀑布要走得舒服，第一步是知道什麼時候該折返。", next: "沿水聲往內走" },
+      { title: "水聲變大處", cue: "暫時收起螢幕", story: "身體先聽見瀑布，眼睛才跟上它。", next: "退一步找含樹影的角度" },
+      { title: "瀑布前", cue: "留一分鐘不拍", story: "你已經到了，現在不用再完成任何事。", next: "原路回車上，保留午後移動緩衝" },
+    ],
+    audio: { duration: "3:00", script: "沿著步道時，先聽水聲怎麼慢慢蓋過人聲。到瀑布前請退一步，把樹影和濕潤的石頭也放進視線；拍完後留一分鐘不看螢幕，這才是這一站真正的收尾。" },
+  },
+  "海遊館": {
+    japaneseName: "海遊館",
+    pronunciation: "かいゆうかん · Kaiyukan",
+    quick: {
+      headline: "不要只找鯨鯊：跟著同一個水槽走兩層，你會看見海的深度。",
+      highlights: ["進館先確認進場與最擁擠區段", "太平洋大水槽不只看主角，也看周邊小魚群", "下行時每層換一個觀察題目"],
+      missed: "同一座大水槽從不同樓層看，光線、魚群高度和你的視角都會改變。",
+      photo: "靠玻璃但不貼著，等魚游進較乾淨的背景再拍。",
+    },
+    standard: ["海遊館的路線設計像一場從高處往海底下潛的旅程。進入大水槽後，不必每層都拍，挑一層看大魚、一層看魚群、一層看光線變暗。", "這樣走，鯨鯊就不只是『找到沒』，而是整個海洋尺度裡的一個主角。"],
+    deep: ["大水槽以螺旋下行的方式讓人反覆遇見同一片水域，這個設計提醒你：海洋不是一張平面海報，而是有高度、光線與不同生活帶的空間。"],
+    utility: { icon: "camera", label: "館內提示", title: "先讓眼睛適應暗處", text: "閃光燈關閉；熱門玻璃前輪流停留，孩子想看時先把前排位置讓給他。" },
+    stops: [
+      { title: "入館前", cue: "先確認集合與休息點", story: "把走散風險先處理，才有餘裕慢慢看。", next: "往太平洋大水槽走" },
+      { title: "第一眼大水槽", cue: "先看整體", story: "別急著找明星，先看魚群怎麼讓水有了尺度。", next: "沿坡道下一層" },
+      { title: "下行視角", cue: "每層換一個問題", story: "這一層看大魚，下一層看光線，再下一層看小魚。", next: "出口前補水、確認下一段船班" },
+    ],
+    audio: { duration: "3:00", script: "進入太平洋大水槽後，先不要急著找鯨鯊。看整片水裡的小魚群如何移動；每下一層就換一個觀察題目。你不是在看一個大缸，而是在慢慢往海裡下潛。" },
+  },
+  "大阪城": {
+    japaneseName: "大阪城",
+    pronunciation: "おおさかじょう · Osaka Castle",
+    quick: {
+      headline: "先看石垣，再看天守閣：這座城真正的尺度在腳下。",
+      highlights: ["沿護城河看石垣的巨大拼接", "找一處能同時看到石牆與天守閣", "若入館，先選最想看的樓層再上去"],
+      missed: "石頭大小、切面與縫隙，會讓『城』從白色天守閣變成一個工程現場。",
+      photo: "在護城河側取石垣前景與天守閣，不必只拍正面。",
+    },
+    standard: ["大阪城最容易被天守閣搶走全部注意力，但先沿著石垣走一段。那些巨石把城的防禦與權力感放在你腳邊，比遠看更有震撼。", "今天早到，先把戶外護城河與石垣走完；是否入天守閣再依排隊與體力決定。"],
+    deep: ["城堡不只是一棟高樓，而是一套由護城河、石垣、門與高地組成的防禦設計。看見石垣的傾角與巨石拼接，會比記住年份更能理解它如何讓人感到難以靠近。"],
+    utility: { icon: "footprints", label: "園區節奏", title: "先決定集合點再分開拍照", text: "園區範圍大、步行多；若想入天守閣，先以現場排隊時間決定，不壓縮下一段交通。" },
+    stops: [
+      { title: "護城河", cue: "看石垣的傾角", story: "城先用水和石頭說話，天守閣反而是後面的句子。", next: "沿石牆找到完整視角" },
+      { title: "巨石與城門", cue: "找不同大小的石頭", story: "每一塊石頭都是防禦的一部分，近看才有重量。", next: "往天守閣方向走" },
+      { title: "天守閣外", cue: "先看外觀再決定入館", story: "讓排隊決定你要看多少，而不是讓它吃掉整個上午。", next: "往御座船或難波方向移動" },
+    ],
+    audio: { duration: "3:00", script: "先沿著護城河走，低頭看石垣的傾角和巨石。大阪城真正的第一印象不在天守閣，而在這些讓人覺得難以靠近的水與石；看完再抬頭，白色天守閣才有尺度。" },
+  },
+  "難波八阪神社": {
+    japaneseName: "難波八阪神社",
+    pronunciation: "なんば やさかじんじゃ · Namba Yasaka Shrine",
+    quick: {
+      headline: "巨大獅子頭不是布景；站遠一點，才看得見它吞吐城市聲音的表情。",
+      highlights: ["從入口先看獅頭和旁邊建物比例", "靠近後找眼睛、牙齒與舞台細節", "短停就好，保留午餐與商店街節奏"],
+      missed: "獅子張開的口像舞台，把神社突然從小巷拉成一個有聲音的空間。",
+      photo: "在廣場外側拍完整獅頭，不站上需要留給參拜者的中線。",
+    },
+    standard: ["難波八阪神社最有趣的是它在密集城市裡突然長出一張巨大的獅子臉。先退後看比例，再走近看牙齒、眼睛與舞台；這兩種距離感都值得停一下。", "它是很好的短停點，不需要把每個角落都逛遍。讓這張獅子臉替你把下午的難波節奏打開就好。"],
+    deep: ["獅子在祭典與信仰中常有驅邪、吞噬厄運的意象。這座巨大繪馬殿把這個象徵放大到近乎幽默，也剛好呼應難波的熱鬧與直接。"],
+    utility: { icon: "hand", label: "短停提示", title: "先參拜，再拍照", text: "廣場不大，拍完即讓出位置；把喧鬧留在街上，把聲音收在境內。" },
+    stops: [
+      { title: "入口", cue: "先退後看比例", story: "一張巨大的臉出現在城市裡，先讓它把你嚇一跳。", next: "靠近看獅頭細節" },
+      { title: "獅子殿", cue: "看眼睛與牙齒", story: "近看會發現它不是平面裝飾，而像一個能吞進聲音的舞台。", next: "參拜後往心齋橋移動" },
+    ],
+    audio: { duration: "3:00", script: "先站遠一點看這張獅子臉的比例，再靠近找它的眼睛和牙齒。它像是把城市的喧鬧吞進一個巨大的舞台；參拜後不用久留，帶著這個畫面走進難波就好。" },
+  },
+  "道頓堀 / Wonder Cruise": {
+    japaneseName: "道頓堀・ワンダークルーズ",
+    pronunciation: "どうとんぼり · Dotonbori / Wonder Cruise",
+    quick: {
+      headline: "先看河，再看招牌：水面才是這條街把光留住的原因。",
+      highlights: ["從橋上看招牌倒影與船的動線", "登船前先確認集合點與時間", "把晚餐只留給一樣最想吃的東西"],
+      missed: "橋下的水聲、船影與倒影，讓招牌不只是招牌，而是城市夜景的節奏器。",
+      photo: "從橋側取河面與招牌倒影，避免阻擋人行動線。",
+    },
+    standard: ["道頓堀很容易被亮度淹沒。先看河面，再抬頭看招牌；當燈光在水上碎開，你才會理解這裡為什麼總像在表演。", "有預約遊船時，把集合與報到放第一，不把它押在最後一分鐘。吃東西則挑一樣最想吃的，別讓排隊把夜景切碎。"],
+    deep: ["河道曾經是大阪商業與物流的一部分，今天的霓虹仍把人流聚到水邊。站在橋上看船隻穿過，能感覺到城市如何把舊水路變成夜間的公共舞台。"],
+    utility: { icon: "ship-wheel", label: "登船提示", title: "集合點、時段、取消規則先確認", text: "人潮大時提早抵達；拍照靠邊站，別在橋中央停下來。" },
+    stops: [
+      { title: "橋上", cue: "先看河面", story: "倒影先把招牌拆碎，夜景才開始有呼吸。", next: "確認船班集合點" },
+      { title: "登船前", cue: "時間優先", story: "把票券、報到與洗手間先處理，才不會在最後一分鐘跑。", next: "上船後回望橋與招牌" },
+      { title: "水上視角", cue: "把鏡頭放低", story: "從河上看，城市不是一面牆，而是一層層向水面傾下來的光。", next: "依預約後續回住宿或用餐" },
+    ],
+    audio: { duration: "3:00", script: "先看河面，讓招牌的光在水上碎開。接著確認集合點和時間，別把登船押在最後一分鐘。從水上回望時，請把鏡頭放低一點，你會看見大阪的夜不是一面牆，而是一層層傾向河面的光。" },
+  },
+  "通天閣": {
+    japaneseName: "通天閣",
+    pronunciation: "つうてんかく · Tsutenkaku",
+    quick: {
+      headline: "先看塔外的新世界，再上去看大阪怎麼在腳下攤開。",
+      highlights: ["在地面看塔與商店街招牌的反差", "上塔前確認時段與排隊", "展望台選一個方向辨認你剛走過的街區"],
+      missed: "塔身不是孤立的地標，它和腳下低矮、熱鬧的招牌一起才像新世界。",
+      photo: "從街口帶入招牌與塔身，避免只拍仰角的塔。",
+    },
+    standard: ["通天閣有趣的是上下的反差：地面是新世界的招牌、串炸與人聲；上到展望台，城市突然變成幾何的街塊。先在地面看一次再上去，兩個視角才會連起來。", "若排隊長，不用硬撐。把時間留給下一段 Harukas 或午餐，因為今天的高處不是只有一個選擇。"],
+    deep: ["新世界的都市想像曾經把『通往天空』做成一座塔。今天它更像城市記憶的錨點：周圍街區不斷變化，塔仍讓人知道自己在哪個大阪。"],
+    utility: { icon: "ticket", label: "入塔提示", title: "先看現場時段與等待時間", text: "人多時決定一個離開時間；上塔後不必在每面玻璃前都停太久。" },
+    stops: [
+      { title: "新世界街口", cue: "先看塔與招牌", story: "塔不是遠離街道的地標，它從招牌與人聲裡長出來。", next: "確認入塔時段" },
+      { title: "展望台", cue: "選一個方向", story: "不用把四面都拍完，找到一個你剛走過的方向就會有連結。", next: "前往 Harukas 或午餐" },
+    ],
+    audio: { duration: "3:00", script: "先在地面看通天閣和新世界的招牌放在一起。上到展望台後，選一個你剛走過的方向；當低處的人聲變成街塊，才會感覺到這座塔是如何替大阪定位。" },
+  },
+  "Harukas 300 Helipad": {
+    japaneseName: "あべのハルカス 300",
+    pronunciation: "あべのハルカス さんびゃく · Abeno Harukas 300",
+    quick: {
+      headline: "先在室內展望台找方向，再把直升機坪當成加分，不當成必答題。",
+      highlights: ["進場先定位大阪城、通天閣或港區", "玻璃前拍一張就換位置", "直升機坪名額以現場規則為準，沒拿到也不影響這站"],
+      missed: "高處最有趣的是城市的尺度：鐵道、道路與公園突然變成一張可以讀的地圖。",
+      photo: "避開玻璃反光，讓一條鐵路或道路帶進遠景。",
+    },
+    standard: ["Harukas 最適合玩『找方向』：找到通天閣、再找大阪城或港邊，城市就不再是一片模糊的樓群。", "直升機坪是額外體驗，保留期待但不要把時間全壓在名額上；室內展望台本身已足夠讓這段城市日有一個漂亮收尾。"],
+    deep: ["從高處看城市，最容易發現鐵路與道路如何把不同街區縫在一起。試著從你今天的動線找出一段，而不是只追求『看得最遠』，會讓景色更貼近自己的旅行。"],
+    utility: { icon: "wind", label: "高處提醒", title: "直升機坪依天候與現場名額", text: "先依現場規則登記；有懼高或小孩疲累時，室內觀景已是完整體驗。" },
+    stops: [
+      { title: "室內展望台", cue: "先找一個地標", story: "當你找到熟悉的塔或城，整座城市就開始有方向。", next: "沿窗面換一個角度" },
+      { title: "城市地圖", cue: "找鐵路與道路", story: "高處不是只看遠，而是看見移動如何把城市縫起來。", next: "依現場名額決定直升機坪" },
+      { title: "直升機坪（如可）", cue: "把它當加分", story: "風、開闊和沒有玻璃的距離感，是額外收到的禮物。", next: "回住宿休息或前往下一站" },
+    ],
+    audio: { duration: "3:00", script: "進到展望台後，先找一個你認得的地標。接著看鐵路和道路怎麼把街區縫在一起。直升機坪若有名額是加分；沒有也沒關係，因為室內的城市地圖已經很完整。" },
+  },
+  "梅田藍天大廈 空中庭園展望台": {
+    japaneseName: "梅田スカイビル 空中庭園展望台",
+    pronunciation: "うめだ スカイビル くうちゅうていえん てんぼうだい · Umeda Sky Building",
+    quick: {
+      headline: "先看兩棟樓如何在天空牽手，再把視線交給大阪的鐵路。",
+      highlights: ["進場前先看建築的連橋與對稱", "上樓後找大阪站一帶的鐵道路網", "若風景被雲吃掉，就把注意力放回建築本身"],
+      missed: "空中庭園最有趣的不是高度，而是你站在兩棟樓中間、被建築框住城市。",
+      photo: "在地面保留雙塔與連橋的完整輪廓；上樓後找鐵路線作前景。",
+    },
+    standard: ["這棟建築先在地面看才有意思：兩棟樓用空中的圓環連在一起，像先把一個問題丟到天空，再邀你上去回答。", "上到展望台後，別只看遠方；找大阪站周邊的鐵路和道路，會看見城市如何一直在流動。"],
+    deep: ["把觀景空間架在雙塔之間，讓建築本身成為觀看裝置。即使天候不適合遠眺，站在這個被框起來的空間裡，也能感覺到它的設計意圖。"],
+    utility: { icon: "cloud", label: "天候備案", title: "雲層厚時仍可看建築與室內空間", text: "先依現場等候時間調整；不為了等一個完美天空壓縮後段行程。" },
+    stops: [
+      { title: "地面仰望", cue: "看雙塔如何連接", story: "這座建築先問你：為什麼把庭園放到天空？", next: "上樓後找城市鐵路" },
+      { title: "空中庭園", cue: "看腳下的流動", story: "鐵路、道路與屋頂讓大阪像一張不斷更新的地圖。", next: "下樓往 HEP FIVE 或天神橋移動" },
+    ],
+    audio: { duration: "3:00", script: "先在地面看兩棟樓如何在天空牽手。到了空中庭園後，請找大阪站附近的鐵路線；這裡的重點不只是看得遠，而是站在建築框出的天空裡，看城市怎麼流動。" },
+  },
+  "大阪生活今昔館": {
+    japaneseName: "大阪くらしの今昔館",
+    pronunciation: "おおさか くらしの こんじゃくかん · Osaka Museum of Housing and Living",
+    quick: {
+      headline: "先走一條江戶大阪的街，再用今天的自己補完它的聲音。",
+      highlights: ["入場先看整體街景，不急著鑽進每一間屋", "挑一戶看格局與生活用品", "留意光線或聲音變化如何改變街道氣氛"],
+      missed: "門前的水桶、招牌與巷子轉角，讓模型街景看起來像有人剛離開。",
+      photo: "從街道轉角取縱深，依館內規定拍攝。",
+    },
+    standard: ["今昔館最好的看法不是『這是假的街』，而是想像如果你住在這裡，早上會從哪一扇門出來、會在哪裡買東西。先看整體，再挑一戶慢慢看。", "室內行程很適合在這裡讓腳休息，但眼睛可以忙一點：看門面、巷子、屋內格局，這些都比每一塊說明牌更能說故事。"],
+    deep: ["重建街景把居住尺度重新放回人的身體：門有多低、巷有多窄、店面和住家隔多近。這些感受說明了城市生活，不必先背任何年代才能理解。"],
+    utility: { icon: "camera", label: "館內提示", title: "先確認拍照與體驗規則", text: "室內光線低，走在指定動線；孩子想停留的店面可多留一點時間。" },
+    stops: [
+      { title: "街景全貌", cue: "先不要走太快", story: "先讓整條街進到眼裡，再挑一扇門走近。", next: "選一戶屋內細看" },
+      { title: "一戶人家", cue: "看生活尺度", story: "門、炊具、格局會讓你知道：這不是縮小模型，而是被重建的日常。", next: "走到巷口看街景收尾" },
+      { title: "巷口", cue: "想像聲音", story: "把今天自己的腳步聲放進去，街就開始活起來。", next: "往天神橋或扇町方向移動" },
+    ],
+    audio: { duration: "3:00", script: "先站在街景前看整體，想像你早上會從哪一扇門出來。接著挑一戶進去看格局和生活用品；不需要記住年代，只要感覺門的高度、巷子的寬度，這座城市的日常就會出現。" },
+  },
+  "日本環球影城 USJ": {
+    japaneseName: "ユニバーサル・スタジオ・ジャパン",
+    pronunciation: "ユニバーサル・スタジオ・ジャパン · Universal Studios Japan",
+    quick: {
+      headline: "今天不是要玩完所有設施，而是把最想要的三件事排成一條不後悔的路。",
+      highlights: ["入園前先確認票券、整理券與第一個目標", "把熱門設施、表演、用餐各挑一個優先", "午後依等待時間換成備案，不追每一個數字"],
+      missed: "園區設計讓你不斷轉換世界；在轉場處停十秒，比多刷一間商店更有記憶。",
+      photo: "在進入各區前先拍入口，不必為了空景擋住人流。",
+    },
+    standard: ["USJ 最好的策略不是把 App 釘在眼前一整天。先寫下三件事：一個最想玩的設施、一場表演或區域、一頓想吃的東西；這三件完成，今天就贏了。", "其餘依等待時間和體力調整。排隊變長時，改去附近的表演、拍照或室內設施，讓移動本身也是行程的一部分。"],
+    deep: ["主題樂園最擅長用入口、聲音、街景與動線讓人切換世界。把注意力放在每個區域怎麼把你帶進故事，會讓等待以外的時間也有價值。"],
+    utility: { icon: "ticket", label: "入園優先順序", title: "票券 → 整理券 → 第一項目標", text: "入園前準備行動電源與雨具；等待時間變動時，以同行者體力優先，不硬追原計畫。" },
+    stops: [
+      { title: "入園前", cue: "確認三件事", story: "票券、整理券、第一個目標處理好，心情就會比排隊更早進園。", next: "直奔第一個優先設施" },
+      { title: "第一個區域", cue: "看入口如何換世界", story: "你不是只走進一個遊戲區，而是被聲音、街景和人流帶進另一個故事。", next: "依等待時間選第二件事" },
+      { title: "午後調整", cue: "把備案當正常計畫", story: "改變路線不是失敗；能照顧體力，才玩得到晚上。", next: "回程前確認集合與交通" },
+    ],
+    audio: { duration: "3:00", script: "今天先不要想著玩完所有設施。請選一個最想玩的、一個想看的、和一頓想吃的；三件事完成，今天就成功。其餘交給等待時間和同行者的體力，改路線不是失敗，是最會玩的人才會做的事。" },
+  },
+};
+
+const betweenStopGuides = {
+  "清水寺→二年坂 / 三年坂": {
+    title: "沿石階下到町家的時間",
+    observations: ["下坡時回頭看屋簷如何把寺院的山景收進街道", "三年坂的名字讓人記得放慢腳步；石階濕滑時更要靠邊走", "八坂塔出現在巷尾時，不必追到正前方，讓它留在遠處"],
+    utility: "石階狹窄，拍照靠邊；買到食物先找店家指定位置吃完。",
+  },
+  "二年坂 / 三年坂→祇園花見小路": {
+    title: "從觀光石階走進有人生活的街",
+    observations: ["店面逐漸變得收斂，注意暖簾與格子窗取代熱鬧招牌", "往祇園時把聲音調低，讓路比照片先通過", "八坂塔不必重複追拍，換成看街屋的屋簷線"],
+    utility: "遇到私人入口或禁拍標示，直接往前走；最好的街景不需要久候。",
+  },
+  "伊根浦觀光案內→天橋立傘松公園": {
+    title: "從居民港灣，轉向大尺度的海景",
+    observations: ["離開伊根前先確認停車與狹路會車，讓移動不打擾聚落", "車窗外海線的顏色會隨雲層改變，不必為每個角度臨停", "到傘松前先看風況與末班，視野好才上山"],
+    utility: "自駕日把下一段車程當緩衝；風雨變強時直接用平地備案。",
+  },
+  "天橋立傘松公園→智恩寺": {
+    title: "把天空的視野收回一座寺門",
+    observations: ["下山後先讓眼睛從海灣的大尺度回到松樹與屋簷", "智恩寺不是加塞景點，而是一段安靜的轉場", "只留十分鐘也足夠，別壓縮住宿前的補給時間"],
+    utility: "依纜車、吊椅的現場時間調整；晚間採買前保留自駕緩衝。",
+  },
+  "大阪城→大阪城御座船乘船處": {
+    title: "從石垣外側，換到水面看城",
+    observations: ["步行時再看一次石垣傾角，船上會從完全不同高度回望它", "先處理票券與集合，再拍護城河", "水面讓城的防禦線變得柔和，也更容易看見距離"],
+    utility: "船班有時間就先報到；排隊長時，以現場規則與下一段交通為準。",
+  },
+  "大阪市天王寺動物園→通天閣": {
+    title: "從樹影走回新世界的招牌",
+    observations: ["離開動物園時先補水，城市熱度會比園內更直接", "通天閣不是遠方目標，隨著招牌越來越密才慢慢出現", "午餐前先決定是否入塔，避免在餓的時候排隊"],
+    utility: "走路時留意同行者體力；入塔等待時間超過預期，就把塔外街景當成完整版本。",
+  },
+  "梅田藍天大廈 空中庭園展望台→HEP FIVE 摩天輪": {
+    title: "從大尺度的天空，回到梅田的紅色節奏",
+    observations: ["高樓下來後，讓眼睛重新適應街道與人流", "紅色摩天輪在商場上方像一個城市標點", "兩個高處不用比較，前者看流動、後者看日常"],
+    utility: "先確認摩天輪等待時間；不適合時保留體力給天神橋與今昔館。",
+  },
+};
+
 const tools = [
   {
     title: "航班資訊",
@@ -616,6 +1075,7 @@ async function hydrateSharedState() {
     setupReservations();
     setupShoppingList();
     renderTodayMode();
+    renderGuide();
     setSyncStatus("已載入 Neon 共用資料。", "online");
     if (window.lucide) window.lucide.createIcons();
   } catch {
@@ -751,6 +1211,7 @@ function setStopCompleted(day, index, completed) {
   else delete completedStops[key];
   updateTripState("completedStops", completedStops);
   renderTodayMode();
+  renderGuide();
 }
 
 function buildDayJourney(day, mode, now = getTripNow()) {
@@ -890,6 +1351,175 @@ function escapeAttr(value) {
     .replaceAll(">", "&gt;");
 }
 
+function fallbackGuideFor(record) {
+  const [stay, bestWindow] = visitAdvice(record);
+  const nextName = record.next?.[1] ?? "今日收尾";
+  const typeContent = {
+    sight: {
+      headline: "先看一個讓你停下來的細節，再決定要走多深。",
+      highlights: ["先從入口或最開闊的地方看整體", "找一個只有現場才看得到的細節", `預留 ${stay}，不要吃掉前往下一站的時間`],
+      missed: "把手機放低十秒，聽聲音、看人怎麼使用這個地方。",
+      photo: "先找不擋動線的位置，再用環境把主角框進畫面。",
+      utility: { icon: "footprints", label: "現場節奏", title: "先看動線再拍照", text: "把停留控制在行程預留時間內，讓下一段移動有餘裕。" },
+    },
+    activity: {
+      headline: "先搞懂入場與集合，再把注意力交給體驗本身。",
+      highlights: ["先確認票券、報到或集合位置", "只抓一個最想體驗的重點", `保留 ${stay}，避免錯過下一站`],
+      missed: "看看人流從哪裡進出，通常能最快看懂這個地方的節奏。",
+      photo: "完成必要報到後再拍，把時間先留給體驗。",
+      utility: { icon: "ticket", label: "體驗提示", title: "票券與集合時間優先", text: "現場規則與等待時間變動時，以報到成功與同行者體力為優先。" },
+    },
+    food: {
+      headline: "先走一圈、再選一樣最想吃的，讓這站真的是一餐。",
+      highlights: ["先比份量與候位，不急著第一間下單", "挑一樣招牌與一樣同行者能共享的品項", `預留 ${stay}，不讓用餐延誤下一段`],
+      missed: "看看在地客人點什麼、店家推薦怎麼吃。",
+      photo: "拍食材或店面即可，不把鏡頭貼近正在用餐的人。",
+      utility: { icon: "utensils", label: "點餐提示", title: "おすすめは何ですか？", text: "意思是「推薦什麼？」先確認份量、最後點餐與是否能在店內吃。" },
+    },
+    shopping: {
+      headline: "先選一樣真的會帶走的，別讓採買變成趕路。",
+      highlights: ["先確認保存與行李空間", "限定、常溫好帶的品項優先", `預留 ${stay}，結帳前記得看下一段時間`],
+      missed: "店裡最有地方感的往往不是最大包，而是當季與日常會買的小物。",
+      photo: "先問能否拍照，避免對著結帳檯與其他客人拍。",
+      utility: { icon: "shopping-bag", label: "採買提示", title: "保存方式先問清楚", text: "冷藏品與易碎品要配合行李和車程；退稅依店家規則處理。" },
+    },
+    hotel: {
+      headline: "先把行李、補給與下一次出門處理好，住宿就是旅行的基地。",
+      highlights: ["先確認入住／退房與行李位置", "補水、充電、整理明早要帶的物品", "把下一站導航先存好"],
+      missed: "旅行裡最有用的景點，常是能讓大家同步喘一口氣的地方。",
+      photo: "這一站不必拍；把時間留給休息與整理。",
+      utility: { icon: "bed-double", label: "基地提示", title: "先確認下一次出發時間", text: "需要自駕時先問停車、夜間出入口與退房前的動線。" },
+    },
+    transport: {
+      headline: "先確認月台、出口或還車點，接著才是移動本身。",
+      highlights: ["票券、月台與出口先一次確認", "預留洗手間與補水時間", "上車前再看一次下一站名稱"],
+      missed: "看著人流怎麼分流，往往比盯著地圖更快知道要往哪走。",
+      photo: "先完成移動，抵達後再把相機拿出來。",
+      utility: { icon: "navigation", label: "移動提示", title: "班次與出口先確認", text: "自駕時把加油、ETC 與還車資訊放在抵達前處理。" },
+    },
+  };
+  const content = typeContent[record.type] ?? typeContent.sight;
+  return {
+    japaneseName: record.name,
+    pronunciation: "現地名稱請以導航頁顯示為準",
+    quick: content,
+    standard: [record.note, `這一站安排在 ${bestWindow}，建議先完成最想看的重點，再依現場人流決定是否延伸。`],
+    deep: ["當你不知道該看什麼時，先問自己：這個地方的人、空間與時間，哪一個最有感？只要帶走一個答案，這一站就不只是打卡。"],
+    utility: content.utility,
+    stops: [
+      { title: "抵達", cue: "先看整體與動線", story: "先確認自己在哪裡、從哪裡離開，再把注意力放回眼前。", next: "找到最想看的第一個重點" },
+      { title: "主角", cue: "選一個細節停十秒", story: "不用每件事都看完；能記住一個細節，就會記住這一站。", next: `依時間前往 ${nextName}` },
+    ],
+    audio: { duration: "3:00", script: `${record.name} 的第一步，先確認動線和時間。接著挑一個最值得看的細節，停十秒，不急著拍。旅行不需要把所有資訊裝滿，只要帶走一個真正看見的畫面。` },
+  };
+}
+
+function onSiteGuideFor(record) {
+  const fallback = fallbackGuideFor(record);
+  const custom = onSiteGuides[record.name];
+  if (!custom) return fallback;
+  return {
+    ...fallback,
+    ...custom,
+    quick: { ...fallback.quick, ...custom.quick },
+    utility: { ...fallback.utility, ...custom.utility },
+    standard: custom.standard ?? fallback.standard,
+    deep: custom.deep ?? fallback.deep,
+    stops: custom.stops ?? fallback.stops,
+    audio: { ...fallback.audio, ...custom.audio },
+  };
+}
+
+function guideContextFor(record, now = getTripNow()) {
+  const target = getTripDayForToday(now);
+  const isToday = target?.mode === "today" && target.day === record.day.day;
+  const journey = isToday ? buildDayJourney(record.day, "today", now) : null;
+  const current = journey?.current ?? null;
+  const next = journey?.next ?? null;
+  const remaining = journey ? journey.records.filter((item) => !item.complete).length : record.day.stops.length - record.index;
+  const state = !isToday
+    ? `Day ${record.day.day} 行程參考`
+    : current?.index === record.index
+      ? "你正在這裡"
+      : next?.index === record.index
+        ? "你的下一站"
+        : isStopCompleted(record.day, record.index)
+          ? "已完成的行程點"
+          : "今天稍後的行程點";
+  return { isToday, now, journey, current, next, remaining, state, drive: isDriveDay(record.day) };
+}
+
+function betweenGuideFor(record) {
+  const next = record.next;
+  if (!next) return null;
+  const [nextTime, nextName] = next;
+  const travel = travelFor(record.day, record.index);
+  const key = `${record.name}→${nextName}`;
+  const custom = betweenStopGuides[key];
+  if (custom) return { ...custom, nextTime, nextName, travel };
+  return {
+    title: `前往 ${nextName} 的路上`,
+    nextTime,
+    nextName,
+    travel,
+    observations: [
+      travel ? `這一段預留 ${travel[0]} ${travel[1]}；先讓移動按自己的節奏完成。` : "先確認下一段的出口或導航，再開始移動。",
+      `留意街景怎麼從 ${record.name} 的氛圍轉成下一站。`,
+      `不需要把路走成空白時間；補水、整理照片、確認 ${nextTime} 的抵達節奏就好。`,
+    ],
+    utility: record.type === "food" ? "離店前確認垃圾已交回店家，再開始下一段移動。" : "過馬路與轉乘時先收好手機，讓導航在需要時再打開。",
+  };
+}
+
+function guideDepthLabel(depth) {
+  return { quick: "Quick · 30 秒", standard: "Standard · 2 分鐘", deep: "Deep Dive" }[depth] ?? "Quick · 30 秒";
+}
+
+function renderGuideContext(record, context) {
+  const nextName = context.next?.name ?? record.next?.[1] ?? "今日收尾";
+  const currentLabel = context.isToday && context.current ? `現在：${context.current.name}` : context.isToday ? "現在：依時間線準備中" : `排程：${record.time}`;
+  return `
+    <section class="guide-context" aria-label="目前旅程情境">
+      <div><span>Day ${record.day.day} · ${context.isToday ? `Japan time ${formatTripTime(context.now)}` : record.day.date}</span><strong>${context.state}</strong></div>
+      <p>${currentLabel}<br />下一站：${escapeAttr(nextName)} · 尚餘 ${context.remaining} 站${context.drive ? " · 自駕日" : ""}</p>
+    </section>
+  `;
+}
+
+function renderGuideReading(guide, depth) {
+  const paragraphs = depth === "quick" ? [guide.quick.headline] : depth === "standard" ? guide.standard : guide.deep;
+  return `
+    <section class="guide-reading" aria-label="${guideDepthLabel(depth)} 導覽內容">
+      <div class="guide-reading__head"><span>${guideDepthLabel(depth)}</span><i data-lucide="${depth === "deep" ? "library-big" : "book-open"}"></i></div>
+      ${paragraphs.map((paragraph) => `<p>${escapeAttr(paragraph)}</p>`).join("")}
+    </section>
+  `;
+}
+
+function renderBetweenStopDetail(record) {
+  const between = betweenGuideFor(record);
+  if (!between) return "";
+  const travelText = between.travel ? `${between.travel[0]} · ${between.travel[1]} · 步行 ${between.travel[2]}` : "依現場導航確認";
+  return `
+    <div class="between-guide">
+      <div class="guide-sheet__intro between-guide__intro">
+        <span class="guide-emblem"><i data-lucide="route"></i></span>
+        <div><span class="guide-overline">Between stops</span><p>${escapeAttr(record.name)} → ${escapeAttr(between.nextName)}</p><small>${escapeAttr(travelText)} · ${between.nextTime} 抵達預定</small></div>
+      </div>
+      <section class="guide-hero guide-hero--transition"><span>On the way</span><h3>${escapeAttr(between.title)}</h3><p>走路、轉乘或開車的這一段，也值得留一點注意力給沿途。</p></section>
+      <section class="guide-section">
+        <h3><i data-lucide="binoculars"></i>路上看這 3 件事</h3>
+        <ol class="guide-highlight-list">${between.observations.map((item, index) => `<li><span>${index + 1}</span><p>${escapeAttr(item)}</p></li>`).join("")}</ol>
+      </section>
+      <section class="guide-utility"><i data-lucide="lightbulb"></i><div><span>移動提醒</span><strong>${escapeAttr(between.utility)}</strong></div></section>
+      <div class="sheet-actions guide-actions">
+        <button class="mini-button" type="button" data-guide-back-to-site><i data-lucide="map-pin"></i>回到景點導覽</button>
+        <a class="mini-button" href="${mapUrl(between.nextName)}" target="_blank" rel="noreferrer"><i data-lucide="navigation"></i>導航到下一站</a>
+      </div>
+    </div>
+  `;
+}
+
 function renderDays() {
   const dayStrip = $("#day-strip");
   const days = $("#days");
@@ -1003,7 +1633,19 @@ function renderStop(stop, day, index) {
 }
 
 function renderGuide() {
-  $("#guide-grid").innerHTML = guideNotes
+  const target = getTripDayForToday();
+  const journey = target ? buildDayJourney(target, target.mode) : null;
+  const focus = journey?.current ?? journey?.next ?? null;
+  const companionCard = focus
+    ? `
+      <article class="guide-card guide-card--companion">
+        <div class="guide-card__top"><div><p class="guide-overline">Personal tour guide</p><h3>${journey?.current ? "現在這裡該看什麼？" : "下一站先看什麼？"}</h3></div><span class="region-mark"><i data-lucide="map-pin"></i></span></div>
+        <p><strong>Day ${focus.day.day} · ${focus.time}</strong>　${escapeAttr(focus.name)}。30 秒掌握重點，再依現場節奏往下走。</p>
+        <button class="mini-button guide-detail-button" data-guide-stop-day="${focus.day.day}" data-guide-stop-index="${focus.index}" type="button"><i data-lucide="compass"></i>開啟現場導遊</button>
+      </article>
+    `
+    : "";
+  $("#guide-grid").innerHTML = companionCard + guideNotes
     .map(
       (note) => `
         <article class="guide-card" data-guide-card="${note.id}">
@@ -1018,7 +1660,7 @@ function renderGuide() {
               .join("")}
           </div>
           <button class="mini-button guide-detail-button" data-guide-id="${note.id}" type="button">
-            <i data-lucide="book-open"></i>詳細攻略
+            <i data-lucide="book-open"></i>區域脈絡
           </button>
         </article>
       `,
@@ -1066,62 +1708,75 @@ function renderGuideDetail(note) {
   `;
 }
 
-function renderStopDetail(record) {
+function renderStopDetail(record, state = {}) {
+  if (state.view === "between") return renderBetweenStopDetail(record);
+
+  const guide = onSiteGuideFor(record);
+  const context = guideContextFor(record);
   const meta = typeMeta[record.type] ?? typeMeta.sight;
-  const plan = dayPlans[record.day.day];
   const travel = travelFor(record.day, record.index);
   const [stay, bestWindow] = visitAdvice(record);
   const [parking, parkingNote, phoneHint] = carInfoForStop(record);
   const nextName = record.next?.[1] ?? "今日收尾";
   const nextTime = record.next?.[0] ?? "完成";
-  const tags =
-    record.type === "food"
-      ? [["必點菜單", "先看招牌、季節限定與兒童可吃品項", "menu"]]
-      : record.type === "shopping"
-        ? [["必買伴手禮", "限定品、常溫好帶、退稅品優先", "gift"]]
-        : [["攻略重點", "停車、拍照、人潮與雨天備案", "reserve"]];
+  const depth = ["quick", "standard", "deep"].includes(state.depth) ? state.depth : "quick";
+  const activeStopIndex = Math.min(Math.max(Number(state.stopIndex) || 0, 0), Math.max(guide.stops.length - 1, 0));
+  const activeStop = guide.stops[activeStopIndex];
+  const between = betweenGuideFor(record);
+  const travelText = travel ? `${travel[0]} · ${travel[1]} · 步行 ${travel[2]}` : "下一站依現況安排";
 
   return `
-    <div class="guide-sheet__intro stop-sheet__intro">
-      <span class="stop-type"><i data-lucide="${meta.icon}"></i>${meta.label}</span>
-      <p>${record.note}</p>
-      <div class="sheet-tags">${tags.map(([label, value, type]) => `<span class="tag ${type}">${label}：${value}</span>`).join("")}</div>
+    ${renderGuideContext(record, context)}
+    <section class="guide-hero" aria-label="30 秒快速認識">
+      <div class="guide-hero__top"><span class="stop-type"><i data-lucide="${meta.icon}"></i>${meta.label}</span><span>${record.time} 到訪</span></div>
+      <p class="guide-overline">30-second guide</p>
+      <h3>${escapeAttr(guide.quick.headline)}</h3>
+      <p class="guide-japanese">${escapeAttr(guide.japaneseName)} <span>${escapeAttr(guide.pronunciation)}</span></p>
+    </section>
+    <section class="guide-section guide-key-things">
+      <h3><i data-lucide="sparkles"></i>現在最值得看 3 件事</h3>
+      <ol class="guide-highlight-list">${guide.quick.highlights.map((item, index) => `<li><span>${index + 1}</span><p>${escapeAttr(item)}</p></li>`).join("")}</ol>
+    </section>
+    <div class="guide-observation-grid">
+      <section><span><i data-lucide="search"></i>容易錯過</span><p>${escapeAttr(guide.quick.missed)}</p></section>
+      <section><span><i data-lucide="camera"></i>拍照位置</span><p>${escapeAttr(guide.quick.photo)}</p></section>
     </div>
-    <div class="stop-detail-grid">
-      <article>
-        <span>時間</span>
-        <strong>${record.time}</strong>
-        <small>下一站 ${nextTime} · 時段 ${durationText(record.time, nextTime)}</small>
+    <section class="guide-section guide-stop-section">
+      <div class="guide-section__head"><div><span class="guide-overline">Guide stops</span><h3>跟著這樣逛</h3></div><span>${activeStopIndex + 1}/${guide.stops.length}</span></div>
+      <div class="guide-stop-tabs" role="tablist" aria-label="景點導覽站點">
+        ${guide.stops.map((stop, index) => `<button type="button" role="tab" aria-selected="${index === activeStopIndex}" class="${index === activeStopIndex ? "is-active" : ""}" data-guide-stop="${index}"><span>${index + 1}</span>${escapeAttr(stop.title)}</button>`).join("")}
+      </div>
+      <article class="guide-stop-card">
+        <span>Stop ${activeStopIndex + 1} · ${escapeAttr(activeStop.cue)}</span>
+        <h4>${escapeAttr(activeStop.title)}</h4>
+        <p>${escapeAttr(activeStop.story)}</p>
+        <div><i data-lucide="arrow-down-right"></i><strong>接下來：${escapeAttr(activeStop.next)}</strong></div>
+        ${activeStopIndex < guide.stops.length - 1 ? `<button class="guide-stop-next" type="button" data-guide-next-stop="${activeStopIndex + 1}">到下一個 Stop <i data-lucide="arrow-right"></i></button>` : ""}
       </article>
-      <article>
-        <span>門票 / 付費</span>
-        <strong>${admissionFor(record.name)}</strong>
-        <small>現場營業與票券規則仍以官方頁面為準。</small>
-      </article>
-    </div>
-    <div class="sheet-section point-box itinerary-facts">
-      <h3><i data-lucide="clock-3"></i>建議停留與移動</h3>
-      <div class="info-row"><span>建議停留</span><strong>${stay}</strong></div>
-      <div class="info-row"><span>最佳時段</span><strong>${bestWindow}</strong></div>
-      ${travel ? `<div class="info-row"><span>下一段排程</span><strong>${travel[0]} · 移動 ${travel[1]} · 步行 ${travel[2]}</strong></div>` : `<div class="info-row"><span>下一站</span><strong>${nextName}</strong></div>`}
-    </div>
-    <div class="sheet-section point-box">
-      <h3><i data-lucide="map-pinned"></i>自駕資訊</h3>
-      <div class="info-row"><span>停車</span><strong>${parking}</strong></div>
-      <div class="info-row"><span>車機</span><strong>${phoneHint}</strong></div>
-      <p>${parkingNote}</p>
-    </div>
-    <div class="sheet-section">
-      <h3><i data-lucide="sparkles"></i>現場攻略</h3>
-      <ul class="sheet-list">
-        <li>${record.note}</li>
-        <li>${plan?.overspend ?? "自駕請先確認停車場、步行距離與回程方向。"}</li>
-        <li>保留前後各 15 分鐘緩衝；若排隊超過 20 分鐘，縮短非核心景點而不壓縮交通時間。</li>
-      </ul>
-    </div>
-    <div class="sheet-actions">
-      <a class="mini-button" href="${mapUrl(record.name)}" target="_blank" rel="noreferrer"><i data-lucide="navigation"></i>單點導航</a>
-      <a class="mini-button" href="${routeUrl(record.day)}" target="_blank" rel="noreferrer"><i data-lucide="route"></i>今日路線</a>
+    </section>
+    <section class="guide-section guide-depth-section">
+      <div class="guide-section__head"><div><span class="guide-overline">Read only what you need</span><h3>想知道多一點？</h3></div></div>
+      <div class="guide-depth-switch" role="tablist" aria-label="導覽閱讀深度">
+        ${["quick", "standard", "deep"].map((item) => `<button type="button" role="tab" aria-selected="${item === depth}" class="${item === depth ? "is-active" : ""}" data-guide-depth="${item}">${item === "quick" ? "Quick" : item === "standard" ? "Standard" : "Deep Dive"}</button>`).join("")}
+      </div>
+      ${renderGuideReading(guide, depth)}
+    </section>
+    <section class="guide-utility"><i data-lucide="${guide.utility.icon}"></i><div><span>${escapeAttr(guide.utility.label)}</span><strong>${escapeAttr(guide.utility.title)}</strong><p>${escapeAttr(guide.utility.text)}</p></div></section>
+    <section class="guide-logistics" aria-label="行程與下一站">
+      <div><span>建議停留</span><strong>${stay}</strong><small>最佳 ${bestWindow}</small></div>
+      <div><span>下一站</span><strong>${escapeAttr(nextName)}</strong><small>${nextTime} · ${escapeAttr(travelText)}</small></div>
+    </section>
+    ${context.drive ? `
+      <section class="guide-drive-note"><i data-lucide="car-front"></i><div><span>自駕日提醒</span><strong>${escapeAttr(parking)}</strong><p>${escapeAttr(parkingNote)} ${escapeAttr(phoneHint)}</p></div></section>
+    ` : ""}
+    <section class="audio-guide" aria-label="語音導覽預留區">
+      <div><span><i data-lucide="headphones"></i>Audio guide</span><strong>${guide.audio.duration} 口語導覽稿已準備</strong><p>未來可直接使用這份現場口語稿接上 TTS 播放。</p></div>
+      <button type="button" disabled title="語音播放功能準備中"><i data-lucide="play"></i>播放 ${guide.audio.duration} 導覽</button>
+    </section>
+    <div class="sheet-actions guide-actions">
+      <a class="mini-button" href="${mapUrl(record.name)}" target="_blank" rel="noreferrer"><i data-lucide="navigation"></i>導航到這裡</a>
+      ${between ? `<button class="mini-button" type="button" data-guide-between><i data-lucide="route"></i>${escapeAttr(record.name)} → ${escapeAttr(nextName)}</button>` : ""}
+      <button class="mini-button guide-actions__return" type="button" data-guide-itinerary-day="${record.day.day}"><i data-lucide="list-tree"></i>回到 Day ${record.day.day} 行程</button>
     </div>
   `;
 }
@@ -1229,6 +1884,7 @@ function setupItineraryMode() {
     localStorage.setItem("kansai-itinerary-mode", itineraryMode);
     renderDays();
     renderTodayMode();
+    renderGuide();
     updateToggle();
     if (window.lucide) window.lucide.createIcons();
   });
@@ -1243,10 +1899,24 @@ function setupGuideSheet() {
   const title = $("#guide-sheet-title");
   const kicker = $("#guide-sheet-kicker");
   const body = $("#guide-sheet-body");
+  let activeStopRecord = null;
+  let activeStopState = { depth: "quick", stopIndex: 0, view: "site" };
+
+  function renderActiveStop(resetScroll = false) {
+    if (!activeStopRecord) return;
+    title.textContent = activeStopRecord.name;
+    kicker.textContent = activeStopState.view === "between"
+      ? `Day ${activeStopRecord.day.day} · Between stops`
+      : `Day ${activeStopRecord.day.day} · ${activeStopRecord.time} · Personal Tour Guide`;
+    body.innerHTML = renderStopDetail(activeStopRecord, activeStopState);
+    if (resetScroll) body.scrollTop = 0;
+    if (window.lucide) window.lucide.createIcons();
+  }
 
   function openGuide(id) {
     const note = guideNotes.find((item) => item.id === id);
     if (!note) return;
+    activeStopRecord = null;
     title.textContent = note.title;
     kicker.textContent = note.detail.subtitle;
     body.innerHTML = renderGuideDetail(note);
@@ -1256,9 +1926,9 @@ function setupGuideSheet() {
   function openStop(dayNumber, stopIndex) {
     const record = stopRecord(dayNumber, stopIndex);
     if (!record) return;
-    title.textContent = record.name;
-    kicker.textContent = `Day ${record.day.day} · ${record.time} · ${record.day.area}`;
-    body.innerHTML = renderStopDetail(record);
+    activeStopRecord = record;
+    activeStopState = { depth: "quick", stopIndex: 0, view: "site" };
+    renderActiveStop(true);
     openSheet();
   }
 
@@ -1288,8 +1958,50 @@ function setupGuideSheet() {
   }
 
   $("#guide-grid").addEventListener("click", (event) => {
+    const stopButton = event.target.closest("[data-guide-stop-day]");
+    if (stopButton) {
+      openStop(stopButton.dataset.guideStopDay, stopButton.dataset.guideStopIndex);
+      return;
+    }
     const button = event.target.closest("[data-guide-id]");
     if (button) openGuide(button.dataset.guideId);
+  });
+
+  body.addEventListener("click", (event) => {
+    if (!activeStopRecord) return;
+    const depthButton = event.target.closest("[data-guide-depth]");
+    if (depthButton) {
+      activeStopState = { ...activeStopState, depth: depthButton.dataset.guideDepth, view: "site" };
+      renderActiveStop();
+      return;
+    }
+    const stopButton = event.target.closest("[data-guide-stop]");
+    if (stopButton) {
+      activeStopState = { ...activeStopState, stopIndex: Number(stopButton.dataset.guideStop), view: "site" };
+      renderActiveStop();
+      return;
+    }
+    const nextStopButton = event.target.closest("[data-guide-next-stop]");
+    if (nextStopButton) {
+      activeStopState = { ...activeStopState, stopIndex: Number(nextStopButton.dataset.guideNextStop), view: "site" };
+      renderActiveStop();
+      return;
+    }
+    if (event.target.closest("[data-guide-between]")) {
+      activeStopState = { ...activeStopState, view: "between" };
+      renderActiveStop(true);
+      return;
+    }
+    if (event.target.closest("[data-guide-back-to-site]")) {
+      activeStopState = { ...activeStopState, view: "site" };
+      renderActiveStop(true);
+      return;
+    }
+    const returnButton = event.target.closest("[data-guide-itinerary-day]");
+    if (returnButton) {
+      closeGuide();
+      focusTripDay(Number(returnButton.dataset.guideItineraryDay));
+    }
   });
 
   $("#days").addEventListener("click", (event) => {
@@ -1441,6 +2153,7 @@ function renderTodayMode(now = getTripNow()) {
 
   const journey = buildDayJourney(target, target.mode, now);
   const activity = currentActivityFor(journey, target, now);
+  const activityGuide = journey.current ?? journey.next;
   const done = journey.records.filter((record) => record.complete).length;
   const progress = journey.records.length ? Math.round((done / journey.records.length) * 100) : 0;
   const weather = liveWeatherByLocation.get(weatherLocationKey(target)) ?? { temperature: "--°", description: `${target.weather.label} 天氣讀取中` };
@@ -1459,7 +2172,7 @@ function renderTodayMode(now = getTripNow()) {
     <div class="today-mode__summary">
       <article class="today-activity">
         <span class="today-activity__time">${activity.time}</span>
-        <div><span class="today-activity__label">Current activity</span><strong>${escapeAttr(activity.title)}</strong><p>${escapeAttr(activity.detail)}</p></div>
+        <div><span class="today-activity__label">Current activity</span><strong>${escapeAttr(activity.title)}</strong><p>${escapeAttr(activity.detail)}</p>${activityGuide ? `<button class="mini-button today-activity__guide" type="button" data-today-detail="${activityGuide.index}" data-today-detail-day="${target.day}"><i data-lucide="compass"></i>現場導遊</button>` : ""}</div>
       </article>
       ${renderTodayNext(target, journey)}
       ${renderDriveSummary(target)}
