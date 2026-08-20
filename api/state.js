@@ -22,6 +22,7 @@ const DEFAULT_STATE = {
     { item: "伴手禮", amount: "", memo: "" }
   ],
   shopping: {},
+  journal: [],
   completedStops: {}
 };
 

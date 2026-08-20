@@ -972,6 +972,7 @@ function getDefaultTripState() {
       createBudgetRow({ category: "souvenir", item: "伴手禮" }),
     ],
     shopping: {},
+    journal: [],
     completedStops: {},
   };
 }
@@ -991,6 +992,7 @@ function mergeTripState(value = {}) {
     reservations: Array.isArray(value.reservations) ? value.reservations : defaults.reservations,
     budget: Array.isArray(value.budget) ? value.budget.map(normalizeBudgetRow) : defaults.budget,
     shopping: value.shopping && typeof value.shopping === "object" ? value.shopping : defaults.shopping,
+    journal: Array.isArray(value.journal) ? value.journal : defaults.journal,
     completedStops: value.completedStops && typeof value.completedStops === "object" ? value.completedStops : defaults.completedStops,
   };
 }
@@ -1004,6 +1006,7 @@ function loadTripState() {
     reservations: readJsonStorage("kansai-reservations", null),
     budget: readJsonStorage("kansai-budget", null),
     shopping: readJsonStorage("kansai-shopping", {}),
+    journal: readJsonStorage("kansai-journal", []),
     completedStops: readJsonStorage("kansai-completed-stops", {}),
   });
 }
@@ -1018,6 +1021,7 @@ function persistTripStateLocal() {
   localStorage.setItem("kansai-reservations", JSON.stringify(tripState.reservations));
   localStorage.setItem("kansai-budget", JSON.stringify(tripState.budget));
   localStorage.setItem("kansai-shopping", JSON.stringify(tripState.shopping));
+  localStorage.setItem("kansai-journal", JSON.stringify(tripState.journal));
   localStorage.setItem("kansai-completed-stops", JSON.stringify(tripState.completedStops));
 }
 
@@ -1074,6 +1078,7 @@ async function hydrateSharedState() {
     setupChecklist();
     setupReservations();
     setupShoppingList();
+    setupJournal();
     renderTodayMode();
     renderGuide();
     setSyncStatus("已載入 Neon 共用資料。", "online");
@@ -1528,7 +1533,7 @@ function renderDays() {
   dayStrip.innerHTML = daysToRender
     .map(
       (day) =>
-        `<a class="day-pill ${day.day === focusDay.day ? "is-today" : ""}" href="#day-${day.day}">D${day.day}<small>${day.date.slice(5)}</small></a>`,
+        `<a class="day-pill ${day.day === focusDay.day ? "is-today" : ""}" href="#day-${day.day}" aria-label="前往第 ${day.day} 天行程"><span>DAY ${day.day}</span><strong>${day.date.slice(5)}</strong><small>${["日", "一", "二", "三", "四", "五", "六"][parseTripDate(day.date).getDay()]}</small></a>`,
     )
     .join("");
 
@@ -1558,6 +1563,40 @@ function renderDays() {
       `,
     )
     .join("");
+
+  days.insertAdjacentHTML("afterbegin", renderJourneyHero(focusDay));
+}
+
+function renderJourneyHero(day) {
+  const now = getTripNow();
+  const start = parseTripDate(displayedTripDays()[0].date);
+  const end = parseTripDate(displayedTripDays().at(-1).date);
+  const weather = liveWeatherByLocation.get(weatherLocationKey(day)) ?? { temperature: "--°", description: `${day.weather.label} 天氣讀取中` };
+  const untilStart = Math.max(0, Math.ceil((start.getTime() - now.getTime()) / 86400000));
+  const state = now < start
+    ? { eyebrow: "Trip countdown", title: "距離出發", value: `${untilStart} 天`, detail: "出發前把準備清單再核對一次。", icon: "plane-takeoff" }
+    : now > end
+      ? { eyebrow: "Journey completed", title: "旅程已完成", value: "11 DAYS", detail: "把沿途回憶好好收藏起來。", icon: "heart" }
+      : { eyebrow: "Journey in progress", title: `DAY ${day.day} / 11`, value: "旅程進行中", detail: "下一站已準備好，跟著時間線出發。", icon: "compass" };
+
+  return `
+    <section class="journey-hero" id="journey-hero" aria-label="今日旅程摘要">
+      <div class="journey-weather">
+        <span><i data-lucide="map-pin"></i>${day.weather.label.toUpperCase()}</span>
+        <strong>${weather.temperature}</strong>
+        <p>${weather.description}</p>
+      </div>
+      <div class="journey-weather__facts" aria-label="今日資訊">
+        <span><i data-lucide="route"></i>${day.area}</span>
+        <span><i data-lucide="calendar-days"></i>${day.date}</span>
+      </div>
+      <div class="journey-countdown">
+        <span><i data-lucide="${state.icon}"></i>${state.eyebrow}</span>
+        <div><p>${state.title}</p><strong>${state.value}</strong></div>
+        <small>${state.detail}</small>
+      </div>
+    </section>
+  `;
 }
 
 function renderDayNotes(dayNumber) {
@@ -1618,6 +1657,7 @@ function renderStop(stop, day, index) {
         <p class="stop-note">${note}</p>
         ${travel ? `<p class="stop-logistics"><i data-lucide="${travel[0].includes("自駕") ? "car-front" : travel[0] === "步行" ? "footprints" : "train-front"}"></i><span>下一段 ${travel[0]}</span><strong>移動 ${travel[1]} · 步行 ${travel[2]}</strong></p>` : ""}
         <div class="stop-actions">
+          <button class="detail-link" type="button" data-stop-guide data-stop-day="${day.day}" data-stop-index="${index}"><i data-lucide="headphones"></i>隨身導遊</button>
           <a class="nav-link" href="${mapUrl(name)}" target="_blank" rel="noreferrer" data-stop-nav>
             <i data-lucide="navigation"></i>導航
           </a>
@@ -1769,6 +1809,23 @@ function renderStopDetail(record, state = {}) {
 }
 
 function renderTools() {
+  const journal = `
+    <article class="tool-card journal-card">
+      <div class="journal-card__head">
+        <div><p class="kicker"><i data-lucide="notebook-pen"></i> Travel journal</p><h3>旅行日誌</h3><p>把當下的風景、心情與地點留在旅程裡。</p></div>
+        <span class="journal-card__count" id="journal-count">0 篇</span>
+      </div>
+      <form class="journal-form" id="journal-form">
+        <label><span>日期</span><input name="date" type="date" required /></label>
+        <label><span>地點</span><input name="location" autocomplete="off" placeholder="例如：京都 · 東山" /></label>
+        <label class="journal-form__title"><span>這一刻的標題</span><input name="title" autocomplete="off" placeholder="例如：傍晚的千本鳥居" required /></label>
+        <label class="journal-form__note"><span>旅途筆記</span><textarea name="note" rows="3" placeholder="想記下什麼？"></textarea></label>
+        <label><span>標籤</span><select name="tag"><option value="moment">精彩瞬間</option><option value="food">美食</option><option value="photo">照片地點</option><option value="tip">旅途提醒</option></select></label>
+        <button class="mini-button" type="submit"><i data-lucide="pen-line"></i>寫進日誌</button>
+      </form>
+      <div class="journal-list" id="journal-list" aria-live="polite"></div>
+    </article>
+  `;
   const checklist = `
     <article class="tool-card checklist-card">
       <div class="checklist-head">
@@ -1821,6 +1878,7 @@ function renderTools() {
   `;
 
   $("#tool-stack").innerHTML =
+    journal +
     checklist +
     cards +
     reservations +
@@ -1859,12 +1917,67 @@ function switchTab(tabId) {
 }
 
 function setupTabs() {
-  document.querySelectorAll(".tab-button").forEach((button) => {
+  document.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       switchTab(button.dataset.tab);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      const activeBottomButton = button.classList.contains("bottom-nav-button")
+        ? button
+        : document.querySelector(`.bottom-nav-button[data-tab="${button.dataset.tab}"]:not([data-focus])`);
+      document.querySelectorAll(".bottom-nav-button").forEach((item) => item.classList.toggle("is-active", item === activeBottomButton));
+      const focusTarget = button.dataset.focus;
+      if (focusTarget) {
+        window.setTimeout(() => document.querySelector(`.${focusTarget}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     });
   });
+}
+
+function setupJournal() {
+  const form = $("#journal-form");
+  const list = $("#journal-list");
+  const count = $("#journal-count");
+  if (!form || !list || !count) return;
+
+  const targetDate = getTripDayForToday().date.replaceAll("/", "-");
+  form.elements.date.value = targetDate;
+
+  function renderEntries() {
+    const entries = [...tripState.journal].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    count.textContent = `${entries.length} 篇`;
+    list.innerHTML = entries.length
+      ? entries.map((entry) => `
+        <article class="journal-entry">
+          <span>${escapeAttr(String(entry.date || "").replaceAll("-", "."))} · ${escapeAttr(entry.tag || "moment")}</span>
+          <h4>${escapeAttr(entry.title)}</h4>
+          ${entry.location ? `<small><i data-lucide="map-pin"></i>${escapeAttr(entry.location)}</small>` : ""}
+          ${entry.note ? `<p>${escapeAttr(entry.note)}</p>` : ""}
+        </article>`).join("")
+      : `<div class="journal-empty"><i data-lucide="book-heart"></i><strong>第一篇日誌，從一個瞬間開始。</strong><span>抵達後寫下一句話，旅程就有了自己的記憶。</span></div>`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const title = String(data.get("title") || "").trim();
+    if (!title) return;
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      date: String(data.get("date") || targetDate),
+      location: String(data.get("location") || "").trim(),
+      title,
+      note: String(data.get("note") || "").trim(),
+      tag: String(data.get("tag") || "moment"),
+    };
+    updateTripState("journal", [...tripState.journal, entry]);
+    form.reset();
+    form.elements.date.value = targetDate;
+    renderEntries();
+  });
+
+  renderEntries();
 }
 
 function setupItineraryMode() {
@@ -1902,12 +2015,25 @@ function setupGuideSheet() {
   const title = $("#guide-sheet-title");
   const kicker = $("#guide-sheet-kicker");
   const body = $("#guide-sheet-body");
+  let activeRecord = null;
+  let detailState = {};
   function openGuide(id) {
     const note = guideNotes.find((item) => item.id === id);
     if (!note) return;
     title.textContent = note.title;
     kicker.textContent = note.detail.subtitle;
     body.innerHTML = renderGuideDetail(note);
+    openSheet();
+  }
+
+  function openStopGuide(dayNumber, index, state = {}) {
+    const record = stopRecord(dayNumber, index);
+    if (!record) return;
+    activeRecord = record;
+    detailState = state;
+    title.textContent = record.name;
+    kicker.textContent = `DAY ${record.day.day} · 隨身導遊`;
+    body.innerHTML = renderStopDetail(record, detailState);
     openSheet();
   }
 
@@ -1937,6 +2063,28 @@ function setupGuideSheet() {
   $("#guide-grid").addEventListener("click", (event) => {
     const button = event.target.closest("[data-guide-id]");
     if (button) openGuide(button.dataset.guideId);
+  });
+
+  $("#days").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-stop-guide]");
+    if (button) openStopGuide(Number(button.dataset.stopDay), Number(button.dataset.stopIndex));
+  });
+
+  body.addEventListener("click", (event) => {
+    if (!activeRecord) return;
+    const stop = event.target.closest("[data-guide-stop]");
+    const next = event.target.closest("[data-guide-next-stop]");
+    const depth = event.target.closest("[data-guide-depth]");
+    if (stop) openStopGuide(activeRecord.day.day, activeRecord.index, { ...detailState, stopIndex: Number(stop.dataset.guideStop) });
+    if (next) openStopGuide(activeRecord.day.day, activeRecord.index, { ...detailState, stopIndex: Number(next.dataset.guideNextStop) });
+    if (depth) openStopGuide(activeRecord.day.day, activeRecord.index, { ...detailState, depth: depth.dataset.guideDepth });
+    if (event.target.closest("[data-guide-between]")) openStopGuide(activeRecord.day.day, activeRecord.index, { view: "between" });
+    if (event.target.closest("[data-guide-back-to-site]")) openStopGuide(activeRecord.day.day, activeRecord.index);
+    const itinerary = event.target.closest("[data-guide-itinerary-day]");
+    if (itinerary) {
+      closeGuide();
+      focusTripDay(Number(itinerary.dataset.guideItineraryDay));
+    }
   });
 
   closeButton.addEventListener("click", closeGuide);
@@ -2526,6 +2674,9 @@ async function loadWeather() {
           temperature: `${Math.round(current.temperature_2m)}°`,
           description: `${day.weather.label} · ${weatherCode[current.weather_code] ?? "即時"}`,
         });
+        if (getTripDayForToday().day === day.day) {
+          $("#journey-hero")?.replaceWith(document.createRange().createContextualFragment(renderJourneyHero(day)));
+        }
         if (target) target.innerHTML = `
           <div class="weather-current">
             <strong>${Math.round(current.temperature_2m)}°</strong>
@@ -2537,6 +2688,9 @@ async function loadWeather() {
         `;
       } catch {
         liveWeatherByLocation.set(weatherLocationKey(day), { temperature: "--°", description: `${day.weather.label} 天氣暫不可用` });
+        if (getTripDayForToday().day === day.day) {
+          $("#journey-hero")?.replaceWith(document.createRange().createContextualFragment(renderJourneyHero(day)));
+        }
         if (target) target.innerHTML = `<strong>--°</strong><span>${day.weather.label} 天氣暫不可用</span>`;
       }
     }),
@@ -2555,6 +2709,7 @@ setupBudget();
 setupChecklist();
 setupReservations();
 setupShoppingList();
+setupJournal();
 setupNetworkStatus();
 hydrateSharedState();
 loadWeather();
