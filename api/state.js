@@ -1,30 +1,8 @@
 const { neon } = require("@neondatabase/serverless");
 
-const TRIP_ID = "kansai-2026";
+const TRIP_ID = "osaka-2026";
 
-const DEFAULT_STATE = {
-  checklist: {},
-  reservations: [
-    { item: "航班去程", date: "2026/09/06", detail: "關西機場抵達 12:40", code: "" },
-    { item: "航班回程", date: "2026/09/16", detail: "請補航班號、起飛時間、航廈", code: "" },
-    { item: "租車", date: "09/06 - 09/16", detail: "取還車地點、保險、ETC、車型", code: "" },
-    { item: "京都住宿", date: "09/06 - 09/08", detail: "RESI STAY cotorune KYOTO", code: "" },
-    { item: "小濱住宿", date: "09/08 - 09/09", detail: "Party&Resort ZERO'sHOUSE", code: "" },
-    { item: "伊根/宮津住宿", date: "09/09 - 09/10", detail: "Private Villa 蒼 Lala & Lino", code: "" },
-    { item: "大阪住宿", date: "09/10 - 09/16", detail: "天下茶屋周邊住宿名與地址", code: "" },
-    { item: "USJ", date: "2026/09/15", detail: "門票、快速通關、入園 QR", code: "" },
-    { item: "海遊館/觀光船", date: "2026/09/14", detail: "海遊館、聖瑪麗亞號、Legoland", code: "" }
-  ],
-  budget: [
-    { item: "餐飲", amount: "", memo: "" },
-    { item: "交通/停車", amount: "", memo: "" },
-    { item: "門票", amount: "", memo: "" },
-    { item: "伴手禮", amount: "", memo: "" }
-  ],
-  shopping: {},
-  journal: [],
-  completedStops: {}
-};
+const DEFAULT_STATE = { day: 1, done: {}, tasks: {}, expenses: [], journal: [] };
 
 function parseBody(body) {
   if (!body) return {};

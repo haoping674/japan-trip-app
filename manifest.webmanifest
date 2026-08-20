@@ -1,27 +1,13 @@
 {
-  "name": "關西旅遊小工具",
-  "short_name": "關西旅遊",
-  "description": "大阪、京都、若狹與海之京都的手機旅遊 PWA 工具。",
-  "lang": "zh-Hant",
-  "start_url": "./",
-  "scope": "./",
+  "name": "大阪第二版｜旅行手帳",
+  "short_name": "大阪第二版",
+  "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#f7f3e8",
-  "theme_color": "#1f8177",
-  "categories": ["travel", "navigation", "utilities"],
+  "background_color": "#f6f1e5",
+  "theme_color": "#e9dfc9",
+  "lang": "zh-Hant",
   "icons": [
-    {
-      "src": "./icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
