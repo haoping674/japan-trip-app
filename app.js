@@ -1810,7 +1810,7 @@ function renderStopDetail(record, state = {}) {
 
 function renderTools() {
   const journal = `
-    <article class="tool-card journal-card">
+    <article class="tool-card journal-card" id="journal">
       <div class="journal-card__head">
         <div><p class="kicker"><i data-lucide="notebook-pen"></i> Travel journal</p><h3>旅行日誌</h3><p>把當下的風景、心情與地點留在旅程裡。</p></div>
         <span class="journal-card__count" id="journal-count">0 篇</span>
@@ -1827,7 +1827,7 @@ function renderTools() {
     </article>
   `;
   const checklist = `
-    <article class="tool-card checklist-card">
+    <article class="tool-card checklist-card" id="preparation">
       <div class="checklist-head">
         <div>
           <p class="kicker">Before Departure</p>
@@ -1840,28 +1840,27 @@ function renderTools() {
   `;
   const cards = tools
     .map(
-      (tool) => `
-        <article class="tool-card">
+      (tool, index) => {
+        const documentType = ["flight", "stay", "emergency"][index] ?? "info";
+        const icon = ["plane", "bed-double", "phone-call"][index] ?? "circle-info";
+        const label = ["Travel document", "Stay card", "Travel support"][index] ?? "Travel desk";
+        return `
+        <article class="tool-card travel-document travel-document--${documentType}">
+          <div class="travel-document__head"><span><i data-lucide="${icon}"></i>${label}</span><i data-lucide="arrow-up-right"></i></div>
           <h3>${tool.title}</h3>
           <div class="info-list">
             ${tool.rows.map(([label, value]) => `<div class="info-row"><span>${label}</span><strong>${value}</strong></div>`).join("")}
           </div>
         </article>
-      `,
+      `;
+      },
     )
     .join("");
   const reservations = `
-    <article class="tool-card reservation-card">
+    <article class="tool-card reservation-card" id="booking">
       <h3>預約代號表</h3>
       <p>把航班、租車、住宿和票券代號集中在這裡；部署 Neon 後會與同行成員同步，本機仍會保留備份。</p>
-      <div class="responsive-table">
-        <table class="budget-table">
-          <thead>
-            <tr><th>項目</th><th>日期</th><th>內容</th><th>代號</th></tr>
-          </thead>
-          <tbody id="reservation-body"></tbody>
-        </table>
-      </div>
+      <div class="booking-cards" id="reservation-body" aria-label="預訂與票券"></div>
     </article>
   `;
   const shopping = `
@@ -1884,7 +1883,7 @@ function renderTools() {
     reservations +
     shopping +
     `
-      <article class="tool-card budget">
+      <article class="tool-card budget" id="expense">
         <div class="budget-card__head">
           <div>
             <h3>旅行記帳</h3>
@@ -1926,7 +1925,7 @@ function setupTabs() {
       document.querySelectorAll(".bottom-nav-button").forEach((item) => item.classList.toggle("is-active", item === activeBottomButton));
       const focusTarget = button.dataset.focus;
       if (focusTarget) {
-        window.setTimeout(() => document.querySelector(`.${focusTarget}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        window.setTimeout(() => document.querySelector(focusTarget)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
       } else {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -2461,7 +2460,7 @@ function setupReservations() {
   const rows = tripState.reservations;
 
   function persist() {
-    const nextRows = [...body.querySelectorAll("tr")].map((row) => ({
+    const nextRows = [...body.querySelectorAll(".booking-card")].map((row) => ({
       item: row.querySelector('[data-field="item"]').value,
       date: row.querySelector('[data-field="date"]').value,
       detail: row.querySelector('[data-field="detail"]').value,
@@ -2473,12 +2472,11 @@ function setupReservations() {
   body.innerHTML = rows
     .map(
       (row) => `
-        <tr>
-          <td><input name="reservation-item" data-field="item" value="${escapeAttr(row.item)}" aria-label="預約項目" /></td>
-          <td><input name="reservation-date" data-field="date" value="${escapeAttr(row.date)}" aria-label="日期" /></td>
-          <td><input name="reservation-detail" data-field="detail" value="${escapeAttr(row.detail)}" aria-label="內容" /></td>
-          <td><input name="reservation-code" data-field="code" value="${escapeAttr(row.code)}" aria-label="代號" placeholder="填入代號" /></td>
-        </tr>
+        <article class="booking-card">
+          <div class="booking-card__top"><span><i data-lucide="ticket-check"></i>TRAVEL BOOKING</span><label><span>代號</span><input name="reservation-code" data-field="code" value="${escapeAttr(row.code)}" aria-label="代號" placeholder="填入代號" /></label></div>
+          <label class="booking-card__item"><span>項目</span><input name="reservation-item" data-field="item" value="${escapeAttr(row.item)}" aria-label="預約項目" /></label>
+          <div class="booking-card__grid"><label><span>日期</span><input name="reservation-date" data-field="date" value="${escapeAttr(row.date)}" aria-label="日期" /></label><label><span>內容</span><input name="reservation-detail" data-field="detail" value="${escapeAttr(row.detail)}" aria-label="內容" /></label></div>
+        </article>
       `,
     )
     .join("");

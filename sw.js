@@ -1,9 +1,9 @@
-const CACHE_NAME = "kansai-trip-v24";
+const CACHE_NAME = "kansai-trip-v26";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=24",
-  "./app.js?v=24",
+  "./styles.css?v=26",
+  "./app.js?v=26",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

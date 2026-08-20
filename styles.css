@@ -3442,3 +3442,243 @@ h1 {
   .weather { min-width: 98px; width: auto; text-align: right; }
   .weather-hours { max-width: 155px; }
 }
+
+/* Reference-inspired app routing: dense, six-part travel journal navigation. */
+.bottom-navigation {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  min-height: calc(70px + var(--safe-bottom));
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.bottom-nav-button {
+  min-width: 0;
+  min-height: 50px;
+  border-radius: 14px;
+  font-size: 0.6rem;
+  letter-spacing: -0.03em;
+}
+
+.bottom-nav-button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.bottom-nav-button.is-active {
+  background: rgba(31, 129, 119, 0.13);
+  color: var(--color-primary-deep);
+}
+
+.travel-document {
+  position: relative;
+  isolation: isolate;
+  min-height: 170px;
+  overflow: hidden;
+}
+
+.travel-document::after {
+  position: absolute;
+  z-index: -1;
+  top: 28px;
+  right: -28px;
+  width: 145px;
+  height: 145px;
+  content: "";
+  border: 26px solid rgba(31, 129, 119, 0.09);
+  border-radius: 50%;
+}
+
+.travel-document--flight {
+  background: linear-gradient(140deg, #edf4ff, #fbfdff 74%);
+}
+
+.travel-document--stay {
+  background: linear-gradient(140deg, #eff8e9, #fffdf7 74%);
+}
+
+.travel-document--emergency {
+  background: linear-gradient(140deg, #fff2eb, #fffdf8 74%);
+}
+
+.travel-document__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-muted);
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.travel-document__head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.travel-document__head svg {
+  width: 15px;
+  height: 15px;
+  color: var(--color-primary);
+}
+
+.travel-document h3 {
+  margin: 13px 0 10px;
+  font-family: "Noto Serif TC", serif;
+  font-size: 1.45rem;
+}
+
+.travel-document .info-list {
+  position: relative;
+  border-top: 1px dashed rgba(74, 91, 79, 0.18);
+  padding-top: 4px;
+}
+
+.travel-document .info-row {
+  padding: 9px 0;
+}
+
+.travel-document .info-row strong {
+  max-width: 70%;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.reservation-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 253, 247, 0.98), rgba(237, 244, 255, 0.78));
+}
+
+.reservation-card::before {
+  display: block;
+  margin: -18px -18px 14px;
+  border-bottom: 1px dashed rgba(65, 112, 157, 0.26);
+  background: #eaf3ff;
+  color: #3572a4;
+  content: "TRAVEL DESK  ·  BOOKINGS & TICKETS";
+  padding: 10px 18px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.reservation-card > p {
+  margin: 0 0 14px;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.booking-cards {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-card {
+  border: 1px solid rgba(65, 112, 157, 0.16);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 5px 13px rgba(56, 78, 105, 0.05);
+  padding: 12px;
+}
+
+.booking-card label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.booking-card label > span {
+  color: var(--color-muted);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.booking-card input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  border: 1px solid rgba(65, 112, 157, 0.14);
+  border-radius: 10px;
+  background: #fffefa;
+  color: var(--color-text);
+  padding: 7px 9px;
+}
+
+.booking-card__top {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.booking-card__top > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #4383b4;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+.booking-card__top > span svg { width: 14px; height: 14px; }
+.booking-card__top label { width: min(38%, 130px); }
+.booking-card__item input { font-family: "Noto Serif TC", serif; font-size: 1rem; font-weight: 700; }
+.booking-card__grid { display: grid; grid-template-columns: minmax(104px, 0.8fr) minmax(0, 1.2fr); gap: 8px; margin-top: 9px; }
+
+@media (min-width: 720px) {
+  .booking-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.budget {
+  position: relative;
+  background: linear-gradient(135deg, #fffef9, #fff8df);
+}
+
+.budget::before {
+  display: block;
+  margin: -18px -18px 14px;
+  background: #f5d56b;
+  color: #765619;
+  content: "TRAVEL LEDGER  ·  SPEND WITH INTENTION";
+  padding: 10px 18px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 719px) {
+  .top-tabs {
+    display: none;
+  }
+
+  .hero {
+    min-height: 151px;
+    margin-bottom: 14px;
+  }
+
+  .hero__content {
+    min-height: 151px;
+    justify-content: center;
+  }
+
+  .section-heading {
+    margin-top: 6px;
+  }
+
+  .journey-countdown {
+    margin-top: 1px;
+  }
+}
+
+@media (min-width: 720px) {
+  .travel-document--flight,
+  .travel-document--stay,
+  .travel-document--emergency {
+    min-height: 220px;
+  }
+}
