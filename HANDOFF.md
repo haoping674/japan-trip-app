@@ -19,7 +19,7 @@
 | `styles.css` | 奶油色手帳視覺、日期列、天氣／倒數卡、清單與表單。 |
 | `app.js` | 11 日行程、票券資料、頁面 render 與互動狀態。 |
 | `api/state.js` | Vercel + Neon 的共用狀態 API，固定資料列 ID 為 `osaka-2026`。 |
-| `sw.js` | `osaka-travel-v3` 的離線 App Shell。 |
+| `sw.js` | `osaka-travel-v4` 的離線 App Shell。 |
 | `manifest.webmanifest` | PWA 名稱、色彩與圖示設定。 |
 
 ## 功能
