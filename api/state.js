@@ -59,7 +59,7 @@ module.exports = async function handler(req, res) {
       insert into trip_state (id, data, updated_at)
       values (${TRIP_ID}, ${JSON.stringify(payload.data)}::jsonb, now())
       on conflict (id)
-      do update set data = excluded.data, updated_at = now()
+      do update set data = trip_state.data || excluded.data, updated_at = now()
       returning data, updated_at
     `;
 

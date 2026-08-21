@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
-    "check": "node --check app.js && node --check sw.js && node --check api/state.js"
+    "check": "node --check app.js && node --check sw.js && node --check api/state.js",
+    "vercel-dev": "vercel dev --listen 4173"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2"
