@@ -8,21 +8,7 @@
     "鹿の宿": "./images/stays/shika-no-yado.jpg",
   };
 
-  const defaults = {
-    flight: {
-      airline: "廈門航空", code: flights[0]?.code || "AK170", from: "高雄", fromCode: "KHH", departure: "15:00",
-      to: "關西", toCode: "KIX", arrival: "18:25", duration: "02h25m", date: "2026/09/06", baggage: "15kg",
-      aircraft: "A321", price: "4,633", purchased: "2025/11/14", purchaseNote: "via 官網",
-    },
-    stays: [
-      { name: "Guest House Kyoan", location: "京都", detail: "9/06–9/08 · 京都", checkIn: "2026-09-06", checkInTime: "15:00", checkOut: "2026-09-08", checkOutTime: "11:00", total: "6,800" },
-      { name: "Party&Resort ZERO'sHOUSE", location: "小濱", detail: "9/08 · 小濱", checkIn: "2026-09-08", checkInTime: "15:00", checkOut: "2026-09-09", checkOutTime: "11:00", total: "4,200" },
-      { name: "KYOTO TANGO MIYAZU inn", location: "宮津", detail: "9/09 · 宮津", checkIn: "2026-09-09", checkInTime: "15:00", checkOut: "2026-09-10", checkOutTime: "11:00", total: "5,000" },
-      { name: "鹿の宿", location: "大阪西成", detail: "9/10–9/15 · 大阪西成", checkIn: "2026-09-10", checkInTime: "15:00", checkOut: "2026-09-16", checkOutTime: "11:00", total: "12,600" },
-    ],
-    rental: { title: "關西租車", company: "Kansai Car Rental", reservation: "RWJD-5223", pickup: "2026/09/10 15:30", pickupLocation: "滋州", return: "2026/09/24 08:00", returnLocation: "滋州" },
-    vouchers: [{ type: "機票", title: "機票_凱文", file: "PDF" }],
-  };
+  const defaults = { flight: {}, flights: [], stays: [], rental: {}, vouchers: [] };
 
   let bookingData;
   try { bookingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || defaults; } catch { bookingData = defaults; }
@@ -30,7 +16,7 @@
   const saveBookingData = () => {
     syncAppBookings();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(bookingData));
-    return fetch("./api/state", { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ data:{ bookings:bookingData, tripDays, planningLists } }) }).catch(() => null);
+    return fetch("./api/state", { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ data:{ bookings:bookingData, tripDays, planningItems } }) }).catch(() => null);
   };
   const loadBookingData = async () => {
     try {
@@ -88,10 +74,17 @@
     openModal(`<div class="edit-modal__head"><div><small>票券資料</small><h2>${target.index === null ? "新增憑證" : "編輯憑證"}</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><form class="edit-form" data-editor="voucher" data-index="${target.index === null ? "new" : target.index}">${field("類型", "type", item.type)}${field("憑證名稱", "title", item.title, "text", "required")}${field("檔案類型", "file", item.file)}<div class="edit-modal__actions"><button class="outline-action" type="button" data-close-edit>取消</button><button class="primary-button" type="submit">儲存憑證</button></div></form>`);
   };
 
-  const editFlightPanel = () => {
+  let editFlightPanel = () => {
     const item = bookingData.flight;
     return `<section class="booking-panel booking-panel--flight"><div class="booking-panel__eyebrow"><span>${safe(item.airline)}</span><small>同一張訂單</small></div><div class="flight-code">${safe(item.code)}</div><div class="flight-route"><div><strong>${safe(item.fromCode)}</strong><small>${safe(item.from)}</small><b>${safe(item.departure)}</b></div><div class="flight-route__path"><small>${safe(item.duration)}</small><i class="fa-solid fa-plane" aria-hidden="true"></i><span></span><small>${safe(item.date)}</small></div><div><strong>${safe(item.toCode)}</strong><small>${safe(item.to)}</small><b>${safe(item.arrival)}</b></div></div><div class="flight-facts"><div><small>BAGGAGE</small><strong><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> ${safe(item.baggage)}</strong></div><div><small>AIRCRAFT</small><strong><i class="fa-solid fa-plane-up" aria-hidden="true"></i> ${safe(item.aircraft)}</strong></div></div><div class="flight-meta"><div><small>PRICE &amp; TYPE</small><strong>NT$ ${safe(item.price)}</strong><span>同一張訂單</span></div><div><small>PURCHASED</small><strong>${safe(item.purchased)}</strong><span>${safe(item.purchaseNote)}</span></div></div><button class="outline-action" type="button" data-edit="flight"><i class="fa-solid fa-pen" aria-hidden="true"></i> 編輯航班資訊</button></section>`;
   };
+
+  const editFlightCards = () => {
+    const items = Array.isArray(bookingData.flights) && bookingData.flights.length ? bookingData.flights : [bookingData.flight];
+    const airportCodes = { "高雄":"KHH", "關西":"KIX" };
+    return `<section class="booking-panel booking-panel--flight"><div class="flight-panel-stack">${items.map((item, index) => { const direction = item.label || (index === 0 ? "去程" : "回程"); const fromCode = item.fromCode || airportCodes[item.from] || ""; const toCode = item.toCode || airportCodes[item.to] || ""; return `<article class="flight-ticket"><div class="booking-panel__eyebrow"><span>${safe(direction)}</span><small>航班資訊</small></div><div class="flight-code">${safe(item.code)}</div><div class="flight-route"><div><strong>${safe(fromCode)}</strong><small>${safe(item.from)}</small><b>${safe(item.departure)}</b></div><div class="flight-route__path"><small>${safe(item.duration || "航班")}</small><i class="fa-solid fa-plane" aria-hidden="true"></i><span></span><small>${safe(item.date)}</small></div><div><strong>${safe(toCode)}</strong><small>${safe(item.to)}</small><b>${safe(item.arrival)}</b></div></div><button class="outline-action" type="button" data-edit="flight" data-index="${index}"><i class="fa-solid fa-pen" aria-hidden="true"></i> 編輯航班資訊</button></article>`; }).join("")}</div></section>`;
+  };
+  editFlightPanel = editFlightCards;
 
   const editStaysPanel = () => `<section class="booking-panel booking-panel--stays"><button class="add-stay" type="button" data-new="stay"><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增住宿</button><div class="stay-visual-list">${bookingData.stays.map((item, index) => `<article class="stay-visual-card"><div class="stay-visual-card__photo" style="background-image:url('${imageForStay(item.name, index)}')" role="img" aria-label="${safe(item.name)}住宿照片"><span class="location-tag"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${safe(item.location)}</span></div><div class="stay-visual-card__body"><div><h3>${safe(item.name)}</h3><p>${safe(item.detail)}</p></div><button type="button" data-edit="stay" data-index="${index}" aria-label="編輯 ${safe(item.name)}"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></div><div class="stay-visual-card__dates"><div><small>CHECK-IN</small><strong>${safe(item.checkIn)}</strong><span>${safe(item.checkInTime)}</span></div><b>→</b><div><small>CHECK-OUT</small><strong>${safe(item.checkOut)}</strong><span>${safe(item.checkOutTime)}</span></div></div><div class="stay-visual-card__total"><span>Total</span><strong>NT$ ${safe(item.total)}</strong></div></article>`).join("")}</div></section>`;
 
@@ -114,6 +107,18 @@
   };
 
   const closeModal = () => document.querySelector(".edit-modal")?.remove();
+  let activeFlightIndex = 0;
+  document.addEventListener("click", (event) => {
+    const flightEdit = event.target.closest('[data-edit="flight"]');
+    if (!flightEdit) return;
+    activeFlightIndex = Number(flightEdit.dataset.index || 0);
+    if (Array.isArray(bookingData.flights) && bookingData.flights[activeFlightIndex]) bookingData.flight = bookingData.flights[activeFlightIndex];
+  }, true);
+  document.addEventListener("submit", (event) => {
+    const form = event.target.closest('.edit-form[data-editor="flight"]');
+    if (!form || !Array.isArray(bookingData.flights) || !bookingData.flights[activeFlightIndex]) return;
+    bookingData.flights[activeFlightIndex] = { ...bookingData.flights[activeFlightIndex], ...Object.fromEntries(new FormData(form).entries()) };
+  }, true);
   document.addEventListener("click", (event) => {
     const close = event.target.closest("[data-close-edit]");
     if (close) { closeModal(); return; }

@@ -17,9 +17,11 @@
 | --- | --- |
 | `index.html` | 手機版殼層、頂端旅行資訊與五項底部導航。 |
 | `styles.css` | 奶油色手帳視覺、日期列、天氣／倒數卡、清單與表單。 |
-| `app.js` | 11 日行程、票券資料、頁面 render 與互動狀態。 |
+| `app.js` | 頁面 render 與互動狀態；行程、預訂、成員與準備項目由 API 載入。 |
 | `api/state.js` | Vercel + Neon 的共用狀態 API，固定資料列 ID 為 `osaka-2026`。 |
-| `sw.js` | `osaka-travel-v7` 的離線 App Shell。 |
+| `api/seed-data.js` | 現有行程、預訂、成員與四類準備清單的唯一 seed 來源。 |
+| `scripts/seed-db.js` | 使用 `npm run db:seed` 將 seed 補進 Neon，不覆蓋既有旅伴／使用者資料。 |
+| `sw.js` | `osaka-travel-v19` 的離線 App Shell。 |
 | `manifest.webmanifest` | PWA 名稱、色彩與圖示設定。 |
 
 ## 功能
@@ -27,16 +29,16 @@
 - 行程：11 天橫向日期選擇、景點時間軸、完成標記與 Google Maps 導航。
 - 票券：航班、住宿、遊船與 USJ 的集中清單。
 - 記帳：新增／刪除日圓支出，顯示合計。
-- 日誌：新增／刪除短篇旅行紀錄。
-- 準備：出發、行李、行程三組共用待辦。
+- 準備：待辦、行李、想去、採買四組共用清單，可依旅伴篩選並逐人標記完成。
 
-行程完成、待辦、記帳與日誌會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若本機預覽沒有 API，功能會保持本機可用；部署時需在 Vercel 設定 `DATABASE_URL`。
+行程內容、預訂、成員與準備清單由 `trip_state` 的 JSONB 狀態提供；互動狀態會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若資料列缺少新欄位，GET API 會自動用 `api/seed-data.js` 補齊而不覆蓋既有內容。部署時需在 Vercel 設定 `DATABASE_URL`。
 
 ## 執行與驗證
 
 ```powershell
 npm install
 npm run check
+npm run db:seed
 npm run dev
 ```
 
