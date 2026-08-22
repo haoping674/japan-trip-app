@@ -31,7 +31,7 @@ const bookingData = {
     { name: "Guest House Kyoan", location: "京都", detail: "9/06–9/08 · 京都", checkIn: "2026-09-06", checkInTime: "15:00", checkOut: "2026-09-08", checkOutTime: "11:00", total: "" },
     { name: "Party&Resort ZERO'sHOUSE", location: "小濱", detail: "9/08 · 小濱", checkIn: "2026-09-08", checkInTime: "15:00", checkOut: "2026-09-09", checkOutTime: "11:00", total: "" },
     { name: "KYOTO TANGO MIYAZU inn", location: "宮津", detail: "9/09 · 宮津", checkIn: "2026-09-09", checkInTime: "15:00", checkOut: "2026-09-10", checkOutTime: "11:00", total: "" },
-    { name: "鹿の宿", location: "大阪西成", detail: "9/10–9/15 · 大阪西成", checkIn: "2026-09-10", checkInTime: "15:00", checkOut: "2026-09-16", checkOutTime: "11:00", total: "" },
+    { name: "鹿の宿", location: "大阪西成", address: "1-chōme-8 Tamadenaka, Nishinari Ward, Osaka 557-0044, Japan", mapUrl: "https://maps.app.goo.gl/q3bXmjiCHYFD6WCZ7?g_st=il", detail: "9/10–9/15 · 大阪西成", checkIn: "2026-09-10", checkInTime: "15:00", checkOut: "2026-09-16", checkOutTime: "11:00", total: "" },
   ],
   rental: { title: "關西租車", company: "", reservation: "", pickup: "", pickupLocation: "", return: "", returnLocation: "" },
   vouchers: [{ type: "機票", title: "機票_凱文", file: "PDF" }],

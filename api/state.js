@@ -31,6 +31,11 @@ function mergeWithDefaults(data) {
     ["flights", "stays", "vouchers"].forEach((key) => {
       if (!Array.isArray(merged.bookings[key]) || !merged.bookings[key].length) merged.bookings[key] = defaults.bookings[key];
     });
+    const defaultStays = new Map(defaults.bookings.stays.map((stay) => [stay.name, stay]));
+    merged.bookings.stays = merged.bookings.stays.map((stay) => {
+      const fallback = defaultStays.get(stay?.name);
+      return fallback ? { ...stay, address: stay.address || fallback.address, mapUrl: stay.mapUrl || fallback.mapUrl } : stay;
+    });
     merged.bookings.flight = { ...defaults.bookings.flight, ...(merged.bookings.flight || {}) };
     merged.bookings.rental = { ...defaults.bookings.rental, ...(merged.bookings.rental || {}) };
   }

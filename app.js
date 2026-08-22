@@ -130,7 +130,16 @@ function syncedExpensePage() {
   return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>預設日幣；切換台幣時會套用工具頁的最新匯率。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category"><option>餐飲</option><option>交通</option><option>門票</option><option>購物</option><option>住宿</option></select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>記下這筆${currency.label}支出</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article data-render-key="expense:${safe(item.id)}"><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><button data-action="expense-delete" data-id="${item.id}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
 }
 
-const mapUrl = (place) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+const knownPlaceLocations = Object.freeze({
+  "鹿の宿": Object.freeze({
+    address: "1-chōme-8 Tamadenaka, Nishinari Ward, Osaka 557-0044, Japan",
+    mapUrl: "https://maps.app.goo.gl/q3bXmjiCHYFD6WCZ7?g_st=il",
+  }),
+});
+const mapUrl = (place) => knownPlaceLocations[place]?.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+const placeAddress = (place) => knownPlaceLocations[place]?.address || "";
+window.tripPlaceMapUrl = mapUrl;
+window.tripPlaceAddress = placeAddress;
 const externalUrl = (value) => {
   try {
     const url = new URL(value, window.location.href);
