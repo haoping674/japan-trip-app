@@ -1,3 +1,5 @@
+const rainyPlans = require("../rain-plans");
+
 const members = [
   { id: "member-kevin", name: "凱文", role: "旅伴", avatar: "", color: "#a86f4f" },
   { id: "member-neil", name: "尼歐", role: "旅伴", avatar: "", color: "#4d5144" },
@@ -17,7 +19,7 @@ const tripDays = [
   { day: 9, date: "2026-09-14", area: "北區 → 西成區", weather: "大阪", weatherLocation: { latitude: 34.6937, longitude: 135.5023 }, stops: [["08:00", "鹿の宿", "出發。"], ["09:41", "梅田藍天大廈 空中庭園展望台", "城市景觀。"], ["10:42", "HEP FIVE 摩天輪", "紅色摩天輪。"], ["11:21", "天神橋筋商店街", "在地商店街。"], ["12:31", "大阪生活今昔館", "室內街景博物館。"], ["14:36", "扇町公園", "休息與遊玩。"], ["16:11", "玉出超市 天神橋店", "採買。"], ["17:29", "鹿の宿", "回住宿。"]] },
   { day: 10, date: "2026-09-15", area: "西成區 → 此花區", weather: "大阪", weatherLocation: { latitude: 34.6937, longitude: 135.5023 }, stops: [["05:05", "鹿の宿", "早起準備。"], ["06:16", "日本環球影城", "全天 USJ 行程。"]] },
   { day: 11, date: "2026-09-16", area: "西成區 → 田尻町", weather: "關西", weatherLocation: { latitude: 34.4347, longitude: 135.2440 }, stops: [["08:00", "鹿の宿", "收拾行李。"], ["09:35", "關西機場站", "搭車前往機場。"]] },
-];
+].map((item) => ({ ...item, rainPlan: rainyPlans[item.day] }));
 
 const bookingData = {
   flight: { airline: "", code: "AK170", from: "高雄", fromCode: "KHH", departure: "08:30", to: "關西", toCode: "KIX", arrival: "12:40", duration: "03h10m", date: "2026/09/06", baggage: "", aircraft: "", price: "", purchased: "", purchaseNote: "" },

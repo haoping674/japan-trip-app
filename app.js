@@ -2,6 +2,7 @@ let tripDays = [];
 let flights = [];
 let bookings = [];
 let planningItems = [];
+const rainyPlans = window.RAINY_PLANS || {};
 const initial = JSON.parse(localStorage.getItem("osaka-travel-state") || "{}");
 const state = { section:"itinerary", day:Number(initial.day) || 1, done:initial.done || {}, tasks:initial.tasks || {}, expenses:initial.expenses || [], journal:initial.journal || [], planningTab:initial.planningTab || "todo", planningMemberFilter:initial.planningMemberFilter || "all" };
 const storedToolState = (() => {
@@ -105,7 +106,9 @@ const applyBookingData = (data) => {
 };
 const applyTripContent = (data) => {
   if (!data || typeof data !== "object") return;
-  if (Array.isArray(data.tripDays) && data.tripDays.length) tripDays = data.tripDays;
+  if (Array.isArray(data.tripDays) && data.tripDays.length) {
+    tripDays = data.tripDays.map((item) => ({ ...item, rainPlan:item.rainPlan || rainyPlans[item.day] || null }));
+  }
   if (Array.isArray(data.planningItems)) planningItems = data.planningItems;
   if (Array.isArray(data.japanesePhrases)) japanesePhrases = normalizeJapanesePhrases(data.japanesePhrases);
 };
@@ -128,6 +131,14 @@ function syncedExpensePage() {
 }
 
 const mapUrl = (place) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+const externalUrl = (value) => {
+  try {
+    const url = new URL(value, window.location.href);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "#";
+  } catch {
+    return "#";
+  }
+};
 const money = (value) => {
   const currency = currentExpenseCurrency();
   if (!(currency.rate > 0)) return "—";
@@ -273,11 +284,26 @@ const weatherCard = (current) => {
   return `<article class="weather-card"><div class="weather-card__cloud cloud-one"></div><div class="weather-card__cloud cloud-two"></div><div><p class="weather-place">${safe(current.weather || "關西")} · 旅行日天氣</p><h2>${safe(title)} ${icon(weather?.icon || (busy ? "fa-solid fa-cloud-arrow-down" : "fa-solid fa-cloud"))}</h2><p class="weather-note">${safe(note)}</p></div><div class="weather-degree"><b>${temperature}</b><span>${range}</span></div><div class="weather-facts"><span>${icon("fa-solid fa-umbrella")} ${rain}<small>降雨機率</small></span><span>${icon("fa-solid fa-wind")} ${wind}<small>最大風速</small></span><span>${icon("fa-solid fa-sun")} ${sunrise}<small>日出</small></span></div></article>`;
 };
 
+const rainPlanCard = (current) => {
+  const plan = current.rainPlan || rainyPlans[current.day];
+  if (!plan || !Array.isArray(plan.stops) || !plan.stops.length) return "";
+  const location = weatherLocationFor(current);
+  const weather = location ? weatherCache.entries[weatherCacheKey(current, location)]?.weather : null;
+  const recommended = Number(weather?.rain) >= 50;
+  const forecastBadge = weather?.rain == null
+    ? "隨身備用"
+    : recommended
+      ? `降雨 ${weather.rain}% · 建議打開`
+      : `降雨 ${weather.rain}% · 先收藏`;
+  const sources = Array.isArray(plan.sources) ? plan.sources : [];
+  return `<aside class="rain-plan-wrap" aria-label="第 ${current.day} 天雨天備案"><details class="rain-plan" ${recommended ? "open" : ""}><summary><span class="rain-plan__icon">${icon("fa-solid fa-umbrella")}</span><div class="rain-plan__heading"><span>雨天備案 <em>${safe(forecastBadge)}</em></span><h3>${safe(plan.title)}</h3><p>${safe(plan.summary)}</p></div><span class="rain-plan__toggle">${icon("fa-solid fa-chevron-down")}</span></summary><div class="rain-plan__body"><p class="rain-plan__trigger">${icon("fa-solid fa-cloud-showers-heavy")}<span><b>什麼時候換？</b>${safe(plan.trigger)}</span></p><ol class="rain-plan__list">${plan.stops.map((stop) => `<li><time>${safe(stop.time)}</time><div><h4>${safe(stop.place)}</h4><p>${safe(stop.note)}</p><a href="${mapUrl(stop.place)}" target="_blank" rel="noopener">地圖 ${icon("fa-solid fa-arrow-up-right-from-square")}</a></div></li>`).join("")}</ol>${sources.length ? `<nav class="rain-plan__sources" aria-label="雨天備案官方來源"><span>出發前再確認</span>${sources.map((source) => `<a href="${externalUrl(source.url)}" target="_blank" rel="noopener">${safe(source.label)} ${icon("fa-solid fa-arrow-up-right-from-square")}</a>`).join("")}</nav>` : ""}<p class="rain-plan__footnote">營業時間、臨時休館與天候停駛仍以當日官方公告為準。</p></div></details></aside>`;
+};
+
 function itineraryPage() {
   const current = tripDays.find((item) => item.day === state.day);
   if (!current) return `<section class="section itinerary-view"><div class="empty-state"><span>${icon("fa-solid fa-compass")}</span><p>正在載入旅程資料…</p></div></section>`;
   const completed = current.stops.filter((_, index) => state.done[`${current.day}-${index}`]).length;
-  return `<section class="section itinerary-view"><div class="section-intro"><p>行程日期</p><button class="tiny-action" data-action="today" type="button">今天在哪裡？</button></div><div class="day-scroller" role="tablist" aria-label="選擇旅行日">${tripDays.map((item) => { const [date, month, weekday] = dayText(item.date); return `<button class="day-chip ${item.day === state.day ? "is-active" : ""}" data-day="${item.day}" role="tab" aria-selected="${item.day === state.day}" type="button"><small>DAY ${item.day}</small><strong>${date}/${month}</strong><em>${weekday}</em></button>`; }).join("")}</div>${weatherCard(current)}<article class="countdown-card"><span aria-hidden="true">${icon("fa-solid fa-plane-departure")}</span><div><small>距離出發</small><strong>${daysUntil()}<i>天</i></strong></div><p>大阪，我們要來了</p></article><div class="day-heading"><div><p>DAY ${current.day}</p><h2>${current.area}</h2><span>${current.date.replaceAll("-", ".")} · 已完成 ${completed}/${current.stops.length}</span></div><span class="day-orb">${current.day}</span></div><ol class="schedule-list">${current.stops.map(([time, place, note], index) => { const key = `${current.day}-${index}`; const done = state.done[key]; return `<li class="schedule-item ${done ? "is-done" : ""}"><button class="stop-check" data-action="stop" data-key="${key}" aria-label="${done ? "標記未完成" : "標記完成"}" type="button">${done ? icon("fa-solid fa-check") : ""}</button><time>${time}</time><div class="schedule-item__copy"><h3>${safe(place)}</h3><p>${safe(note)}</p><a href="${mapUrl(place)}" target="_blank" rel="noopener">在地圖開啟 ${icon("fa-solid fa-arrow-up-right-from-square")}</a></div></li>`; }).join("")}</ol></section>`;
+  return `<section class="section itinerary-view"><div class="section-intro"><p>行程日期</p><button class="tiny-action" data-action="today" type="button">今天在哪裡？</button></div><div class="day-scroller" role="tablist" aria-label="選擇旅行日">${tripDays.map((item) => { const [date, month, weekday] = dayText(item.date); return `<button class="day-chip ${item.day === state.day ? "is-active" : ""}" data-day="${item.day}" role="tab" aria-selected="${item.day === state.day}" type="button"><small>DAY ${item.day}</small><strong>${date}/${month}</strong><em>${weekday}</em></button>`; }).join("")}</div>${weatherCard(current)}<article class="countdown-card"><span aria-hidden="true">${icon("fa-solid fa-plane-departure")}</span><div><small>距離出發</small><strong>${daysUntil()}<i>天</i></strong></div><p>大阪，我們要來了</p></article><div class="day-heading"><div><p>DAY ${current.day}</p><h2>${current.area}</h2><span>${current.date.replaceAll("-", ".")} · 已完成 ${completed}/${current.stops.length}</span></div><span class="day-orb">${current.day}</span></div>${rainPlanCard(current)}<ol class="schedule-list">${current.stops.map(([time, place, note], index) => { const key = `${current.day}-${index}`; const done = state.done[key]; return `<li class="schedule-item ${done ? "is-done" : ""}"><button class="stop-check" data-action="stop" data-key="${key}" aria-label="${done ? "標記未完成" : "標記完成"}" type="button">${done ? icon("fa-solid fa-check") : ""}</button><time>${time}</time><div class="schedule-item__copy"><h3>${safe(place)}</h3><p>${safe(note)}</p><a href="${mapUrl(place)}" target="_blank" rel="noopener">在地圖開啟 ${icon("fa-solid fa-arrow-up-right-from-square")}</a></div></li>`; }).join("")}</ol></section>`;
 }
 function bookingPage() { const stays = bookings.filter(([type]) => type === "住宿"); const tickets = bookings.filter(([type]) => type === "票券"); return `<section class="section booking-view"><div class="page-title"><p>旅程收納</p><h2>我的預訂</h2><span>機票、住宿、租車與憑證都放在同一個地方。</span></div><div class="booking-summary"><span>已整理</span><strong>${bookings.length}<i>項</i></strong><p>出發前再核對一次訂單。</p></div><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-plane")}</span><h3>機票</h3><small>${flights.length} 段</small></div><div class="flight-stack">${flights.map((flight) => `<article class="boarding-pass"><div class="boarding-pass__main"><small>${flight.label} · ${flight.code}</small><div><strong>${flight.from}</strong>${icon("fa-solid fa-arrow-right")}<strong>${flight.to}</strong></div><p>${flight.date}</p></div><div class="boarding-pass__stub"><span>${flight.label.includes("去程") ? "抵達時間" : "起飛時間"}</span><b>${flight.time}</b><small>${flight.code}</small></div></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-bed")}</span><h3>住宿</h3><small>${stays.length} 間</small></div><div class="stay-stack">${stays.map(([,name,detail],index) => `<article class="stay-card"><div class="stay-card__photo stay-card__photo--${index + 1}"><span>${icon("fa-solid fa-bed")}</span></div><div><h4>${name}</h4><p>${detail}</p><small>入住資訊與地址待補</small></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">${icon("fa-solid fa-ellipsis")}</button></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-car-side")}</span><h3>租車</h3></div><article class="rental-card"><div class="rental-card__car">${icon("fa-solid fa-car-side")}</div><div><h4>關西自駕</h4><p>取還車時間、車型、保險與 ETC</p><small>尚待補上預訂資訊</small></div><button type="button" disabled>待補</button></article></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-ticket")}</span><h3>憑證</h3><small>${tickets.length} 張</small></div><div class="voucher-list">${tickets.map(([,name,detail,iconClass]) => `<article><span>${icon(iconClass)}</span><div><h4>${name}</h4><p>${detail}</p></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">查看</button></article>`).join("")}</div></section></section>`; }
 function journalPage() { return `<section class="section"><div class="page-title"><p>旅行回憶</p><h2>今日手記</h2><span>照片會褪色，當下的心情不會。</span></div><form class="journal-compose" id="journal-form"><textarea name="note" required maxlength="180" placeholder="今天最想記住的是⋯⋯"></textarea><button class="primary-button" type="submit">留下這一頁</button></form><div class="journal-list">${state.journal.length ? state.journal.slice().reverse().map((item) => `<article class="journal-entry"><div class="journal-entry__stamp">${item.day}</div><div><p>${safe(item.note)}</p><span>${item.date}</span></div><button data-action="journal-delete" data-id="${item.id}" type="button" aria-label="刪除日誌">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state journal-empty"><span>${icon("fa-solid fa-feather-pointed")}</span><p>旅程還沒開始。<br />等第一個想留下的瞬間。</p></div>`}</div></section>`; }

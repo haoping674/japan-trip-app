@@ -11,6 +11,19 @@ function mergeWithDefaults(data) {
   ["tripDays", "planningItems", "members"].forEach((key) => {
     if (!Array.isArray(merged[key]) || !merged[key].length) merged[key] = defaults[key];
   });
+  if (Array.isArray(merged.tripDays)) {
+    const defaultDays = new Map(defaults.tripDays.map((item) => [item.day, item]));
+    merged.tripDays = merged.tripDays.map((item) => {
+      const fallback = defaultDays.get(item?.day);
+      if (!fallback?.rainPlan) return item;
+      const rainPlan = item?.rainPlan && typeof item.rainPlan === "object"
+        ? { ...fallback.rainPlan, ...item.rainPlan }
+        : fallback.rainPlan;
+      if (!Array.isArray(rainPlan.stops) || !rainPlan.stops.length) rainPlan.stops = fallback.rainPlan.stops;
+      if (!Array.isArray(rainPlan.sources) || !rainPlan.sources.length) rainPlan.sources = fallback.rainPlan.sources;
+      return { ...item, rainPlan };
+    });
+  }
   if (!Array.isArray(merged.japanesePhrases)) merged.japanesePhrases = defaults.japanesePhrases;
   if (!merged.bookings || typeof merged.bookings !== "object") merged.bookings = defaults.bookings;
   else {
