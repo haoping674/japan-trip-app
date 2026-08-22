@@ -363,12 +363,36 @@ const normalizeJapanesePhrases = (phrases) => (Array.isArray(phrases) ? phrases 
 })).filter((phrase) => phrase.zh && phrase.ja);
 japanesePhrases = normalizeJapanesePhrases(japanesePhrases);
 const createPhraseId = () => `phrase-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const phraseTranslationCache = new Map();
+const phraseForTranslation = (zh, category, existingPhrase) => {
+  if (existingPhrase?.zh === zh && existingPhrase.ja) return { ja:existingPhrase.ja, roma:existingPhrase.roma || "" };
+  const knownPhrase = japanesePhrases.find((item) => item.zh === zh && item.ja);
+  if (knownPhrase) return { ja:knownPhrase.ja, roma:knownPhrase.roma || "" };
+  return phraseTranslationCache.get(`${category}:${zh}`) || null;
+};
+const generatePhraseTranslation = async (zh, category, existingPhrase) => {
+  const cached = phraseForTranslation(zh, category, existingPhrase);
+  if (cached?.ja && cached.roma) return cached;
+  const cacheKey = `${category}:${zh}`;
+  if (phraseTranslationCache.has(cacheKey)) return phraseTranslationCache.get(cacheKey);
+  const response = await fetch("./api/translate-phrase", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ zh, category }),
+  });
+  let result = {};
+  try { result = await response.json(); } catch {}
+  if (!response.ok || !result.ja) throw new Error(result.error || "無法自動產生日文，請確認網路後重試");
+  const generated = { ja:String(result.ja).trim(), roma:String(result.roma || "").trim() };
+  phraseTranslationCache.set(cacheKey, generated);
+  return generated;
+};
 const closePhraseEditor = () => document.querySelector(".phrase-editor-modal")?.remove();
 const openPhraseEditor = (phraseId = "") => {
   const phrase = japanesePhrases.find((item) => item.id === phraseId) || { category:toolState.phraseCategory || "general", zh:"", ja:"", roma:"" };
   const categoryOptions = phraseCategories.map(([id, label]) => `<option value="${id}" ${phrase.category === id ? "selected" : ""}>${label}</option>`).join("");
   closePhraseEditor();
-  app.insertAdjacentHTML("beforeend", `<div class="phrase-editor-modal"><div class="phrase-editor-modal__backdrop" data-phrase-editor-close></div><section class="phrase-editor-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="phrase-editor-title"><div class="phrase-editor-modal__head"><div><small>SHARED PHRASEBOOK</small><h2 id="phrase-editor-title">${phraseId ? "編輯常用短語" : "新增常用短語"}</h2></div><button type="button" data-phrase-editor-close aria-label="關閉">×</button></div><p class="phrase-editor-modal__hint">儲存後會同步給所有旅伴。</p><form class="phrase-editor-form" id="phrase-editor-form" data-phrase-id="${safe(phraseId)}"><label class="phrase-editor-field"><span>中文提示</span><input name="zh" required maxlength="80" value="${safe(phrase.zh)}" placeholder="例如：請問洗手間在哪裡？" /></label><label class="phrase-editor-field"><span>日文</span><input name="ja" required maxlength="120" value="${safe(phrase.ja)}" placeholder="例如：トイレはどこですか。" /></label><label class="phrase-editor-field"><span>羅馬拼音（選填）</span><input name="roma" maxlength="120" value="${safe(phrase.roma)}" placeholder="例如：Toire wa doko desu ka." /></label><label class="phrase-editor-field"><span>分類</span><select name="category">${categoryOptions}</select></label><p class="phrase-editor-error" aria-live="polite"></p><div class="phrase-editor-modal__actions"><button class="outline-action" type="button" data-phrase-editor-close>取消</button><button class="primary-button" type="submit">儲存短語</button></div></form></section></div>`);
+  app.insertAdjacentHTML("beforeend", `<div class="phrase-editor-modal"><div class="phrase-editor-modal__backdrop" data-phrase-editor-close></div><section class="phrase-editor-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="phrase-editor-title"><div class="phrase-editor-modal__head"><div><small>SHARED PHRASEBOOK</small><h2 id="phrase-editor-title">${phraseId ? "編輯常用短語" : "新增常用短語"}</h2></div><button type="button" data-phrase-editor-close aria-label="關閉">×</button></div><p class="phrase-editor-modal__hint">只要輸入中文並選分類，日文與羅馬拼音會在儲存時自動產生；播放時會使用裝置的日語語音。儲存後同步給所有旅伴。</p><form class="phrase-editor-form" id="phrase-editor-form" data-phrase-id="${safe(phraseId)}"><label class="phrase-editor-field"><span>中文提示</span><input name="zh" required maxlength="80" value="${safe(phrase.zh)}" placeholder="例如：請問洗手間在哪裡？" /></label><label class="phrase-editor-field"><span>分類</span><select name="category">${categoryOptions}</select></label><div class="phrase-generated-preview"><small>自動生成內容</small><strong lang="ja">${safe(phrase.ja || "儲存後自動產生")}</strong><span>${safe(phrase.roma || "羅馬拼音會一起產生")}</span></div><p class="phrase-editor-error" aria-live="polite"></p><div class="phrase-editor-modal__actions"><button class="outline-action" type="button" data-phrase-editor-close>取消</button><button class="primary-button" type="submit">儲存並自動生成</button></div></form></section></div>`);
   if (!window.matchMedia("(pointer: coarse)").matches) app.querySelector("#phrase-editor-form input")?.focus();
 };
 const persistToolPreference = () => { saveToolState(); };
@@ -686,16 +710,30 @@ document.addEventListener("submit", (event) => {
 });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && document.querySelector(".planning-modal")) closePlanningModal(); });
 app.addEventListener("input", (event) => { if (event.target.id === "exchange-amount") updateExchangeResult(); });
-app.addEventListener("submit", (event) => {
+app.addEventListener("submit", async (event) => {
   const form = event.target;
   if (form.id === "phrase-editor-form") {
     event.preventDefault();
     const data = new FormData(form);
     const zh = String(data.get("zh") || "").trim();
-    const ja = String(data.get("ja") || "").trim();
+    const category = String(data.get("category") || "general");
+    const existingPhrase = japanesePhrases.find((item) => item.id === form.dataset.phraseId);
     const error = form.querySelector(".phrase-editor-error");
-    if (!zh || !ja) { if (error) error.textContent = "中文提示與日文都要填寫。"; return; }
-    const phrase = { id:form.dataset.phraseId || createPhraseId(), category:String(data.get("category") || "general"), zh, ja, roma:String(data.get("roma") || "").trim() };
+    const submitButton = form.querySelector("button[type='submit']");
+    if (!zh) { if (error) error.textContent = "請先輸入中文提示。"; return; }
+    if (error) error.textContent = "正在產生日文與羅馬拼音…";
+    form.setAttribute("aria-busy", "true");
+    if (submitButton) { submitButton.disabled = true; submitButton.textContent = "生成中…"; }
+    let generated;
+    try {
+      generated = await generatePhraseTranslation(zh, category, existingPhrase);
+    } catch (translationError) {
+      if (error) error.textContent = translationError.message || "無法自動產生，請稍後重試。";
+      form.removeAttribute("aria-busy");
+      if (submitButton) { submitButton.disabled = false; submitButton.textContent = "儲存並自動生成"; }
+      return;
+    }
+    const phrase = { id:form.dataset.phraseId || createPhraseId(), category, zh, ja:generated.ja, roma:generated.roma };
     const existingIndex = japanesePhrases.findIndex((item) => item.id === phrase.id);
     if (existingIndex >= 0) japanesePhrases[existingIndex] = phrase;
     else japanesePhrases.push(phrase);
