@@ -39,7 +39,7 @@
     modal.className = "member-modal";
     modal.innerHTML = `<div class="member-modal__backdrop" data-close-member></div><section class="member-modal__sheet" role="dialog" aria-modal="true">${content}</section>`;
     document.body.appendChild(modal);
-    modal.querySelector("input")?.focus();
+    if (!window.matchMedia("(pointer: coarse)").matches) modal.querySelector("input")?.focus();
     return modal;
   };
 

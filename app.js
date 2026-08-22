@@ -114,7 +114,7 @@ const planningModal = (content) => {
   modal.className = "planning-modal";
   modal.innerHTML = `<div class="planning-modal__backdrop" data-planning-modal-close></div><section class="planning-modal__sheet" role="dialog" aria-modal="true">${content}</section>`;
   document.body.appendChild(modal);
-  modal.querySelector("input, textarea")?.focus();
+  if (!window.matchMedia("(pointer: coarse)").matches) modal.querySelector("input, textarea")?.focus();
   return modal;
 };
 const openPlanningEditor = (item) => {
@@ -178,7 +178,7 @@ function updateExpenseCurrencyUI() {
     entry.textContent = entry.textContent.replace(/·\s*(JPY|TWD)$/, `· ${currency.code}`);
   });
 }
-function render() { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage }; app.innerHTML = pages[state.section](); updateExpenseCurrencyUI(); document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section)); }
+function render() { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage }; const markup = pages[state.section](); app.innerHTML = window.matchMedia("(pointer: coarse)").matches ? markup.replace(/\sautofocus(?=[\s>])/g, "") : markup; updateExpenseCurrencyUI(); document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section)); }
 document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { state.section = button.dataset.section; render(); window.scrollTo({ top:0, behavior:"smooth" }); } });
 app.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action], [data-day]");
