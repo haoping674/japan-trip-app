@@ -37,7 +37,7 @@
 
 工具頁偏好與匯率快取使用獨立的 `osaka-tool-state-v1` localStorage，不會同步至共用資料庫；常用短語則放在共用狀態的 `japanesePhrases`，可由工具頁 CRUD，並透過 `/api/state` 同步給所有旅伴。新增或編輯短語時只需輸入中文與分類，`/api/translate-phrase` 會自動產生日文與羅馬拼音；日語朗讀使用產生出的日文搭配裝置的 Web Speech API，不儲存或下載語音檔。匯率由 Frankfurter `GET /v2/rate/JPY/TWD` 每 12 小時更新一次；離線時沿用最後成功值，也可手動覆寫。天氣使用獨立的 `osaka-weather-state-v1` localStorage，每 6 小時更新一次。
 
-行程內容、預訂、成員與準備清單由 `trip_state` 的 JSONB 狀態提供；互動狀態會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若資料列缺少新欄位，GET API 會自動用 `api/seed-data.js` 補齊而不覆蓋既有內容。部署時需在 Vercel 設定 `DATABASE_URL`。
+ 行程內容、預訂、成員與準備清單由 `trip_state` 的 JSONB 狀態提供；互動狀態會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若資料列缺少新欄位，GET API 會自動用 `api/seed-data.js` 補齊而不覆蓋既有內容。PWA 靜態 App Shell 採快取優先；同源 `/api/*` GET 採網路優先，離線時才回退到上次成功回應，避免線上一直讀到舊共用資料。部署時需在 Vercel 設定 `DATABASE_URL`。
 
 ## 執行與驗證
 

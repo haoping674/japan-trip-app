@@ -36,10 +36,9 @@
 
   state.bookingTab = state.bookingTab || "flights";
   const originalRender = render;
-  render = () => {
-    if (state.section !== "bookings") return originalRender();
-    app.innerHTML = renderBookingPage();
-    document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section));
+  render = (options = {}) => {
+    if (state.section !== "bookings") return originalRender(options);
+    window.renderPageContent?.(renderBookingPage(), options);
   };
 
   document.addEventListener("click", (event) => {

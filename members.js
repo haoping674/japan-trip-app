@@ -113,10 +113,9 @@
   };
 
   const baseRender = render;
-  render = () => {
-    if (state.section !== "members") return baseRender();
-    app.innerHTML = membersPage();
-    document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section));
+  render = (options = {}) => {
+    if (state.section !== "members") return baseRender(options);
+    window.renderPageContent?.(membersPage(), options);
   };
 
   document.addEventListener("click", (event) => {

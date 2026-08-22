@@ -591,8 +591,19 @@ const updateExchangeResult = () => {
   const prefix = output.dataset.direction === "JPY_TWD" ? "NT$" : "¥";
   output.textContent = `${prefix}${new Intl.NumberFormat("zh-TW", { maximumFractionDigits:0 }).format(Math.round(converted))}`;
 };
-function render() { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage, tools:toolsPage }; const page = pages[state.section] || itineraryPage; const markup = page(); stopJapaneseSpeech(); app.innerHTML = window.matchMedia("(pointer: coarse)").matches ? markup.replace(/\sautofocus(?=[\s>])/g, "") : markup; updateExpenseCurrencyUI(); document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section)); }
-document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { stopJapaneseSpeech(); state.section = button.dataset.section; render(); if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") refreshExchangeRate(); window.scrollTo({ top:0, behavior:"smooth" }); } });
+const renderPageContent = (markup, { preserveScroll = true } = {}) => {
+  const scrollTop = window.scrollY;
+  const scrollLeft = window.scrollX;
+  if (app.innerHTML !== markup) app.innerHTML = markup;
+  updateExpenseCurrencyUI();
+  document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section));
+  if (preserveScroll && (window.scrollY !== scrollTop || window.scrollX !== scrollLeft)) {
+    window.scrollTo({ top:scrollTop, left:scrollLeft, behavior:"auto" });
+  }
+};
+window.renderPageContent = renderPageContent;
+function render(options = {}) { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage, tools:toolsPage }; const page = pages[state.section] || itineraryPage; const markup = page(); stopJapaneseSpeech(); renderPageContent(window.matchMedia("(pointer: coarse)").matches ? markup.replace(/\sautofocus(?=[\s>])/g, "") : markup, options); }
+document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { stopJapaneseSpeech(); state.section = button.dataset.section; render({ preserveScroll:false }); if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") refreshExchangeRate(); window.scrollTo({ top:0, behavior:"smooth" }); } });
 app.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action], [data-day]");
   if (!button) return;

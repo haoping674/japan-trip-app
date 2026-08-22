@@ -104,10 +104,9 @@
   };
 
   const baseRender = render;
-  render = () => {
-    if (state.section !== "bookings") return baseRender();
-    app.innerHTML = bookingPage();
-    document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section));
+  render = (options = {}) => {
+    if (state.section !== "bookings") return baseRender(options);
+    window.renderPageContent?.(bookingPage(), options);
   };
 
   const closeModal = () => document.querySelector(".edit-modal")?.remove();
