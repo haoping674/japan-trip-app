@@ -222,3 +222,112 @@ body { color:var(--ink); background-color:#ebe7dc; background-image:radial-gradi
   input:not([type="file"]), textarea, select { font-size:16px !important; }
   .amount-input input { font-size:20px !important; }
 }
+
+/* Travel toolbox: a pocket phrasebook, exchange slip, and calm emergency card. */
+.tools-view { display:grid; gap:.82rem; padding-top:.35rem; }
+.tools-page-title { padding:.25rem .2rem 0; }
+.tools-page-title p { margin:0; color:#a8a091; font-size:.62rem; font-weight:800; letter-spacing:.15em; }
+.tools-page-title h2 { margin:.18rem 0 .08rem; color:#75685d; font-family:"Kiwi Maru",serif; font-size:1.42rem; }
+.tools-page-title span { color:#aaa197; font-size:.67rem; line-height:1.5; }
+.tools-tabs { grid-template-columns:repeat(3,1fr); }
+.tools-tabs .booking-subnav__item { gap:.32rem; min-width:0; font-size:.65rem; }
+.tool-panel { display:grid; gap:.78rem; animation:soft-in .32s ease both; }
+
+.phrase-hero { position:relative; overflow:hidden; padding:1rem 1rem .9rem; border:1px solid #dfe8d8; border-radius:1.45rem; background:#eef5e8; box-shadow:0 8px 0 rgba(112,151,83,.08),var(--shadow); }
+.phrase-hero:after { position:absolute; right:-2.1rem; top:-2.6rem; width:7.4rem; height:7.4rem; border:1px dashed rgba(101,149,79,.25); border-radius:50%; content:""; box-shadow:0 0 0 1rem rgba(255,255,255,.2),0 0 0 2rem rgba(255,255,255,.12); }
+.phrase-hero>div:first-child { position:relative; z-index:1; padding-right:1rem; }
+.phrase-hero small,.tool-section-heading small { color:#8ea681; font-size:.53rem; font-weight:900; letter-spacing:.14em; }
+.phrase-hero h3 { margin:.18rem 0; color:#65755e; font-family:"Kiwi Maru",serif; font-size:1.04rem; }
+.phrase-hero p { margin:0; color:#94a28d; font-size:.61rem; line-height:1.55; }
+.speech-speed { position:relative; z-index:1; display:flex; width:max-content; gap:.18rem; margin-top:.7rem; padding:.18rem; border-radius:1.2rem; background:rgba(255,255,255,.76); }
+.speech-speed button { min-width:3.4rem; min-height:1.85rem; border:0; border-radius:1rem; background:transparent; color:#9d9b8e; font-size:.6rem; font-weight:800; }
+.speech-speed button.is-active { background:#78ad63; color:white; box-shadow:0 2px 5px rgba(93,139,72,.22); }
+.phrase-categories { display:flex; gap:.48rem; overflow-x:auto; margin:0 -.15rem; padding:.12rem .15rem .28rem; scrollbar-width:none; }
+.phrase-categories::-webkit-scrollbar { display:none; }
+.phrase-categories button { flex:none; display:flex; align-items:center; gap:.32rem; min-height:2.3rem; padding:.45rem .78rem; border:1px solid #e5dfd4; border-radius:1.2rem; background:#fffefa; color:#998f82; font-size:.63rem; font-weight:800; box-shadow:0 2px 5px rgba(103,92,74,.04); }
+.phrase-categories button.is-active { border-color:#736353; background:#736353; color:#fff; box-shadow:0 4px 8px rgba(91,76,58,.15); }
+.phrase-list { display:grid; gap:.68rem; }
+.phrase-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:.65rem; min-height:6.5rem; padding:.85rem .8rem .82rem 1rem; border:1px solid #e4e0d6; border-radius:1.35rem; background:#fffefa; box-shadow:0 7px 0 rgba(120,105,81,.08),0 9px 20px rgba(113,99,76,.06); transition:border-color .2s ease,background .2s ease,transform .2s ease; }
+.phrase-card.is-speaking { border-color:#83b95e; background:#f1f8ec; transform:translateY(2px); box-shadow:0 4px 0 rgba(103,153,75,.14); }
+.phrase-card__copy { min-width:0; }
+.phrase-card__copy small { display:block; margin-bottom:.3rem; color:#64a29b; font-size:.65rem; font-weight:900; letter-spacing:.02em; }
+.phrase-card__copy strong { display:block; color:#645a53; font-family:"Kiwi Maru",serif; font-size:1.03rem; font-weight:500; line-height:1.55; }
+.phrase-card__copy span { display:block; margin-top:.23rem; color:#b1a89e; font-size:.56rem; line-height:1.4; }
+.phrase-card__actions { display:grid; gap:.35rem; justify-items:center; }
+.phrase-card__actions button { display:grid; width:2rem; height:2rem; place-items:center; border:1px solid #eee8de; border-radius:50%; background:#fffefa; color:#bbb2a7; font-size:.7rem; }
+.phrase-card__actions .phrase-play { width:2.9rem; height:2.9rem; border:0; background:#dfeeda; color:#6fa657; font-size:1rem; box-shadow:0 4px 0 #c0d8b6; }
+.phrase-card.is-speaking .phrase-play { background:#78ad63; color:white; box-shadow:0 2px 0 #5f914d; animation:speech-pulse 1s ease-in-out infinite; }
+@keyframes speech-pulse { 50% { transform:scale(.92); } }
+.speech-status { min-height:1.1rem; margin:.1rem .2rem 0; color:#a0988e; font-size:.59rem; line-height:1.5; }
+
+.exchange-card { overflow:hidden; border:1px solid #dce5d8; border-radius:1.55rem; background:#fffefa; box-shadow:0 9px 0 rgba(93,135,76,.09),var(--shadow); }
+.exchange-card__head { display:flex; align-items:center; justify-content:space-between; padding:.95rem 1rem .7rem; background:#edf4e8; }
+.exchange-card__head small { color:#8ea383; font-size:.55rem; font-weight:900; letter-spacing:.08em; }
+.exchange-card__head h3 { margin:.12rem 0 0; color:#66725e; font-family:"Kiwi Maru",serif; font-size:1.08rem; }
+.exchange-refresh { display:grid; width:2.35rem; height:2.35rem; place-items:center; border:1px solid rgba(112,157,91,.25); border-radius:50%; background:rgba(255,255,255,.7); color:#75a961; }
+.exchange-refresh.is-loading i { animation:rate-spin 1s linear infinite; }
+@keyframes rate-spin { to { transform:rotate(1turn); } }
+.exchange-converter { position:relative; display:grid; grid-template-columns:1fr 2.6rem 1fr; gap:.42rem; align-items:stretch; padding:1rem; }
+.exchange-converter label,.exchange-result { min-width:0; min-height:7.2rem; padding:.75rem; border:1px solid #ebe5dc; border-radius:1rem; background:#fcfaf5; }
+.exchange-converter label>span,.exchange-result>span { display:block; color:#a59c91; font-size:.56rem; font-weight:800; }
+.exchange-converter label>div { display:flex; align-items:baseline; gap:.22rem; margin-top:.65rem; }
+.exchange-converter label b { color:#6f6258; font-size:1rem; }
+.exchange-converter input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:#64584f; padding:0; font-family:"Kiwi Maru",serif; font-size:1.35rem !important; font-weight:500; }
+.exchange-converter input::placeholder { color:#d1cac0; }
+.exchange-swap { align-self:center; display:grid; width:2.4rem; height:2.4rem; place-items:center; border:0; border-radius:50%; background:#83b95e; color:#fff; box-shadow:0 3px 0 #65954a; }
+.exchange-result { display:grid; align-content:start; }
+.exchange-result strong { overflow:hidden; margin:.58rem 0 .15rem; color:#529c91; font-family:"Kiwi Maru",serif; font-size:1.28rem; line-height:1.25; text-overflow:ellipsis; }
+.exchange-result small { color:#b6aea4; font-size:.5rem; }
+.quick-amounts { display:flex; gap:.4rem; padding:0 1rem .8rem; }
+.quick-amounts button { flex:1; min-height:2rem; border:1px solid #e7e1d7; border-radius:.65rem; background:#faf8f2; color:#8c8175; font-size:.57rem; font-weight:800; }
+.exchange-status { display:flex; align-items:flex-start; gap:.38rem; margin:0; padding:.65rem 1rem .8rem; border-top:1px dashed #e5dfd5; color:#8f9d85; font-size:.58rem; line-height:1.45; }
+.exchange-status i { margin-top:.08rem; }.exchange-status.is-error { color:#c17a6f; }
+.rate-editor { border:1px solid #e4ded3; border-radius:1.1rem; background:#fffefa; }
+.rate-editor summary { padding:.78rem .9rem; color:#8e8478; cursor:pointer; font-size:.65rem; font-weight:800; list-style:none; }
+.rate-editor summary::-webkit-details-marker { display:none; }
+.rate-editor summary i { margin-right:.35rem; color:#7fa66f; }
+.rate-editor form { display:grid; gap:.65rem; padding:0 .9rem .9rem; }
+.rate-editor label { display:grid; gap:.3rem; color:#9f968b; font-size:.59rem; font-weight:800; }
+.rate-editor input { width:100%; border:1px solid #e3ddd3; border-radius:.7rem; outline:0; background:#fcfaf4; color:#6f6258; padding:.65rem .7rem; }
+.rate-editor input:focus { border-color:#83b95e; box-shadow:0 0 0 3px rgba(131,185,94,.14); }
+.rate-editor form>div { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+.rate-editor button { min-height:2.3rem; border-radius:.7rem; font-size:.62rem; font-weight:900; }
+.rate-save { border:0; background:#83b95e; color:white; }.rate-auto { border:1px solid #ddd6ca; background:#fffefa; color:#91877a; }
+.exchange-disclaimer { margin:0 .2rem; color:#aaa197; font-size:.56rem; line-height:1.5; }
+
+.emergency-hero { display:flex; align-items:center; gap:.8rem; overflow:hidden; padding:1rem; border-radius:1.4rem; background:#f8eadf; color:#9c6f5e; box-shadow:var(--shadow); }
+.emergency-hero>span { display:grid; flex:none; width:3.1rem; height:3.1rem; place-items:center; border-radius:1.05rem; background:#d77e70; color:white; font-size:1.3rem; transform:rotate(-4deg); }
+.emergency-hero small { color:#bd8876; font-size:.5rem; font-weight:900; letter-spacing:.11em; }
+.emergency-hero h3 { margin:.12rem 0; color:#8b6254; font-family:"Kiwi Maru",serif; font-size:1rem; }
+.emergency-hero p { margin:0; color:#b18b7c; font-size:.58rem; line-height:1.45; }
+.emergency-call-list { display:grid; gap:.62rem; }
+.emergency-call { display:grid; grid-template-columns:3.4rem minmax(0,1fr) auto; align-items:center; gap:.65rem; min-height:5rem; padding:.7rem .72rem; border:1px solid #e7e1d7; border-left:4px solid #82ad72; border-radius:1.15rem; background:#fffefa; box-shadow:0 5px 13px rgba(112,97,74,.07); }
+.emergency-call--medical { border-left-color:#d77e70; }.emergency-call--visitor { border-left-color:#68a6a0; }
+.emergency-call__number { display:grid; align-content:center; min-height:3.5rem; border-radius:.8rem; background:#eef4e9; text-align:center; }
+.emergency-call--medical .emergency-call__number { background:#faece7; }.emergency-call--visitor .emergency-call__number { background:#e5f1ef; }
+.emergency-call__number small { color:#9aab91; font-size:.4rem; font-weight:900; }.emergency-call__number strong { color:#6f9560; font-size:1.25rem; }
+.emergency-call--medical .emergency-call__number strong { color:#c97165; }.emergency-call--visitor .emergency-call__number strong { color:#57958f; font-size:.8rem; }
+.emergency-call h3 { margin:0; color:#71655b; font-size:.76rem; }
+.emergency-call p { margin:.16rem 0; color:#aaa197; font-size:.54rem; line-height:1.4; }
+.emergency-call b { color:#668e89; font-size:.62rem; font-variant-numeric:tabular-nums; }
+.emergency-call>a { display:grid; gap:.16rem; justify-items:center; min-width:2.8rem; padding:.55rem .38rem; border-radius:.72rem; background:#eef4e9; color:#679654; font-size:.51rem; font-weight:900; text-decoration:none; }
+.emergency-call--medical>a { background:#faece7; color:#bd685e; }.emergency-call--visitor>a { background:#e5f1ef; color:#4f8e88; }
+.emergency-phrases { display:grid; gap:.6rem; margin-top:.25rem; }
+.tool-section-heading { margin:.15rem .2rem -.1rem; }.tool-section-heading h3 { margin:.12rem 0 0; color:#75685d; font-family:"Kiwi Maru",serif; font-size:.92rem; }
+.phrase-card--compact { min-height:4.8rem; padding-top:.65rem; padding-bottom:.65rem; box-shadow:0 5px 0 rgba(120,105,81,.07); }
+.phrase-card--compact .phrase-card__copy strong { font-size:.91rem; }
+.official-emergency-link { display:flex; align-items:center; justify-content:center; gap:.35rem; min-height:2.7rem; border:1px solid #dfe4d9; border-radius:.85rem; background:#f4f7ef; color:#6f9663; font-size:.65rem; font-weight:900; text-decoration:none; }
+.emergency-note { margin:0 .2rem; color:#a69d92; font-size:.57rem; line-height:1.55; }
+
+.bottom-nav__item { min-width:0; }
+.bottom-nav__item:focus-visible,.tools-view button:focus-visible,.tools-view a:focus-visible,.rate-editor summary:focus-visible { outline:3px solid rgba(103,164,88,.34); outline-offset:2px; }
+@media (max-width:360px) {
+  .bottom-nav { padding-right:.2rem; padding-left:.2rem; }
+  .bottom-nav__item b { font-size:.53rem; }
+  .tools-tabs .booking-subnav__item { font-size:.6rem; }
+  .exchange-converter { grid-template-columns:1fr 2.25rem 1fr; padding:.8rem; }
+  .exchange-converter label,.exchange-result { padding:.6rem; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .tool-panel,.phrase-card,.phrase-card.is-speaking .phrase-play,.exchange-refresh.is-loading i { animation:none; transition:none; }
+}

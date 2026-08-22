@@ -4,6 +4,21 @@ let bookings = [];
 let planningItems = [];
 const initial = JSON.parse(localStorage.getItem("osaka-travel-state") || "{}");
 const state = { section:"itinerary", day:Number(initial.day) || 1, done:initial.done || {}, tasks:initial.tasks || {}, expenses:initial.expenses || [], journal:initial.journal || [], planningTab:initial.planningTab || "todo", planningMemberFilter:initial.planningMemberFilter || "all" };
+const storedToolState = (() => {
+  try { return JSON.parse(localStorage.getItem("osaka-tool-state-v1") || "{}"); } catch { return {}; }
+})();
+const toolState = {
+  tab:["phrases", "exchange", "emergency"].includes(storedToolState.tab) ? storedToolState.tab : "phrases",
+  phraseCategory:storedToolState.phraseCategory || "general",
+  speechRate:storedToolState.speechRate === "slow" ? "slow" : "normal",
+  exchangeDirection:storedToolState.exchangeDirection === "TWD_JPY" ? "TWD_JPY" : "JPY_TWD",
+  rate:Number(storedToolState.rate) > 0 ? Number(storedToolState.rate) : null,
+  rateDate:storedToolState.rateDate || "",
+  rateFetchedAt:Number(storedToolState.rateFetchedAt) || 0,
+  manualRate:Number(storedToolState.manualRate) > 0 ? Number(storedToolState.manualRate) : null,
+  useManualRate:Boolean(storedToolState.useManualRate),
+};
+const saveToolState = () => localStorage.setItem("osaka-tool-state-v1", JSON.stringify(toolState));
 const savedExpenseCurrency = localStorage.getItem("osaka-expense-currency");
 state.expenseCurrency = savedExpenseCurrency === "TWD" ? "TWD" : "JPY";
 let syncedBookings = initial.bookings || null;
@@ -116,6 +131,117 @@ function itineraryPage() {
 }
 function bookingPage() { const stays = bookings.filter(([type]) => type === "住宿"); const tickets = bookings.filter(([type]) => type === "票券"); return `<section class="section booking-view"><div class="page-title"><p>旅程收納</p><h2>我的預訂</h2><span>機票、住宿、租車與憑證都放在同一個地方。</span></div><div class="booking-summary"><span>已整理</span><strong>${bookings.length}<i>項</i></strong><p>出發前再核對一次訂單。</p></div><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-plane")}</span><h3>機票</h3><small>${flights.length} 段</small></div><div class="flight-stack">${flights.map((flight) => `<article class="boarding-pass"><div class="boarding-pass__main"><small>${flight.label} · ${flight.code}</small><div><strong>${flight.from}</strong>${icon("fa-solid fa-arrow-right")}<strong>${flight.to}</strong></div><p>${flight.date}</p></div><div class="boarding-pass__stub"><span>${flight.label.includes("去程") ? "抵達時間" : "起飛時間"}</span><b>${flight.time}</b><small>${flight.code}</small></div></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-bed")}</span><h3>住宿</h3><small>${stays.length} 間</small></div><div class="stay-stack">${stays.map(([,name,detail],index) => `<article class="stay-card"><div class="stay-card__photo stay-card__photo--${index + 1}"><span>${icon("fa-solid fa-bed")}</span></div><div><h4>${name}</h4><p>${detail}</p><small>入住資訊與地址待補</small></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">${icon("fa-solid fa-ellipsis")}</button></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-car-side")}</span><h3>租車</h3></div><article class="rental-card"><div class="rental-card__car">${icon("fa-solid fa-car-side")}</div><div><h4>關西自駕</h4><p>取還車時間、車型、保險與 ETC</p><small>尚待補上預訂資訊</small></div><button type="button" disabled>待補</button></article></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-ticket")}</span><h3>憑證</h3><small>${tickets.length} 張</small></div><div class="voucher-list">${tickets.map(([,name,detail,iconClass]) => `<article><span>${icon(iconClass)}</span><div><h4>${name}</h4><p>${detail}</p></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">查看</button></article>`).join("")}</div></section></section>`; }
 function journalPage() { return `<section class="section"><div class="page-title"><p>旅行回憶</p><h2>今日手記</h2><span>照片會褪色，當下的心情不會。</span></div><form class="journal-compose" id="journal-form"><textarea name="note" required maxlength="180" placeholder="今天最想記住的是⋯⋯"></textarea><button class="primary-button" type="submit">留下這一頁</button></form><div class="journal-list">${state.journal.length ? state.journal.slice().reverse().map((item) => `<article class="journal-entry"><div class="journal-entry__stamp">${item.day}</div><div><p>${safe(item.note)}</p><span>${item.date}</span></div><button data-action="journal-delete" data-id="${item.id}" type="button" aria-label="刪除日誌">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state journal-empty"><span>${icon("fa-solid fa-feather-pointed")}</span><p>旅程還沒開始。<br />等第一個想留下的瞬間。</p></div>`}</div></section>`; }
+const toolTabs = [
+  ["phrases", "常用日語", "fa-solid fa-volume-high"],
+  ["exchange", "匯率換算", "fa-solid fa-arrow-right-arrow-left"],
+  ["emergency", "緊急資訊", "fa-solid fa-kit-medical"],
+];
+const phraseCategories = [
+  ["general", "通用", "fa-solid fa-comments"],
+  ["hotel", "飯店", "fa-solid fa-bed"],
+  ["restaurant", "餐廳", "fa-solid fa-utensils"],
+  ["transport", "交通", "fa-solid fa-train-subway"],
+  ["shopping", "購物", "fa-solid fa-bag-shopping"],
+  ["emergency", "緊急", "fa-solid fa-triangle-exclamation"],
+];
+const japanesePhrases = [
+  { category:"general", zh:"你好。", ja:"こんにちは。", roma:"Konnichiwa." },
+  { category:"general", zh:"謝謝。", ja:"ありがとうございます。", roma:"Arigatou gozaimasu." },
+  { category:"general", zh:"不好意思／借過。", ja:"すみません。", roma:"Sumimasen." },
+  { category:"general", zh:"我不太會說日文。", ja:"日本語があまり話せません。", roma:"Nihongo ga amari hanasemasen." },
+  { category:"general", zh:"請說慢一點。", ja:"もう少しゆっくり話してください。", roma:"Mou sukoshi yukkuri hanashite kudasai." },
+  { category:"general", zh:"可以再說一次嗎？", ja:"もう一度お願いします。", roma:"Mou ichido onegaishimasu." },
+  { category:"hotel", zh:"我要辦理入住。", ja:"チェックインをお願いします。", roma:"Chekku-in o onegaishimasu." },
+  { category:"hotel", zh:"我有預約。", ja:"予約しています。", roma:"Yoyaku shiteimasu." },
+  { category:"hotel", zh:"我們訂了兩間房。", ja:"部屋を二部屋予約しています。", roma:"Heya o futaheya yoyaku shiteimasu." },
+  { category:"hotel", zh:"可以寄放行李嗎？", ja:"荷物を預かっていただけますか。", roma:"Nimotsu o azukatte itadakemasu ka." },
+  { category:"hotel", zh:"退房時間是幾點？", ja:"チェックアウトは何時ですか。", roma:"Chekku-auto wa nanji desu ka." },
+  { category:"restaurant", zh:"四位。", ja:"四人です。", roma:"Yonin desu." },
+  { category:"restaurant", zh:"請給我菜單。", ja:"メニューをお願いします。", roma:"Menyuu o onegaishimasu." },
+  { category:"restaurant", zh:"有推薦的料理嗎？", ja:"おすすめは何ですか。", roma:"Osusume wa nan desu ka." },
+  { category:"restaurant", zh:"請給我這個。", ja:"これをください。", roma:"Kore o kudasai." },
+  { category:"restaurant", zh:"請結帳。", ja:"お会計をお願いします。", roma:"Okaikei o onegaishimasu." },
+  { category:"restaurant", zh:"可以刷卡嗎？", ja:"カードは使えますか。", roma:"Kaado wa tsukaemasu ka." },
+  { category:"transport", zh:"請問車站在哪裡？", ja:"駅はどこですか。", roma:"Eki wa doko desu ka." },
+  { category:"transport", zh:"這班車有到大阪嗎？", ja:"この電車は大阪に行きますか。", roma:"Kono densha wa Oosaka ni ikimasu ka." },
+  { category:"transport", zh:"要在哪裡轉車？", ja:"どこで乗り換えますか。", roma:"Doko de norikaemasu ka." },
+  { category:"transport", zh:"請到這個地址。", ja:"この住所までお願いします。", roma:"Kono juusho made onegaishimasu." },
+  { category:"transport", zh:"我們迷路了。", ja:"道に迷いました。", roma:"Michi ni mayoimashita." },
+  { category:"shopping", zh:"這個多少錢？", ja:"これはいくらですか。", roma:"Kore wa ikura desu ka." },
+  { category:"shopping", zh:"可以試穿嗎？", ja:"試着してもいいですか。", roma:"Shichaku shite mo ii desu ka." },
+  { category:"shopping", zh:"有別的尺寸嗎？", ja:"別のサイズはありますか。", roma:"Betsu no saizu wa arimasu ka." },
+  { category:"shopping", zh:"可以免稅嗎？", ja:"免税できますか。", roma:"Menzei dekimasu ka." },
+  { category:"shopping", zh:"請給我兩個。", ja:"これを二つください。", roma:"Kore o futatsu kudasai." },
+  { category:"emergency", zh:"請幫幫我。", ja:"助けてください。", roma:"Tasukete kudasai." },
+  { category:"emergency", zh:"請叫救護車。", ja:"救急車を呼んでください。", roma:"Kyuukyuusha o yonde kudasai." },
+  { category:"emergency", zh:"我需要去醫院。", ja:"病院に行きたいです。", roma:"Byouin ni ikitai desu." },
+  { category:"emergency", zh:"我的護照不見了。", ja:"パスポートをなくしました。", roma:"Pasupooto o nakushimashita." },
+  { category:"emergency", zh:"請叫警察。", ja:"警察を呼んでください。", roma:"Keisatsu o yonde kudasai." },
+];
+const persistToolPreference = () => { saveToolState(); };
+const activeExchangeRate = () => toolState.useManualRate && toolState.manualRate ? toolState.manualRate : toolState.rate;
+const exchangeIsFresh = () => toolState.rateFetchedAt && Date.now() - toolState.rateFetchedAt < 12 * 60 * 60 * 1000;
+let exchangeStatus = "idle";
+let exchangeError = "";
+let exchangeRequest = null;
+
+async function refreshExchangeRate(force = false) {
+  if (exchangeRequest || (!force && exchangeIsFresh())) return exchangeRequest;
+  exchangeStatus = "loading";
+  exchangeError = "";
+  if (state.section === "tools" && toolState.tab === "exchange") render();
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 6500);
+  exchangeRequest = fetch("https://api.frankfurter.dev/v2/rate/JPY/TWD", { cache:"no-store", signal:controller.signal })
+    .then((response) => response.ok ? response.json() : Promise.reject(new Error("rate-request")))
+    .then((data) => {
+      const rate = Number(data?.rate);
+      if (!(rate > 0)) throw new Error("invalid-rate");
+      toolState.rate = rate;
+      toolState.rateDate = String(data.date || "");
+      toolState.rateFetchedAt = Date.now();
+      exchangeStatus = "ready";
+      saveToolState();
+    })
+    .catch(() => {
+      exchangeStatus = "error";
+      exchangeError = toolState.rate ? "目前無法更新，已沿用上次成功匯率。" : "目前無法取得匯率，請連線後重試或輸入自訂匯率。";
+    })
+    .finally(() => {
+      window.clearTimeout(timeout);
+      exchangeRequest = null;
+      if (state.section === "tools" && toolState.tab === "exchange") render();
+    });
+  return exchangeRequest;
+}
+
+const toolTabNav = () => `<nav class="booking-subnav tools-tabs" role="tablist" aria-label="旅行工具分類">${toolTabs.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${toolState.tab === id ? "is-active" : ""}" data-action="tool-tab" data-tab="${id}" type="button" role="tab" aria-selected="${toolState.tab === id}">${icon(iconClass)}<span>${label}</span></button>`).join("")}</nav>`;
+const phraseCard = (phrase, compact = false) => `<article class="phrase-card ${compact ? "phrase-card--compact" : ""}"><div class="phrase-card__copy"><small>${safe(phrase.zh)}</small><strong lang="ja">${safe(phrase.ja)}</strong>${compact ? "" : `<span>${safe(phrase.roma)}</span>`}</div><div class="phrase-card__actions"><button data-action="phrase-copy" data-phrase="${safe(phrase.ja)}" type="button" aria-label="複製日文：${safe(phrase.zh)}">${icon("fa-regular fa-copy")}</button><button class="phrase-play" data-action="phrase-speak" data-phrase="${safe(phrase.ja)}" type="button" aria-label="播放日文：${safe(phrase.zh)}">${icon("fa-solid fa-volume-high")}</button></div></article>`;
+
+function phrasesToolPanel() {
+  const activeCategory = phraseCategories.some(([id]) => id === toolState.phraseCategory) ? toolState.phraseCategory : "general";
+  const phrases = japanesePhrases.filter((phrase) => phrase.category === activeCategory);
+  return `<div class="tool-panel phrase-panel" role="tabpanel"><article class="phrase-hero"><div><small>JAPANESE POCKET GUIDE</small><h3>指一下，也能把話說清楚。</h3><p>點喇叭立即播放，或把日文直接出示給對方看。</p></div><div class="speech-speed" role="group" aria-label="日語播放速度"><button class="${toolState.speechRate === "normal" ? "is-active" : ""}" data-action="speech-rate" data-rate="normal" type="button">一般</button><button class="${toolState.speechRate === "slow" ? "is-active" : ""}" data-action="speech-rate" data-rate="slow" type="button">慢速</button></div></article><div class="phrase-categories" role="tablist" aria-label="日語情境">${phraseCategories.map(([id, label, iconClass]) => `<button class="${activeCategory === id ? "is-active" : ""}" data-action="phrase-category" data-category="${id}" type="button" role="tab" aria-selected="${activeCategory === id}">${icon(iconClass)}<span>${label}</span></button>`).join("")}</div><div class="phrase-list">${phrases.map((phrase) => phraseCard(phrase)).join("")}</div><p class="speech-status" role="status" aria-live="polite">點選一句日文開始播放。</p></div>`;
+}
+
+function exchangeToolPanel() {
+  const rate = activeExchangeRate();
+  const fromJpy = toolState.exchangeDirection === "JPY_TWD";
+  const quickAmounts = fromJpy ? [1000, 5000, 10000] : [500, 1000, 3000];
+  const sourceLabel = toolState.useManualRate ? "自訂匯率" : toolState.rateDate ? `參考匯率 · ${toolState.rateDate}` : "每日參考匯率";
+  const status = exchangeStatus === "loading" ? "正在更新今日匯率…" : exchangeError || (rate ? `1 JPY ≈ NT$${Number(rate).toFixed(4)}` : "尚未取得匯率，連線後會自動更新。");
+  return `<div class="tool-panel exchange-panel" role="tabpanel"><article class="exchange-card"><div class="exchange-card__head"><div><small>${sourceLabel}</small><h3>旅費快速換算</h3></div><button class="exchange-refresh ${exchangeStatus === "loading" ? "is-loading" : ""}" data-action="exchange-refresh" type="button" aria-label="重新整理匯率" ${exchangeStatus === "loading" ? "disabled" : ""}>${icon("fa-solid fa-rotate")}</button></div><div class="exchange-converter"><label><span>${fromJpy ? "日圓 JPY" : "台幣 TWD"}</span><div><b>${fromJpy ? "¥" : "NT$"}</b><input id="exchange-amount" type="number" min="0" step="any" inputmode="decimal" placeholder="0" aria-label="要換算的${fromJpy ? "日圓" : "台幣"}金額" /></div></label><button class="exchange-swap" data-action="exchange-swap" type="button" aria-label="交換換算方向">${icon("fa-solid fa-arrow-down-up-across-line")}</button><div class="exchange-result"><span>${fromJpy ? "約為台幣" : "約為日圓"}</span><strong id="exchange-output" data-rate="${rate || ""}" data-direction="${toolState.exchangeDirection}">—</strong><small>${fromJpy ? "TWD · 新台幣" : "JPY · 日本円"}</small></div></div><div class="quick-amounts" aria-label="常用金額">${quickAmounts.map((amount) => `<button data-action="exchange-quick" data-amount="${amount}" type="button">${fromJpy ? "¥" : "NT$"}${new Intl.NumberFormat("zh-TW").format(amount)}</button>`).join("")}</div><p class="exchange-status ${exchangeStatus === "error" ? "is-error" : ""}" role="status">${icon(rate ? "fa-solid fa-circle-info" : "fa-solid fa-wifi")}${safe(status)}</p></article><details class="rate-editor" ${toolState.useManualRate ? "open" : ""}><summary>${icon("fa-solid fa-sliders")} 調整換算匯率</summary><form id="exchange-rate-form"><label>1 日圓等於多少台幣<input name="rate" type="number" min="0.0001" step="0.0001" inputmode="decimal" required value="${toolState.useManualRate && toolState.manualRate ? toolState.manualRate : toolState.rate || ""}" placeholder="例如 0.2200" /></label><div><button class="rate-save" type="submit">使用自訂匯率</button>${toolState.useManualRate ? `<button class="rate-auto" data-action="exchange-auto" type="button">恢復自動</button>` : ""}</div></form></details><p class="exchange-disclaimer">匯率僅供旅費概算，不含現金、刷卡匯差與手續費。</p></div>`;
+}
+
+function emergencyToolPanel() {
+  const quickPhrases = japanesePhrases.filter((phrase) => phrase.category === "emergency").slice(0, 3);
+  return `<div class="tool-panel emergency-panel" role="tabpanel"><article class="emergency-hero"><span>${icon("fa-solid fa-shield-heart")}</span><div><small>KEEP CALM & ASK FOR HELP</small><h3>先確認位置，再清楚求助。</h3><p>撥號按鈕會先開啟手機確認畫面，不會直接撥出。</p></div></article><div class="emergency-call-list"><article class="emergency-call emergency-call--police"><div class="emergency-call__number"><small>POLICE</small><strong>110</strong></div><div><h3>警察</h3><p>犯罪、事故或需要緊急警察協助</p></div><a href="tel:110" aria-label="撥打日本警察 110">${icon("fa-solid fa-phone")} 撥號</a></article><article class="emergency-call emergency-call--medical"><div class="emergency-call__number"><small>FIRE / EMS</small><strong>119</strong></div><div><h3>消防・救護車</h3><p>火災、重傷、突發疾病或需要救護車</p></div><a href="tel:119" aria-label="撥打日本消防或救護車 119">${icon("fa-solid fa-phone")} 撥號</a></article><article class="emergency-call emergency-call--visitor"><div class="emergency-call__number"><small>JNTO 24H</small><strong>旅客</strong></div><div><h3>Japan Visitor Hotline</h3><p>中文／英文／韓文支援 · 事故、疾病與災害協助</p><b>050-3816-2787</b></div><a href="tel:05038162787" aria-label="撥打 JNTO 旅客熱線 050-3816-2787">${icon("fa-solid fa-phone")} 撥號</a></article></div><div class="emergency-phrases"><div class="tool-section-heading"><small>QUICK VOICE</small><h3>緊急求助日語</h3></div>${quickPhrases.map((phrase) => phraseCard(phrase, true)).join("")}</div><a class="official-emergency-link" href="https://www.japan.travel/en/plan/hotline/" target="_blank" rel="noopener">查看 JNTO 官方緊急資訊 ${icon("fa-solid fa-arrow-up-right-from-square")}</a><p class="emergency-note">通話時盡量提供目前地址、附近地標、受傷人數與可回撥的電話。</p><p class="speech-status" role="status" aria-live="polite">可播放日文求助句給身旁的人聽。</p></div>`;
+}
+
+function toolsPage() {
+  const panels = { phrases:phrasesToolPanel, exchange:exchangeToolPanel, emergency:emergencyToolPanel };
+  return `<section class="section tools-view"><div class="tools-page-title"><p>TRAVEL TOOLBOX</p><h2>旅途小工具</h2><span>需要開口、換算或求助時，這一頁隨手就到。</span></div>${toolTabNav()}${panels[toolState.tab]()}</section>`;
+}
 const planningTabs = [["todo", "待辦", "fa-solid fa-clipboard-check"], ["packing", "行李", "fa-solid fa-suitcase-rolling"], ["wishlist", "想去", "fa-solid fa-heart"], ["shopping", "採買", "fa-solid fa-cart-shopping"]];
 const planningMembers = () => Array.isArray(syncedMembers) ? syncedMembers : [];
 const legacyMemberAliases = { "member-kevin": "member-a", "member-neil": "member-b", "member-sheep": "member-c", "member-dax": "member-d" };
@@ -197,8 +323,51 @@ function updateExpenseCurrencyUI() {
     entry.textContent = entry.textContent.replace(/·\s*(JPY|TWD)$/, `· ${currency.code}`);
   });
 }
-function render() { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage }; const markup = pages[state.section](); app.innerHTML = window.matchMedia("(pointer: coarse)").matches ? markup.replace(/\sautofocus(?=[\s>])/g, "") : markup; updateExpenseCurrencyUI(); document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section)); }
-document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { state.section = button.dataset.section; render(); window.scrollTo({ top:0, behavior:"smooth" }); } });
+let activeJapaneseUtterance = null;
+const setSpeechStatus = (message) => { const status = document.querySelector(".speech-status"); if (status) status.textContent = message; };
+const stopJapaneseSpeech = () => {
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  activeJapaneseUtterance = null;
+  document.querySelectorAll(".phrase-card.is-speaking").forEach((card) => card.classList.remove("is-speaking"));
+};
+const speakJapanese = (button, text) => {
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    setSpeechStatus("這台裝置不支援即時朗讀，請複製或直接出示日文文字。");
+    return;
+  }
+  stopJapaneseSpeech();
+  const utterance = new SpeechSynthesisUtterance(text);
+  const japaneseVoice = window.speechSynthesis.getVoices().find((voice) => voice.lang?.toLowerCase().startsWith("ja"));
+  utterance.lang = "ja-JP";
+  utterance.rate = toolState.speechRate === "slow" ? 0.65 : 0.88;
+  utterance.pitch = 1;
+  if (japaneseVoice) utterance.voice = japaneseVoice;
+  const card = button.closest(".phrase-card");
+  card?.classList.add("is-speaking");
+  setSpeechStatus(`播放中：${text}`);
+  const finish = (failed = false) => {
+    card?.classList.remove("is-speaking");
+    if (activeJapaneseUtterance === utterance) activeJapaneseUtterance = null;
+    setSpeechStatus(failed ? "語音播放失敗，請複製或直接出示日文文字。" : "播放完成，可再點一次重播。");
+  };
+  utterance.onend = () => finish(false);
+  utterance.onerror = () => finish(true);
+  activeJapaneseUtterance = utterance;
+  window.speechSynthesis.speak(utterance);
+};
+const updateExchangeResult = () => {
+  const input = document.querySelector("#exchange-amount");
+  const output = document.querySelector("#exchange-output");
+  if (!input || !output) return;
+  const amount = Number(input.value);
+  const rate = Number(output.dataset.rate);
+  if (!(amount >= 0) || !(rate > 0) || input.value === "") { output.textContent = "—"; return; }
+  const converted = output.dataset.direction === "JPY_TWD" ? amount * rate : amount / rate;
+  const prefix = output.dataset.direction === "JPY_TWD" ? "NT$" : "¥";
+  output.textContent = `${prefix}${new Intl.NumberFormat("zh-TW", { maximumFractionDigits:0 }).format(Math.round(converted))}`;
+};
+function render() { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage, tools:toolsPage }; const page = pages[state.section] || itineraryPage; const markup = page(); stopJapaneseSpeech(); app.innerHTML = window.matchMedia("(pointer: coarse)").matches ? markup.replace(/\sautofocus(?=[\s>])/g, "") : markup; updateExpenseCurrencyUI(); document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section)); }
+document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { stopJapaneseSpeech(); state.section = button.dataset.section; render(); if (state.section === "tools" && toolState.tab === "exchange") refreshExchangeRate(); window.scrollTo({ top:0, behavior:"smooth" }); } });
 app.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action], [data-day]");
   if (!button) return;
@@ -214,6 +383,24 @@ app.addEventListener("click", (event) => {
   if (action === "task") { state.tasks[key] = !state.tasks[key]; save(); render(); }
   if (action === "expense-delete") { state.expenses = state.expenses.filter((item) => item.id !== id); save(); render(); }
   if (action === "copy") { navigator.clipboard?.writeText(name).catch(() => {}); button.textContent = "已複製"; }
+  if (action === "tool-tab") {
+    toolState.tab = button.dataset.tab;
+    persistToolPreference();
+    render();
+    if (toolState.tab === "exchange") refreshExchangeRate();
+    return;
+  }
+  if (action === "phrase-category") { toolState.phraseCategory = button.dataset.category; persistToolPreference(); render(); return; }
+  if (action === "speech-rate") { toolState.speechRate = button.dataset.rate === "slow" ? "slow" : "normal"; persistToolPreference(); render(); return; }
+  if (action === "phrase-speak") { speakJapanese(button, button.dataset.phrase); return; }
+  if (action === "phrase-copy") {
+    navigator.clipboard?.writeText(button.dataset.phrase).then(() => { setSpeechStatus("日文已複製。可貼到翻譯、訊息或備忘錄中。"); }).catch(() => { setSpeechStatus("無法自動複製，請長按日文文字選取。"); });
+    return;
+  }
+  if (action === "exchange-refresh") { refreshExchangeRate(true); return; }
+  if (action === "exchange-swap") { toolState.exchangeDirection = toolState.exchangeDirection === "JPY_TWD" ? "TWD_JPY" : "JPY_TWD"; persistToolPreference(); render(); return; }
+  if (action === "exchange-quick") { const input = document.querySelector("#exchange-amount"); if (input) { input.value = button.dataset.amount; updateExchangeResult(); } return; }
+  if (action === "exchange-auto") { toolState.useManualRate = false; persistToolPreference(); render(); refreshExchangeRate(true); return; }
   if (action === "today") { const index = tripDays.findIndex((item) => item.date === new Date().toISOString().slice(0, 10)); state.day = index >= 0 ? tripDays[index].day : 1; save(); render(); }
   if (action === "planning-tab") { state.planningTab = button.dataset.tab; save(); render(); }
   if (action === "planning-filter") { state.planningMemberFilter = button.dataset.memberId; save(); render(); }
@@ -285,7 +472,33 @@ document.addEventListener("submit", (event) => {
   render();
 });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && document.querySelector(".planning-modal")) closePlanningModal(); });
-app.addEventListener("submit", (event) => { event.preventDefault(); const form = event.target; const data = new FormData(form); if (form.id === "expense-form") state.expenses.push({ id:crypto.randomUUID(), item:data.get("item"), amount:Number(data.get("amount")), category:data.get("category"), payer:data.get("payer") }); if (form.id === "journal-form") state.journal.push({ id:crypto.randomUUID(), note:data.get("note"), day:`DAY ${state.day}`, date:new Date().toLocaleDateString("zh-TW") }); if (form.id === "planning-form") { const title = String(data.get("title") || "").trim(); if (!title) return; const assignees = state.planningMemberFilter === "all" ? planningMembers().map((member) => member.id) : [state.planningMemberFilter]; planningItems.push({ id:crypto.randomUUID(), category:state.planningTab, title:title.slice(0, 60), note:String(data.get("note") || "").trim().slice(0, 180), assignees, completedBy:[] }); } save(); render(); });
+app.addEventListener("input", (event) => { if (event.target.id === "exchange-amount") updateExchangeResult(); });
+app.addEventListener("submit", (event) => {
+  const form = event.target;
+  if (!["expense-form", "journal-form", "planning-form", "exchange-rate-form"].includes(form.id)) return;
+  event.preventDefault();
+  const data = new FormData(form);
+  if (form.id === "exchange-rate-form") {
+    const rate = Number(data.get("rate"));
+    if (!(rate > 0)) return;
+    toolState.manualRate = rate;
+    toolState.useManualRate = true;
+    persistToolPreference();
+    exchangeError = "";
+    render();
+    return;
+  }
+  if (form.id === "expense-form") state.expenses.push({ id:crypto.randomUUID(), item:data.get("item"), amount:Number(data.get("amount")), category:data.get("category"), payer:data.get("payer") });
+  if (form.id === "journal-form") state.journal.push({ id:crypto.randomUUID(), note:data.get("note"), day:`DAY ${state.day}`, date:new Date().toLocaleDateString("zh-TW") });
+  if (form.id === "planning-form") {
+    const title = String(data.get("title") || "").trim();
+    if (!title) return;
+    const assignees = state.planningMemberFilter === "all" ? planningMembers().map((member) => member.id) : [state.planningMemberFilter];
+    planningItems.push({ id:crypto.randomUUID(), category:state.planningTab, title:title.slice(0, 60), note:String(data.get("note") || "").trim().slice(0, 180), assignees, completedBy:[] });
+  }
+  save();
+  render();
+});
 app.addEventListener("submit", (event) => {
   if (event.target.id !== "expense-form" || state.expenseCurrency === "JPY") return;
   const amount = event.target.elements.amount;
