@@ -259,6 +259,31 @@ body { color:var(--ink); background-color:#ebe7dc; background-image:radial-gradi
 .phrase-card.is-speaking .phrase-play { background:#78ad63; color:white; box-shadow:0 2px 0 #5f914d; animation:speech-pulse 1s ease-in-out infinite; }
 @keyframes speech-pulse { 50% { transform:scale(.92); } }
 .speech-status { min-height:1.1rem; margin:.1rem .2rem 0; color:#a0988e; font-size:.59rem; line-height:1.5; }
+.phrase-library-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin:.1rem .2rem -.05rem; }
+.phrase-library-head small { color:#8ea681; font-size:.53rem; font-weight:900; letter-spacing:.14em; }
+.phrase-library-head h3 { margin:.12rem 0 .1rem; color:#75685d; font-family:"Kiwi Maru",serif; font-size:.92rem; }
+.phrase-library-head p { margin:0; color:#aaa197; font-size:.58rem; }
+.phrase-add { display:flex; align-items:center; gap:.32rem; flex:none; min-height:2.25rem; padding:.48rem .75rem; border:0; border-radius:1rem; background:#78ad63; color:#fff; font-size:.63rem; font-weight:900; box-shadow:0 3px 0 #5f914d; }
+.phrase-empty { display:grid; justify-items:center; gap:.35rem; padding:1.6rem 1rem; border:1px dashed #d9d6ca; border-radius:1.1rem; color:#aaa197; text-align:center; }
+.phrase-empty span { color:#aac0a0; font-size:1.25rem; }
+.phrase-empty p { margin:0 0 .3rem; font-size:.68rem; }
+.phrase-empty .outline-action { width:auto; margin:0; padding:.55rem .8rem; }
+.phrase-editor-modal { position:fixed; z-index:40; inset:0; display:grid; place-items:end center; }
+.phrase-editor-modal__backdrop { position:absolute; inset:0; background:rgba(77,69,58,.36); backdrop-filter:blur(4px); }
+.phrase-editor-modal__sheet { position:relative; width:min(100%,430px); max-height:min(88dvh,680px); overflow:auto; padding:1.15rem 1rem calc(1rem + env(safe-area-inset-bottom)); border-radius:1.5rem 1.5rem 0 0; background:#fffefa; box-shadow:0 -12px 35px rgba(79,69,52,.2); animation:edit-sheet-in .25s ease both; }
+.phrase-editor-modal__head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:.55rem; }
+.phrase-editor-modal__head small { color:#8ea681; font-size:.6rem; font-weight:900; letter-spacing:.12em; }
+.phrase-editor-modal__head h2 { margin:.16rem 0 0; color:#70635a; font-family:"Kiwi Maru",serif; font-size:1.25rem; }
+.phrase-editor-modal__head>button { border:0; background:transparent; color:#aaa196; font-size:1.5rem; line-height:1; }
+.phrase-editor-modal__hint { margin:.2rem 0 1rem; color:#a49b91; font-size:.7rem; line-height:1.5; }
+.phrase-editor-form { display:grid; gap:.7rem; }
+.phrase-editor-field { display:grid; gap:.28rem; color:#9f968b; font-size:.6rem; font-weight:700; }
+.phrase-editor-field input,.phrase-editor-field select { width:100%; height:2.6rem; border:1px solid #e5dfd5; border-radius:.75rem; outline:0; background:#fcfaf4; color:#6f6258; padding:.7rem .75rem; font-size:.78rem; }
+.phrase-editor-field input:focus,.phrase-editor-field select:focus { border-color:#83b95e; box-shadow:0 0 0 3px rgba(131,185,94,.16); }
+.phrase-editor-error { min-height:1.1rem; margin:0; color:#d97878; font-size:.65rem; }
+.phrase-editor-modal__actions { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-top:.25rem; }
+.phrase-editor-modal__actions .outline-action { margin:0; border-radius:.8rem; }
+.phrase-editor-modal__actions .primary-button { border-radius:.8rem; box-shadow:none; }
 
 .exchange-card { overflow:hidden; border:1px solid #dce5d8; border-radius:1.55rem; background:#fffefa; box-shadow:0 9px 0 rgba(93,135,76,.09),var(--shadow); }
 .exchange-card__head { display:flex; align-items:center; justify-content:space-between; padding:.95rem 1rem .7rem; background:#edf4e8; }

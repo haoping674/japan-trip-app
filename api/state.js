@@ -11,6 +11,7 @@ function mergeWithDefaults(data) {
   ["tripDays", "planningItems", "members"].forEach((key) => {
     if (!Array.isArray(merged[key]) || !merged[key].length) merged[key] = defaults[key];
   });
+  if (!Array.isArray(merged.japanesePhrases)) merged.japanesePhrases = defaults.japanesePhrases;
   if (!merged.bookings || typeof merged.bookings !== "object") merged.bookings = defaults.bookings;
   else {
     merged.bookings = { ...defaults.bookings, ...merged.bookings };

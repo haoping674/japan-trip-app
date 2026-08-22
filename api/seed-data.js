@@ -50,6 +50,41 @@ const planningItems = [
   { id: "shopping-snack", category: "shopping", title: "零食", note: "", assignees: ["member-sheep"], completedBy: [] },
 ];
 
+const japanesePhrases = [
+  { category: "general", zh: "你好。", ja: "こんにちは。", roma: "Konnichiwa." },
+  { category: "general", zh: "謝謝。", ja: "ありがとうございます。", roma: "Arigatou gozaimasu." },
+  { category: "general", zh: "不好意思／借過。", ja: "すみません。", roma: "Sumimasen." },
+  { category: "general", zh: "我不太會說日文。", ja: "日本語があまり話せません。", roma: "Nihongo ga amari hanasemasen." },
+  { category: "general", zh: "請說慢一點。", ja: "もう少しゆっくり話してください。", roma: "Mou sukoshi yukkuri hanashite kudasai." },
+  { category: "general", zh: "可以再說一次嗎？", ja: "もう一度お願いします。", roma: "Mou ichido onegaishimasu." },
+  { category: "hotel", zh: "我要辦理入住。", ja: "チェックインをお願いします。", roma: "Chekku-in o onegaishimasu." },
+  { category: "hotel", zh: "我有預約。", ja: "予約しています。", roma: "Yoyaku shiteimasu." },
+  { category: "hotel", zh: "我們訂了兩間房。", ja: "部屋を二部屋予約しています。", roma: "Heya o futaheya yoyaku shiteimasu." },
+  { category: "hotel", zh: "可以寄放行李嗎？", ja: "荷物を預かっていただけますか。", roma: "Nimotsu o azukatte itadakemasu ka." },
+  { category: "hotel", zh: "退房時間是幾點？", ja: "チェックアウトは何時ですか。", roma: "Chekku-auto wa nanji desu ka." },
+  { category: "restaurant", zh: "四位。", ja: "四人です。", roma: "Yonin desu." },
+  { category: "restaurant", zh: "請給我菜單。", ja: "メニューをお願いします。", roma: "Menyuu o onegaishimasu." },
+  { category: "restaurant", zh: "有推薦的料理嗎？", ja: "おすすめは何ですか。", roma: "Osusume wa nan desu ka." },
+  { category: "restaurant", zh: "請給我這個。", ja: "これをください。", roma: "Kore o kudasai." },
+  { category: "restaurant", zh: "請結帳。", ja: "お会計をお願いします。", roma: "Okaikei o onegaishimasu." },
+  { category: "restaurant", zh: "可以刷卡嗎？", ja: "カードは使えますか。", roma: "Kaado wa tsukaemasu ka." },
+  { category: "transport", zh: "請問車站在哪裡？", ja: "駅はどこですか。", roma: "Eki wa doko desu ka." },
+  { category: "transport", zh: "這班車有到大阪嗎？", ja: "この電車は大阪に行きますか。", roma: "Kono densha wa Oosaka ni ikimasu ka." },
+  { category: "transport", zh: "要在哪裡轉車？", ja: "どこで乗り換えますか。", roma: "Doko de norikaemasu ka." },
+  { category: "transport", zh: "請到這個地址。", ja: "この住所までお願いします。", roma: "Kono juusho made onegaishimasu." },
+  { category: "transport", zh: "我們迷路了。", ja: "道に迷いました。", roma: "Michi ni mayoimashita." },
+  { category: "shopping", zh: "這個多少錢？", ja: "これはいくらですか。", roma: "Kore wa ikura desu ka." },
+  { category: "shopping", zh: "可以試穿嗎？", ja: "試着してもいいですか。", roma: "Shichaku shite mo ii desu ka." },
+  { category: "shopping", zh: "有別的尺寸嗎？", ja: "別のサイズはありますか。", roma: "Betsu no saizu wa arimasu ka." },
+  { category: "shopping", zh: "可以免稅嗎？", ja: "免税できますか。", roma: "Menzei dekimasu ka." },
+  { category: "shopping", zh: "請給我兩個。", ja: "これを二つください。", roma: "Kore o futatsu kudasai." },
+  { category: "emergency", zh: "請幫幫我。", ja: "助けてください。", roma: "Tasukete kudasai." },
+  { category: "emergency", zh: "請叫救護車。", ja: "救急車を呼んでください。", roma: "Kyuukyuusha o yonde kudasai." },
+  { category: "emergency", zh: "我需要去醫院。", ja: "病院に行きたいです。", roma: "Byouin ni ikitai desu." },
+  { category: "emergency", zh: "我的護照不見了。", ja: "パスポートをなくしました。", roma: "Pasupooto o nakushimashita." },
+  { category: "emergency", zh: "請叫警察。", ja: "警察を呼んでください。", roma: "Keisatsu o yonde kudasai." },
+];
+
 function buildDefaultState() {
   return {
     day: 1,
@@ -62,6 +97,7 @@ function buildDefaultState() {
     tripDays,
     bookings: bookingData,
     planningItems,
+    japanesePhrases,
     members,
   };
 }

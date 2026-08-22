@@ -107,6 +107,7 @@ const applyTripContent = (data) => {
   if (!data || typeof data !== "object") return;
   if (Array.isArray(data.tripDays) && data.tripDays.length) tripDays = data.tripDays;
   if (Array.isArray(data.planningItems)) planningItems = data.planningItems;
+  if (Array.isArray(data.japanesePhrases)) japanesePhrases = normalizeJapanesePhrases(data.japanesePhrases);
 };
 window.applyBookingData = applyBookingData;
 window.applyTripContent = applyTripContent;
@@ -114,9 +115,8 @@ window.setSharedMembers = (members) => {
   syncedMembers = Array.isArray(members) ? members : null;
   localStorage.setItem("osaka-travel-state", JSON.stringify(sharedData()));
 };
-if (initial.tripDays || initial.planningItems) applyTripContent(initial);
 if (syncedBookings) applyBookingData(syncedBookings);
-const sharedData = () => ({ day:state.day, done:state.done, tasks:state.tasks, expenses:state.expenses, journal:state.journal, planningTab:state.planningTab, planningMemberFilter:state.planningMemberFilter, tripDays, planningItems, ...(syncedBookings ? { bookings:syncedBookings } : {}), ...(syncedMembers ? { members:syncedMembers } : {}) });
+const sharedData = () => ({ day:state.day, done:state.done, tasks:state.tasks, expenses:state.expenses, journal:state.journal, planningTab:state.planningTab, planningMemberFilter:state.planningMemberFilter, tripDays, planningItems, japanesePhrases, ...(syncedBookings ? { bookings:syncedBookings } : {}), ...(syncedMembers ? { members:syncedMembers } : {}) });
 const save = () => { const data = sharedData(); localStorage.setItem("osaka-travel-state", JSON.stringify(data)); clearTimeout(syncTimer); syncTimer = setTimeout(() => fetch("./api/state", { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ data }) }).catch(() => {}), 700); };
 function syncedExpensePage() {
   const total = state.expenses.reduce((sum, item) => sum + Number(item.amount), 0);
@@ -294,7 +294,7 @@ const phraseCategories = [
   ["shopping", "購物", "fa-solid fa-bag-shopping"],
   ["emergency", "緊急", "fa-solid fa-triangle-exclamation"],
 ];
-const japanesePhrases = [
+let japanesePhrases = [
   { category:"general", zh:"你好。", ja:"こんにちは。", roma:"Konnichiwa." },
   { category:"general", zh:"謝謝。", ja:"ありがとうございます。", roma:"Arigatou gozaimasu." },
   { category:"general", zh:"不好意思／借過。", ja:"すみません。", roma:"Sumimasen." },
@@ -328,6 +328,23 @@ const japanesePhrases = [
   { category:"emergency", zh:"我的護照不見了。", ja:"パスポートをなくしました。", roma:"Pasupooto o nakushimashita." },
   { category:"emergency", zh:"請叫警察。", ja:"警察を呼んでください。", roma:"Keisatsu o yonde kudasai." },
 ];
+const normalizeJapanesePhrases = (phrases) => (Array.isArray(phrases) ? phrases : []).filter((phrase) => phrase && typeof phrase === "object").map((phrase, index) => ({
+  id: String(phrase.id || `phrase-${phrase.category || "general"}-${index}`),
+  category: phraseCategories.some(([id]) => id === phrase.category) ? phrase.category : "general",
+  zh: String(phrase.zh || "").trim().slice(0, 80),
+  ja: String(phrase.ja || "").trim().slice(0, 120),
+  roma: String(phrase.roma || "").trim().slice(0, 120),
+})).filter((phrase) => phrase.zh && phrase.ja);
+japanesePhrases = normalizeJapanesePhrases(japanesePhrases);
+const createPhraseId = () => `phrase-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const closePhraseEditor = () => document.querySelector(".phrase-editor-modal")?.remove();
+const openPhraseEditor = (phraseId = "") => {
+  const phrase = japanesePhrases.find((item) => item.id === phraseId) || { category:toolState.phraseCategory || "general", zh:"", ja:"", roma:"" };
+  const categoryOptions = phraseCategories.map(([id, label]) => `<option value="${id}" ${phrase.category === id ? "selected" : ""}>${label}</option>`).join("");
+  closePhraseEditor();
+  app.insertAdjacentHTML("beforeend", `<div class="phrase-editor-modal"><div class="phrase-editor-modal__backdrop" data-phrase-editor-close></div><section class="phrase-editor-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="phrase-editor-title"><div class="phrase-editor-modal__head"><div><small>SHARED PHRASEBOOK</small><h2 id="phrase-editor-title">${phraseId ? "編輯常用短語" : "新增常用短語"}</h2></div><button type="button" data-phrase-editor-close aria-label="關閉">×</button></div><p class="phrase-editor-modal__hint">儲存後會同步給所有旅伴。</p><form class="phrase-editor-form" id="phrase-editor-form" data-phrase-id="${safe(phraseId)}"><label class="phrase-editor-field"><span>中文提示</span><input name="zh" required maxlength="80" value="${safe(phrase.zh)}" placeholder="例如：請問洗手間在哪裡？" /></label><label class="phrase-editor-field"><span>日文</span><input name="ja" required maxlength="120" value="${safe(phrase.ja)}" placeholder="例如：トイレはどこですか。" /></label><label class="phrase-editor-field"><span>羅馬拼音（選填）</span><input name="roma" maxlength="120" value="${safe(phrase.roma)}" placeholder="例如：Toire wa doko desu ka." /></label><label class="phrase-editor-field"><span>分類</span><select name="category">${categoryOptions}</select></label><p class="phrase-editor-error" aria-live="polite"></p><div class="phrase-editor-modal__actions"><button class="outline-action" type="button" data-phrase-editor-close>取消</button><button class="primary-button" type="submit">儲存短語</button></div></form></section></div>`);
+  if (!window.matchMedia("(pointer: coarse)").matches) app.querySelector("#phrase-editor-form input")?.focus();
+};
 const persistToolPreference = () => { saveToolState(); };
 const activeExchangeRate = () => toolState.useManualRate && toolState.manualRate ? toolState.manualRate : toolState.rate;
 const exchangeIsFresh = () => toolState.rateFetchedAt && Date.now() - toolState.rateFetchedAt < 12 * 60 * 60 * 1000;
@@ -366,12 +383,12 @@ async function refreshExchangeRate(force = false) {
 }
 
 const toolTabNav = () => `<nav class="booking-subnav tools-tabs" role="tablist" aria-label="旅行工具分類">${toolTabs.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${toolState.tab === id ? "is-active" : ""}" data-action="tool-tab" data-tab="${id}" type="button" role="tab" aria-selected="${toolState.tab === id}">${icon(iconClass)}<span>${label}</span></button>`).join("")}</nav>`;
-const phraseCard = (phrase, compact = false) => `<article class="phrase-card ${compact ? "phrase-card--compact" : ""}"><div class="phrase-card__copy"><small>${safe(phrase.zh)}</small><strong lang="ja">${safe(phrase.ja)}</strong>${compact ? "" : `<span>${safe(phrase.roma)}</span>`}</div><div class="phrase-card__actions"><button data-action="phrase-copy" data-phrase="${safe(phrase.ja)}" type="button" aria-label="複製日文：${safe(phrase.zh)}">${icon("fa-regular fa-copy")}</button><button class="phrase-play" data-action="phrase-speak" data-phrase="${safe(phrase.ja)}" type="button" aria-label="播放日文：${safe(phrase.zh)}">${icon("fa-solid fa-volume-high")}</button></div></article>`;
+const phraseCard = (phrase, compact = false) => `<article class="phrase-card ${compact ? "phrase-card--compact" : ""}"><div class="phrase-card__copy"><small>${safe(phrase.zh)}</small><strong lang="ja">${safe(phrase.ja)}</strong>${compact ? "" : `<span>${safe(phrase.roma)}</span>`}</div><div class="phrase-card__actions"><button data-action="phrase-copy" data-phrase="${safe(phrase.ja)}" type="button" aria-label="複製日文：${safe(phrase.zh)}">${icon("fa-regular fa-copy")}</button><button class="phrase-play" data-action="phrase-speak" data-phrase="${safe(phrase.ja)}" type="button" aria-label="播放日文：${safe(phrase.zh)}">${icon("fa-solid fa-volume-high")}</button><button data-action="phrase-edit" data-phrase-id="${safe(phrase.id)}" type="button" aria-label="編輯：${safe(phrase.zh)}">${icon("fa-solid fa-pen")}</button><button data-action="phrase-delete" data-phrase-id="${safe(phrase.id)}" type="button" aria-label="刪除：${safe(phrase.zh)}">${icon("fa-solid fa-trash-can")}</button></div></article>`;
 
 function phrasesToolPanel() {
   const activeCategory = phraseCategories.some(([id]) => id === toolState.phraseCategory) ? toolState.phraseCategory : "general";
   const phrases = japanesePhrases.filter((phrase) => phrase.category === activeCategory);
-  return `<div class="tool-panel phrase-panel" role="tabpanel"><article class="phrase-hero"><div><small>JAPANESE POCKET GUIDE</small><h3>指一下，也能把話說清楚。</h3><p>點喇叭立即播放，或把日文直接出示給對方看。</p></div><div class="speech-speed" role="group" aria-label="日語播放速度"><button class="${toolState.speechRate === "normal" ? "is-active" : ""}" data-action="speech-rate" data-rate="normal" type="button">一般</button><button class="${toolState.speechRate === "slow" ? "is-active" : ""}" data-action="speech-rate" data-rate="slow" type="button">慢速</button></div></article><div class="phrase-categories" role="tablist" aria-label="日語情境">${phraseCategories.map(([id, label, iconClass]) => `<button class="${activeCategory === id ? "is-active" : ""}" data-action="phrase-category" data-category="${id}" type="button" role="tab" aria-selected="${activeCategory === id}">${icon(iconClass)}<span>${label}</span></button>`).join("")}</div><div class="phrase-list">${phrases.map((phrase) => phraseCard(phrase)).join("")}</div><p class="speech-status" role="status" aria-live="polite">點選一句日文開始播放。</p></div>`;
+  return `<div class="tool-panel phrase-panel" role="tabpanel"><article class="phrase-hero"><div><small>JAPANESE POCKET GUIDE</small><h3>指一下，也能把話說清楚。</h3><p>點喇叭立即播放，或把日文直接出示給對方看。</p></div><div class="speech-speed" role="group" aria-label="日語播放速度"><button class="${toolState.speechRate === "normal" ? "is-active" : ""}" data-action="speech-rate" data-rate="normal" type="button">一般</button><button class="${toolState.speechRate === "slow" ? "is-active" : ""}" data-action="speech-rate" data-rate="slow" type="button">慢速</button></div></article><div class="phrase-library-head"><div><small>SHARED PHRASEBOOK</small><h3>常用短語</h3><p>新增或調整後會同步給所有旅伴。</p></div><button class="phrase-add" data-action="phrase-add" type="button">${icon("fa-solid fa-plus")} 新增</button></div><div class="phrase-categories" role="tablist" aria-label="日語情境">${phraseCategories.map(([id, label, iconClass]) => `<button class="${activeCategory === id ? "is-active" : ""}" data-action="phrase-category" data-category="${id}" type="button" role="tab" aria-selected="${activeCategory === id}">${icon(iconClass)}<span>${label}</span></button>`).join("")}</div><div class="phrase-list">${phrases.length ? phrases.map((phrase) => phraseCard(phrase)).join("") : `<div class="phrase-empty"><span>${icon("fa-solid fa-comment-slash")}</span><p>這個分類還沒有短語。</p><button class="outline-action" data-action="phrase-add" type="button">新增第一句</button></div>`}</div><p class="speech-status" role="status" aria-live="polite">點選一句日文開始播放。</p></div>`;
 }
 
 function exchangeToolPanel() {
@@ -530,7 +547,7 @@ app.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action], [data-day]");
   if (!button) return;
   if (button.dataset.day) { state.day = Number(button.dataset.day); save(); render(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); return; }
-  const { action, key, id, name } = button.dataset;
+  const { action, key, id, name, phraseId } = button.dataset;
   if (action === "expense-currency") {
     if (button.dataset.currency === "TWD" && !(activeExchangeRate() > 0)) { refreshExchangeRate(); return; }
     state.expenseCurrency = button.dataset.currency === "TWD" ? "TWD" : "JPY";
@@ -550,6 +567,16 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (action === "phrase-category") { toolState.phraseCategory = button.dataset.category; persistToolPreference(); render(); return; }
+  if (action === "phrase-add") { openPhraseEditor(); return; }
+  if (action === "phrase-edit") { openPhraseEditor(phraseId); return; }
+  if (action === "phrase-delete") {
+    const phrase = japanesePhrases.find((item) => item.id === phraseId);
+    if (!phrase || !window.confirm(`刪除「${phrase.zh}」？這會同步移除所有旅伴看到的版本。`)) return;
+    japanesePhrases = japanesePhrases.filter((item) => item.id !== phraseId);
+    save();
+    render();
+    return;
+  }
   if (action === "speech-rate") { toolState.speechRate = button.dataset.rate === "slow" ? "slow" : "normal"; persistToolPreference(); render(); return; }
   if (action === "phrase-speak") { speakJapanese(button, button.dataset.phrase); return; }
   if (action === "phrase-copy") {
@@ -578,6 +605,7 @@ app.addEventListener("click", (event) => {
   }
 });
 document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-phrase-editor-close]")) { closePhraseEditor(); return; }
   if (event.target.closest("[data-planning-modal-close]")) { closePlanningModal(); return; }
   const option = event.target.closest("[data-planning-member-option]");
   if (option) {
@@ -634,6 +662,22 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 app.addEventListener("input", (event) => { if (event.target.id === "exchange-amount") updateExchangeResult(); });
 app.addEventListener("submit", (event) => {
   const form = event.target;
+  if (form.id === "phrase-editor-form") {
+    event.preventDefault();
+    const data = new FormData(form);
+    const zh = String(data.get("zh") || "").trim();
+    const ja = String(data.get("ja") || "").trim();
+    const error = form.querySelector(".phrase-editor-error");
+    if (!zh || !ja) { if (error) error.textContent = "中文提示與日文都要填寫。"; return; }
+    const phrase = { id:form.dataset.phraseId || createPhraseId(), category:String(data.get("category") || "general"), zh, ja, roma:String(data.get("roma") || "").trim() };
+    const existingIndex = japanesePhrases.findIndex((item) => item.id === phrase.id);
+    if (existingIndex >= 0) japanesePhrases[existingIndex] = phrase;
+    else japanesePhrases.push(phrase);
+    closePhraseEditor();
+    save();
+    render();
+    return;
+  }
   if (!["expense-form", "journal-form", "planning-form", "exchange-rate-form"].includes(form.id)) return;
   event.preventDefault();
   const data = new FormData(form);
@@ -664,6 +708,7 @@ app.addEventListener("submit", (event) => {
   if (amount?.value) amount.value = Math.round(Number(amount.value) / currentExpenseCurrency().rate);
 }, true);
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+if (initial.tripDays || initial.planningItems || initial.japanesePhrases) applyTripContent(initial);
 render();
 refreshWeatherForDay(tripDays.find((item) => item.day === state.day));
 if (state.section === "expenses" || (state.section === "tools" && toolState.tab === "exchange")) refreshExchangeRate();

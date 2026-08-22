@@ -31,9 +31,9 @@
 - 票券：航班、住宿、遊船與 USJ 的集中清單。
 - 記帳：新增／刪除日圓支出，顯示合計。
 - 準備：待辦、行李、想去、採買四組共用清單，可依旅伴篩選並逐人標記完成。
-- 工具：常用日語即時朗讀、JPY／TWD 雙向換算，以及日本警察、消防／救護車和 JNTO 旅客熱線資訊。
+- 工具：常用日語即時朗讀（可新增／編輯／刪除並同步給所有旅伴）、JPY／TWD 雙向換算，以及日本警察、消防／救護車和 JNTO 旅客熱線資訊。
 
-工具頁偏好與匯率快取使用獨立的 `osaka-tool-state-v1` localStorage，不會同步至共用資料庫。匯率由 Frankfurter `GET /v2/rate/JPY/TWD` 每 12 小時更新一次；離線時沿用最後成功值，也可手動覆寫。天氣使用獨立的 `osaka-weather-state-v1` localStorage，每 6 小時更新一次。日語朗讀使用裝置的 Web Speech API，不儲存或下載語音檔。
+工具頁偏好與匯率快取使用獨立的 `osaka-tool-state-v1` localStorage，不會同步至共用資料庫；常用短語則放在共用狀態的 `japanesePhrases`，可由工具頁 CRUD，並透過 `/api/state` 同步給所有旅伴。匯率由 Frankfurter `GET /v2/rate/JPY/TWD` 每 12 小時更新一次；離線時沿用最後成功值，也可手動覆寫。天氣使用獨立的 `osaka-weather-state-v1` localStorage，每 6 小時更新一次。日語朗讀使用裝置的 Web Speech API，不儲存或下載語音檔。
 
 行程內容、預訂、成員與準備清單由 `trip_state` 的 JSONB 狀態提供；互動狀態會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若資料列缺少新欄位，GET API 會自動用 `api/seed-data.js` 補齊而不覆蓋既有內容。部署時需在 Vercel 設定 `DATABASE_URL`。
 
@@ -60,7 +60,7 @@ python -m http.server 4173
 
 - `npm run check` 與 `git diff --check` 已通過。
 - 在 390 × 844 的行動版驗證首頁、票券、準備、成員、工具導覽與無水平溢位。
-- 已驗證日語分類與朗讀狀態、JPY／TWD 線上及自訂匯率雙向換算、緊急電話連結；Console 無警告或錯誤。
+- 已驗證日語分類與朗讀狀態、常用短語新增／編輯／刪除與共用 payload、JPY／TWD 線上及自訂匯率雙向換算、緊急電話連結；Chrome 手機尺寸 Console 無本專案錯誤。
 - 唯一 console error 來自瀏覽器擴充套件 `chrome-extension://mfidniedemcgceagapgdekdbmanojomk/`，不是本專案。
 
 ## 已知限制
