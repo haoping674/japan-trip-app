@@ -68,9 +68,18 @@ const expenseSplitMembers = () => {
 };
 const EXPENSE_CURRENCIES = {
   JPY: { code: "JPY", label: "日幣", icon: "fa-solid fa-yen-sign", rate: 1, note: "日本円" },
-  TWD: { code: "TWD", label: "台幣", icon: "fa-solid fa-dollar-sign", rate: 0.22, note: "估算匯率 1 JPY ≈ NT$0.22" },
+  TWD: { code: "TWD", label: "台幣", icon: "fa-solid fa-dollar-sign", rate: null, note: "尚未取得最新匯率" },
 };
-const currentExpenseCurrency = () => EXPENSE_CURRENCIES[state.expenseCurrency] || EXPENSE_CURRENCIES.JPY;
+const expenseRateNote = (rate) => {
+  if (!(rate > 0)) return exchangeStatus === "error" ? (exchangeError || "目前無法取得匯率，請連線後重試。") : "台幣匯率載入中，稍候即可切換。";
+  if (toolState.useManualRate && toolState.manualRate) return `自訂匯率 · 1 JPY ≈ NT$${Number(rate).toFixed(4)}`;
+  return `${toolState.rateDate ? `最新參考 ${toolState.rateDate} · ` : ""}1 JPY ≈ NT$${Number(rate).toFixed(4)}`;
+};
+const currentExpenseCurrency = () => {
+  const currency = EXPENSE_CURRENCIES[state.expenseCurrency] || EXPENSE_CURRENCIES.JPY;
+  const rate = currency.code === "TWD" ? activeExchangeRate() : 1;
+  return { ...currency, rate, note: currency.code === "TWD" ? expenseRateNote(rate) : currency.note };
+};
 let syncTimer;
 const applyBookingData = (data) => {
   if (!data || typeof data !== "object") return;
@@ -111,12 +120,17 @@ const sharedData = () => ({ day:state.day, done:state.done, tasks:state.tasks, e
 const save = () => { const data = sharedData(); localStorage.setItem("osaka-travel-state", JSON.stringify(data)); clearTimeout(syncTimer); syncTimer = setTimeout(() => fetch("./api/state", { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ data }) }).catch(() => {}), 700); };
 function syncedExpensePage() {
   const total = state.expenses.reduce((sum, item) => sum + Number(item.amount), 0);
-  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>預設日幣；先記下每筆花費，再一起分攤。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>JPY · 日本円</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="is-active" type="button" role="tab" aria-selected="true">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button type="button" disabled role="tab" aria-selected="false">NT$ 台幣</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon("fa-solid fa-yen-sign")}<input name="amount" required type="number" min="1" inputmode="numeric" placeholder="0" autofocus /></label><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category"><option>餐飲</option><option>交通</option><option>門票</option><option>購物</option><option>住宿</option></select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit">記下這筆日幣支出</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · JPY</p></div><strong>${money(item.amount)}</strong><button data-action="expense-delete" data-id="${item.id}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
+  const currency = currentExpenseCurrency();
+  const isTwd = currency.code === "TWD";
+  const rateReady = !isTwd || currency.rate > 0;
+  const rateNote = expenseRateNote(currency.rate);
+  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>預設日幣；切換台幣時會套用工具頁的最新匯率。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category"><option>餐飲</option><option>交通</option><option>門票</option><option>購物</option><option>住宿</option></select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>記下這筆${currency.label}支出</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><button data-action="expense-delete" data-id="${item.id}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
 }
 
 const mapUrl = (place) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
 const money = (value) => {
   const currency = currentExpenseCurrency();
+  if (!(currency.rate > 0)) return "—";
   const amount = new Intl.NumberFormat("zh-TW", { maximumFractionDigits:0 }).format((value || 0) * currency.rate);
   return currency.code === "TWD" ? `NT$${amount}` : `¥${amount}`;
 };
@@ -325,7 +339,7 @@ async function refreshExchangeRate(force = false) {
   if (exchangeRequest || (!force && exchangeIsFresh())) return exchangeRequest;
   exchangeStatus = "loading";
   exchangeError = "";
-  if (state.section === "tools" && toolState.tab === "exchange") render();
+  if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") render();
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 6500);
   exchangeRequest = fetch("https://api.frankfurter.dev/v2/rate/JPY/TWD", { cache:"no-store", signal:controller.signal })
@@ -346,7 +360,7 @@ async function refreshExchangeRate(force = false) {
     .finally(() => {
       window.clearTimeout(timeout);
       exchangeRequest = null;
-      if (state.section === "tools" && toolState.tab === "exchange") render();
+      if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") render();
     });
   return exchangeRequest;
 }
@@ -437,7 +451,7 @@ function updateExpenseCurrencyUI() {
     const code = index === 0 ? "JPY" : "TWD";
     const selected = code === currency.code;
     const option = EXPENSE_CURRENCIES[code];
-    button.disabled = false;
+    button.disabled = code === "TWD" && !(currency.rate > 0);
     button.dataset.action = "expense-currency";
     button.dataset.currency = code;
     button.classList.toggle("is-active", selected);
@@ -452,9 +466,17 @@ function updateExpenseCurrencyUI() {
     amountLabel.innerHTML = `${icon(currency.icon)}`;
     amountLabel.append(amountInput);
     amountInput.placeholder = currency.code === "JPY" ? "0" : "0.00";
+    amountInput.step = currency.code === "JPY" ? "1" : "0.01";
+    amountInput.inputMode = currency.code === "JPY" ? "numeric" : "decimal";
+    amountInput.disabled = currency.code === "TWD" && !(currency.rate > 0);
   }
   const submit = document.querySelector("#expense-form .primary-button");
-  if (submit) submit.textContent = `記下這筆${currency.label}支出`;
+  if (submit) {
+    submit.textContent = `記下這筆${currency.label}支出`;
+    submit.disabled = currency.code === "TWD" && !(currency.rate > 0);
+  }
+  const rateHint = document.querySelector(".expense-rate-hint");
+  if (rateHint) rateHint.textContent = expenseRateNote(currency.rate);
   document.querySelectorAll(".ledger article p").forEach((entry) => {
     entry.textContent = entry.textContent.replace(/·\s*(JPY|TWD)$/, `· ${currency.code}`);
   });
@@ -503,13 +525,14 @@ const updateExchangeResult = () => {
   output.textContent = `${prefix}${new Intl.NumberFormat("zh-TW", { maximumFractionDigits:0 }).format(Math.round(converted))}`;
 };
 function render() { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage, tools:toolsPage }; const page = pages[state.section] || itineraryPage; const markup = page(); stopJapaneseSpeech(); app.innerHTML = window.matchMedia("(pointer: coarse)").matches ? markup.replace(/\sautofocus(?=[\s>])/g, "") : markup; updateExpenseCurrencyUI(); document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section)); }
-document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { stopJapaneseSpeech(); state.section = button.dataset.section; render(); if (state.section === "tools" && toolState.tab === "exchange") refreshExchangeRate(); window.scrollTo({ top:0, behavior:"smooth" }); } });
+document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { stopJapaneseSpeech(); state.section = button.dataset.section; render(); if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") refreshExchangeRate(); window.scrollTo({ top:0, behavior:"smooth" }); } });
 app.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action], [data-day]");
   if (!button) return;
   if (button.dataset.day) { state.day = Number(button.dataset.day); save(); render(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); return; }
   const { action, key, id, name } = button.dataset;
   if (action === "expense-currency") {
+    if (button.dataset.currency === "TWD" && !(activeExchangeRate() > 0)) { refreshExchangeRate(); return; }
     state.expenseCurrency = button.dataset.currency === "TWD" ? "TWD" : "JPY";
     localStorage.setItem("osaka-expense-currency", state.expenseCurrency);
     render();
@@ -643,4 +666,5 @@ app.addEventListener("submit", (event) => {
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 render();
 refreshWeatherForDay(tripDays.find((item) => item.day === state.day));
+if (state.section === "expenses" || (state.section === "tools" && toolState.tab === "exchange")) refreshExchangeRate();
 fetch("./api/state", { cache:"no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then(({ data }) => { if (!data || typeof data !== "object") return; state.day = Number(data.day) || state.day; state.done = data.done || state.done; state.tasks = data.tasks || state.tasks; state.expenses = Array.isArray(data.expenses) ? data.expenses : state.expenses; state.journal = Array.isArray(data.journal) ? data.journal : state.journal; state.planningTab = planningTabs.some(([id]) => id === data.planningTab) ? data.planningTab : state.planningTab; state.planningMemberFilter = data.planningMemberFilter || state.planningMemberFilter; applyTripContent(data); if (data.bookings) { applyBookingData(data.bookings); } if (Array.isArray(data.members)) { syncedMembers = data.members; window.applyMembersData?.(data.members); } localStorage.setItem("osaka-travel-state", JSON.stringify(sharedData())); render(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); }).catch(() => {});
