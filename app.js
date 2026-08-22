@@ -127,7 +127,7 @@ function syncedExpensePage() {
   const isTwd = currency.code === "TWD";
   const rateReady = !isTwd || currency.rate > 0;
   const rateNote = expenseRateNote(currency.rate);
-  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>預設日幣；切換台幣時會套用工具頁的最新匯率。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category"><option>餐飲</option><option>交通</option><option>門票</option><option>購物</option><option>住宿</option></select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>記下這筆${currency.label}支出</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><button data-action="expense-delete" data-id="${item.id}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
+  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>預設日幣；切換台幣時會套用工具頁的最新匯率。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category"><option>餐飲</option><option>交通</option><option>門票</option><option>購物</option><option>住宿</option></select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>記下這筆${currency.label}支出</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article data-render-key="expense:${safe(item.id)}"><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><button data-action="expense-delete" data-id="${item.id}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
 }
 
 const mapUrl = (place) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
@@ -303,7 +303,7 @@ function itineraryPage() {
   const current = tripDays.find((item) => item.day === state.day);
   if (!current) return `<section class="section itinerary-view"><div class="empty-state"><span>${icon("fa-solid fa-compass")}</span><p>正在載入旅程資料…</p></div></section>`;
   const completed = current.stops.filter((_, index) => state.done[`${current.day}-${index}`]).length;
-  return `<section class="section itinerary-view"><div class="section-intro"><p>行程日期</p><button class="tiny-action" data-action="today" type="button">今天在哪裡？</button></div><div class="day-scroller" role="tablist" aria-label="選擇旅行日">${tripDays.map((item) => { const [date, month, weekday] = dayText(item.date); return `<button class="day-chip ${item.day === state.day ? "is-active" : ""}" data-day="${item.day}" role="tab" aria-selected="${item.day === state.day}" type="button"><small>DAY ${item.day}</small><strong>${date}/${month}</strong><em>${weekday}</em></button>`; }).join("")}</div>${weatherCard(current)}<article class="countdown-card"><span aria-hidden="true">${icon("fa-solid fa-plane-departure")}</span><div><small>距離出發</small><strong>${daysUntil()}<i>天</i></strong></div><p>大阪，我們要來了</p></article><div class="day-heading"><div><p>DAY ${current.day}</p><h2>${current.area}</h2><span>${current.date.replaceAll("-", ".")} · 已完成 ${completed}/${current.stops.length}</span></div><span class="day-orb">${current.day}</span></div>${rainPlanCard(current)}<ol class="schedule-list">${current.stops.map(([time, place, note], index) => { const key = `${current.day}-${index}`; const done = state.done[key]; return `<li class="schedule-item ${done ? "is-done" : ""}"><button class="stop-check" data-action="stop" data-key="${key}" aria-label="${done ? "標記未完成" : "標記完成"}" type="button">${done ? icon("fa-solid fa-check") : ""}</button><time>${time}</time><div class="schedule-item__copy"><h3>${safe(place)}</h3><p>${safe(note)}</p><a href="${mapUrl(place)}" target="_blank" rel="noopener">在地圖開啟 ${icon("fa-solid fa-arrow-up-right-from-square")}</a></div></li>`; }).join("")}</ol></section>`;
+  return `<section class="section itinerary-view"><div class="section-intro"><p>行程日期</p><button class="tiny-action" data-action="today" type="button">今天在哪裡？</button></div><div class="day-scroller" role="tablist" aria-label="選擇旅行日">${tripDays.map((item) => { const [date, month, weekday] = dayText(item.date); return `<button class="day-chip ${item.day === state.day ? "is-active" : ""}" data-day="${item.day}" role="tab" aria-selected="${item.day === state.day}" type="button"><small>DAY ${item.day}</small><strong>${date}/${month}</strong><em>${weekday}</em></button>`; }).join("")}</div>${weatherCard(current)}<article class="countdown-card"><span aria-hidden="true">${icon("fa-solid fa-plane-departure")}</span><div><small>距離出發</small><strong>${daysUntil()}<i>天</i></strong></div><p>大阪，我們要來了</p></article><div class="day-heading"><div><p>DAY ${current.day}</p><h2>${current.area}</h2><span>${current.date.replaceAll("-", ".")} · 已完成 ${completed}/${current.stops.length}</span></div><span class="day-orb">${current.day}</span></div>${rainPlanCard(current)}<ol class="schedule-list">${current.stops.map(([time, place, note], index) => { const key = `${current.day}-${index}`; const done = state.done[key]; return `<li class="schedule-item ${done ? "is-done" : ""}" data-render-key="stop:${key}"><button class="stop-check" data-action="stop" data-key="${key}" aria-label="${done ? "標記未完成" : "標記完成"}" type="button">${done ? icon("fa-solid fa-check") : ""}</button><time>${time}</time><div class="schedule-item__copy"><h3>${safe(place)}</h3><p>${safe(note)}</p><a href="${mapUrl(place)}" target="_blank" rel="noopener">在地圖開啟 ${icon("fa-solid fa-arrow-up-right-from-square")}</a></div></li>`; }).join("")}</ol></section>`;
 }
 function bookingPage() { const stays = bookings.filter(([type]) => type === "住宿"); const tickets = bookings.filter(([type]) => type === "票券"); return `<section class="section booking-view"><div class="page-title"><p>旅程收納</p><h2>我的預訂</h2><span>機票、住宿、租車與憑證都放在同一個地方。</span></div><div class="booking-summary"><span>已整理</span><strong>${bookings.length}<i>項</i></strong><p>出發前再核對一次訂單。</p></div><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-plane")}</span><h3>機票</h3><small>${flights.length} 段</small></div><div class="flight-stack">${flights.map((flight) => `<article class="boarding-pass"><div class="boarding-pass__main"><small>${flight.label} · ${flight.code}</small><div><strong>${flight.from}</strong>${icon("fa-solid fa-arrow-right")}<strong>${flight.to}</strong></div><p>${flight.date}</p></div><div class="boarding-pass__stub"><span>${flight.label.includes("去程") ? "抵達時間" : "起飛時間"}</span><b>${flight.time}</b><small>${flight.code}</small></div></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-bed")}</span><h3>住宿</h3><small>${stays.length} 間</small></div><div class="stay-stack">${stays.map(([,name,detail],index) => `<article class="stay-card"><div class="stay-card__photo stay-card__photo--${index + 1}"><span>${icon("fa-solid fa-bed")}</span></div><div><h4>${name}</h4><p>${detail}</p><small>入住資訊與地址待補</small></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">${icon("fa-solid fa-ellipsis")}</button></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-car-side")}</span><h3>租車</h3></div><article class="rental-card"><div class="rental-card__car">${icon("fa-solid fa-car-side")}</div><div><h4>關西自駕</h4><p>取還車時間、車型、保險與 ETC</p><small>尚待補上預訂資訊</small></div><button type="button" disabled>待補</button></article></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-ticket")}</span><h3>憑證</h3><small>${tickets.length} 張</small></div><div class="voucher-list">${tickets.map(([,name,detail,iconClass]) => `<article><span>${icon(iconClass)}</span><div><h4>${name}</h4><p>${detail}</p></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">查看</button></article>`).join("")}</div></section></section>`; }
 function journalPage() { return `<section class="section"><div class="page-title"><p>旅行回憶</p><h2>今日手記</h2><span>照片會褪色，當下的心情不會。</span></div><form class="journal-compose" id="journal-form"><textarea name="note" required maxlength="180" placeholder="今天最想記住的是⋯⋯"></textarea><button class="primary-button" type="submit">留下這一頁</button></form><div class="journal-list">${state.journal.length ? state.journal.slice().reverse().map((item) => `<article class="journal-entry"><div class="journal-entry__stamp">${item.day}</div><div><p>${safe(item.note)}</p><span>${item.date}</span></div><button data-action="journal-delete" data-id="${item.id}" type="button" aria-label="刪除日誌">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state journal-empty"><span>${icon("fa-solid fa-feather-pointed")}</span><p>旅程還沒開始。<br />等第一個想留下的瞬間。</p></div>`}</div></section>`; }
@@ -433,7 +433,7 @@ async function refreshExchangeRate(force = false) {
 }
 
 const toolTabNav = () => `<nav class="booking-subnav tools-tabs" role="tablist" aria-label="旅行工具分類">${toolTabs.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${toolState.tab === id ? "is-active" : ""}" data-action="tool-tab" data-tab="${id}" type="button" role="tab" aria-selected="${toolState.tab === id}">${icon(iconClass)}<span>${label}</span></button>`).join("")}</nav>`;
-const phraseCard = (phrase, compact = false) => `<article class="phrase-card ${compact ? "phrase-card--compact" : ""}"><div class="phrase-card__copy"><small>${safe(phrase.zh)}</small><strong lang="ja">${safe(phrase.ja)}</strong>${compact ? "" : `<span>${safe(phrase.roma)}</span>`}</div><div class="phrase-card__actions"><button data-action="phrase-copy" data-phrase="${safe(phrase.ja)}" type="button" aria-label="複製日文：${safe(phrase.zh)}">${icon("fa-regular fa-copy")}</button><button class="phrase-play" data-action="phrase-speak" data-phrase="${safe(phrase.ja)}" type="button" aria-label="播放日文：${safe(phrase.zh)}">${icon("fa-solid fa-volume-high")}</button><button data-action="phrase-edit" data-phrase-id="${safe(phrase.id)}" type="button" aria-label="編輯：${safe(phrase.zh)}">${icon("fa-solid fa-pen")}</button><button data-action="phrase-delete" data-phrase-id="${safe(phrase.id)}" type="button" aria-label="刪除：${safe(phrase.zh)}">${icon("fa-solid fa-trash-can")}</button></div></article>`;
+const phraseCard = (phrase, compact = false) => `<article class="phrase-card ${compact ? "phrase-card--compact" : ""}" data-render-key="phrase:${safe(phrase.id)}"><div class="phrase-card__copy"><small>${safe(phrase.zh)}</small><strong lang="ja">${safe(phrase.ja)}</strong>${compact ? "" : `<span>${safe(phrase.roma)}</span>`}</div><div class="phrase-card__actions"><button data-action="phrase-copy" data-phrase="${safe(phrase.ja)}" type="button" aria-label="複製日文：${safe(phrase.zh)}">${icon("fa-regular fa-copy")}</button><button class="phrase-play" data-action="phrase-speak" data-phrase="${safe(phrase.ja)}" type="button" aria-label="播放日文：${safe(phrase.zh)}">${icon("fa-solid fa-volume-high")}</button><button data-action="phrase-edit" data-phrase-id="${safe(phrase.id)}" type="button" aria-label="編輯：${safe(phrase.zh)}">${icon("fa-solid fa-pen")}</button><button data-action="phrase-delete" data-phrase-id="${safe(phrase.id)}" type="button" aria-label="刪除：${safe(phrase.zh)}">${icon("fa-solid fa-trash-can")}</button></div></article>`;
 
 function phrasesToolPanel() {
   const activeCategory = phraseCategories.some(([id]) => id === toolState.phraseCategory) ? toolState.phraseCategory : "general";
@@ -501,7 +501,7 @@ const planningCard = (item) => {
   const done = planningItemDone(item);
   const progress = `${(item.completedBy || []).filter((memberId) => item.assignees?.includes(memberId)).length}/${item.assignees?.length || 0}`;
   const extra = state.planningTab === "todo" ? `<span class="planning-progress ${done ? "is-complete" : ""}">${progress}</span>` : `<button class="planning-checkbox ${done ? "is-complete" : ""}" data-action="planning-toggle" data-item-id="${safe(item.id)}" type="button" aria-label="${done ? "標記未完成" : "標記完成"}">${done ? icon("fa-solid fa-check") : ""}</button>`;
-  return `<article class="planning-card ${state.planningTab === "wishlist" ? "planning-card--wishlist" : ""} ${done ? "is-complete" : ""}"><div class="planning-card__tags">${(item.assignees || []).map((memberId) => `<span>${safe(planningMemberName(memberId))}</span>`).join("")}</div><div class="planning-card__body">${extra}<div class="planning-card__copy"><h3>${safe(item.title)}</h3>${item.note ? `<p>${safe(item.note)}</p>` : ""}</div><div class="planning-card__actions"><button data-action="planning-edit" data-item-id="${safe(item.id)}" type="button" aria-label="編輯 ${safe(item.title)}">${icon("fa-solid fa-pen")}</button><button data-action="planning-delete" data-item-id="${safe(item.id)}" type="button" aria-label="刪除 ${safe(item.title)}">${icon("fa-solid fa-trash-can")}</button></div></div><div class="planning-card__assignees">${planningAssigneeTags(item)}</div></article>`;
+  return `<article class="planning-card ${state.planningTab === "wishlist" ? "planning-card--wishlist" : ""} ${done ? "is-complete" : ""}" data-render-key="planning:${safe(item.id)}"><div class="planning-card__tags">${(item.assignees || []).map((memberId) => `<span>${safe(planningMemberName(memberId))}</span>`).join("")}</div><div class="planning-card__body">${extra}<div class="planning-card__copy"><h3>${safe(item.title)}</h3>${item.note ? `<p>${safe(item.note)}</p>` : ""}</div><div class="planning-card__actions"><button data-action="planning-edit" data-item-id="${safe(item.id)}" type="button" aria-label="編輯 ${safe(item.title)}">${icon("fa-solid fa-pen")}</button><button data-action="planning-delete" data-item-id="${safe(item.id)}" type="button" aria-label="刪除 ${safe(item.title)}">${icon("fa-solid fa-trash-can")}</button></div></div><div class="planning-card__assignees">${planningAssigneeTags(item)}</div></article>`;
 };
 function planningPage() {
   const tab = planningTabs.find(([id]) => id === state.planningTab) || planningTabs[0];
@@ -591,10 +591,93 @@ const updateExchangeResult = () => {
   const prefix = output.dataset.direction === "JPY_TWD" ? "NT$" : "¥";
   output.textContent = `${prefix}${new Intl.NumberFormat("zh-TW", { maximumFractionDigits:0 }).format(Math.round(converted))}`;
 };
-const renderPageContent = (markup, { preserveScroll = true } = {}) => {
+const renderKey = (node) => node.nodeType === Node.ELEMENT_NODE ? node.getAttribute("data-render-key") || node.id || "" : "";
+const activeFormControl = () => document.activeElement?.matches?.("input, textarea, select") ? document.activeElement : null;
+const hasPendingFormValue = (control) => {
+  if (control instanceof HTMLInputElement) {
+    if (control.type === "file") return control.files?.length > 0;
+    if (["checkbox", "radio"].includes(control.type)) return control.checked !== control.defaultChecked;
+    return control.value !== control.defaultValue;
+  }
+  if (control instanceof HTMLTextAreaElement) return control.value !== control.defaultValue;
+  if (control instanceof HTMLSelectElement) return [...control.options].some((option) => option.selected !== option.defaultSelected);
+  return false;
+};
+const syncControlValue = (current, next, activeControl, preserveFormValues) => {
+  if (current === activeControl || (preserveFormValues && hasPendingFormValue(current))) return;
+  if (current instanceof HTMLInputElement) {
+    if (current.type !== "file") current.value = next.value;
+    current.checked = next.checked;
+  } else if (current instanceof HTMLTextAreaElement) {
+    current.value = next.value;
+  } else if (current instanceof HTMLSelectElement) {
+    current.value = next.value;
+  }
+};
+const syncAttributes = (current, next, activeControl, preserveFormValues) => {
+  [...current.attributes].forEach((attribute) => {
+    if (!next.hasAttribute(attribute.name)) current.removeAttribute(attribute.name);
+  });
+  [...next.attributes].forEach((attribute) => {
+    if ((current === activeControl || (preserveFormValues && hasPendingFormValue(current))) && ["value", "checked", "selected"].includes(attribute.name)) return;
+    if (current.getAttribute(attribute.name) !== attribute.value) current.setAttribute(attribute.name, attribute.value);
+  });
+  syncControlValue(current, next, activeControl, preserveFormValues);
+};
+const canPatch = (current, next) => current.nodeType === next.nodeType && current.nodeName === next.nodeName;
+const patchNode = (current, next, activeControl, preserveFormValues) => {
+  if (!canPatch(current, next)) {
+    current.replaceWith(next.cloneNode(true));
+    return;
+  }
+  if (current.nodeType === Node.TEXT_NODE) {
+    if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+    return;
+  }
+  if (current.outerHTML === next.outerHTML) return;
+  syncAttributes(current, next, activeControl, preserveFormValues);
+  if (current === activeControl) return;
+  patchChildren(current, next, activeControl, preserveFormValues);
+};
+const patchChildren = (current, next, activeControl, preserveFormValues) => {
+  const keyedCurrent = new Map([...current.childNodes].map((node) => [renderKey(node), node]).filter(([key]) => key));
+  const retained = new Set();
+  let cursor = current.firstChild;
+  [...next.childNodes].forEach((nextChild) => {
+    const key = renderKey(nextChild);
+    let child = key ? keyedCurrent.get(key) : null;
+    if (!child && cursor && !retained.has(cursor) && !renderKey(cursor) && canPatch(cursor, nextChild)) child = cursor;
+    if (!child) {
+      child = nextChild.cloneNode(true);
+      current.insertBefore(child, cursor);
+    } else {
+      if (child !== cursor) current.insertBefore(child, cursor);
+      patchNode(child, nextChild, activeControl, preserveFormValues);
+    }
+    retained.add(child);
+    cursor = child.nextSibling;
+  });
+  [...current.childNodes].forEach((child) => {
+    if (!retained.has(child)) child.remove();
+  });
+};
+const patchPageContent = (markup, { preserveFormValues = true } = {}) => {
+  const template = document.createElement("template");
+  template.innerHTML = markup.trim();
+  const nextSection = template.content.firstElementChild;
+  const currentSection = app.firstElementChild;
+  const sectionChanged = app.dataset.renderedSection && app.dataset.renderedSection !== state.section;
+  if (!nextSection || !currentSection || sectionChanged || currentSection.nodeName !== nextSection.nodeName) {
+    app.replaceChildren(template.content.cloneNode(true));
+  } else {
+    patchChildren(app, template.content, activeFormControl(), preserveFormValues);
+  }
+  app.dataset.renderedSection = state.section;
+};
+const renderPageContent = (markup, { preserveScroll = true, preserveFormValues = true } = {}) => {
   const scrollTop = window.scrollY;
   const scrollLeft = window.scrollX;
-  if (app.innerHTML !== markup) app.innerHTML = markup;
+  if (app.innerHTML !== markup) patchPageContent(markup, { preserveFormValues });
   updateExpenseCurrencyUI();
   document.querySelectorAll(".bottom-nav__item").forEach((button) => button.classList.toggle("is-active", button.dataset.section === state.section));
   if (preserveScroll && (window.scrollY !== scrollTop || window.scrollX !== scrollLeft)) {
@@ -723,7 +806,7 @@ document.addEventListener("submit", (event) => {
   item.completedBy = (item.completedBy || []).filter((memberId) => selectedMembers.some((id) => id === memberId || legacyMemberAliases[id] === memberId || legacyMemberAliases[memberId] === id));
   closePlanningModal();
   save();
-  render();
+  render({ preserveFormValues:false });
 });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && document.querySelector(".planning-modal")) closePlanningModal(); });
 app.addEventListener("input", (event) => { if (event.target.id === "exchange-amount") updateExchangeResult(); });
@@ -781,7 +864,7 @@ app.addEventListener("submit", async (event) => {
     planningItems.push({ id:crypto.randomUUID(), category:state.planningTab, title:title.slice(0, 60), note:String(data.get("note") || "").trim().slice(0, 180), assignees, completedBy:[] });
   }
   save();
-  render();
+  render({ preserveFormValues:false });
 });
 app.addEventListener("submit", (event) => {
   if (event.target.id !== "expense-form" || state.expenseCurrency === "JPY") return;
