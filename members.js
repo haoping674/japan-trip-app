@@ -109,7 +109,7 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
     window.setSharedMembers?.(members);
     renderHeader();
-    render();
+    if (["members", "expenses", "planning"].includes(state.section)) window.renderWhenSafe?.();
   };
 
   const baseRender = render;

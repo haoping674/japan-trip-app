@@ -245,7 +245,7 @@ const refreshWeatherForDay = (tripDay, force = false) => {
     .then((response) => response.ok ? response.json() : Promise.reject(new Error(`weather-${response.status}`)))
     .then((payload) => weatherRecordFrom(payload, tripDay));
   weatherRequest = { key, promise };
-  if (state.section === "itinerary" && isCurrentWeatherDay(tripDay)) render();
+  if (state.section === "itinerary" && isCurrentWeatherDay(tripDay)) renderWhenSafe();
   promise.then((weather) => {
     weatherCache.entries[key] = { fetchedAt:Date.now(), weather };
     persistWeatherCache();
@@ -255,7 +255,7 @@ const refreshWeatherForDay = (tripDay, force = false) => {
   }).finally(() => {
     window.clearTimeout(timeout);
     if (weatherRequest?.key === key) weatherRequest = null;
-    if (state.section === "itinerary" && isCurrentWeatherDay(tripDay)) render();
+    if (state.section === "itinerary" && isCurrentWeatherDay(tripDay)) renderWhenSafe();
   });
   return promise;
 };
@@ -406,7 +406,7 @@ async function refreshExchangeRate(force = false) {
   if (exchangeRequest || (!force && exchangeIsFresh())) return exchangeRequest;
   exchangeStatus = "loading";
   exchangeError = "";
-  if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") render();
+  if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") renderWhenSafe();
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 6500);
   exchangeRequest = fetch("https://api.frankfurter.dev/v2/rate/JPY/TWD", { cache:"no-store", signal:controller.signal })
@@ -427,7 +427,7 @@ async function refreshExchangeRate(force = false) {
     .finally(() => {
       window.clearTimeout(timeout);
       exchangeRequest = null;
-      if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") render();
+      if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") renderWhenSafe();
     });
   return exchangeRequest;
 }
@@ -603,6 +603,12 @@ const renderPageContent = (markup, { preserveScroll = true } = {}) => {
 };
 window.renderPageContent = renderPageContent;
 function render(options = {}) { const pages = { itinerary:itineraryPage, bookings:bookingPage, expenses:syncedExpensePage, planning:planningPage, tools:toolsPage }; const page = pages[state.section] || itineraryPage; const markup = page(); stopJapaneseSpeech(); renderPageContent(window.matchMedia("(pointer: coarse)").matches ? markup.replace(/\sautofocus(?=[\s>])/g, "") : markup, options); }
+const renderWhenSafe = (options = {}) => {
+  if (document.querySelector(".phrase-editor-modal, .planning-modal, .edit-modal, .member-modal")) return false;
+  render(options);
+  return true;
+};
+window.renderWhenSafe = renderWhenSafe;
 document.querySelector(".bottom-nav").addEventListener("click", (event) => { const button = event.target.closest("[data-section]"); if (button) { stopJapaneseSpeech(); state.section = button.dataset.section; render({ preserveScroll:false }); if ((state.section === "tools" && toolState.tab === "exchange") || state.section === "expenses") refreshExchangeRate(); window.scrollTo({ top:0, behavior:"smooth" }); } });
 app.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action], [data-day]");
@@ -787,4 +793,4 @@ if (initial.tripDays || initial.planningItems || initial.japanesePhrases) applyT
 render();
 refreshWeatherForDay(tripDays.find((item) => item.day === state.day));
 if (state.section === "expenses" || (state.section === "tools" && toolState.tab === "exchange")) refreshExchangeRate();
-fetch("./api/state", { cache:"no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then(({ data }) => { if (!data || typeof data !== "object") return; state.day = Number(data.day) || state.day; state.done = data.done || state.done; state.tasks = data.tasks || state.tasks; state.expenses = Array.isArray(data.expenses) ? data.expenses : state.expenses; state.journal = Array.isArray(data.journal) ? data.journal : state.journal; state.planningTab = planningTabs.some(([id]) => id === data.planningTab) ? data.planningTab : state.planningTab; state.planningMemberFilter = data.planningMemberFilter || state.planningMemberFilter; applyTripContent(data); if (data.bookings) { applyBookingData(data.bookings); } if (Array.isArray(data.members)) { syncedMembers = data.members; window.applyMembersData?.(data.members); } localStorage.setItem("osaka-travel-state", JSON.stringify(sharedData())); render(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); }).catch(() => {});
+fetch("./api/state", { cache:"no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then(({ data }) => { if (!data || typeof data !== "object") return; state.day = Number(data.day) || state.day; state.done = data.done || state.done; state.tasks = data.tasks || state.tasks; state.expenses = Array.isArray(data.expenses) ? data.expenses : state.expenses; state.journal = Array.isArray(data.journal) ? data.journal : state.journal; state.planningTab = planningTabs.some(([id]) => id === data.planningTab) ? data.planningTab : state.planningTab; state.planningMemberFilter = data.planningMemberFilter || state.planningMemberFilter; applyTripContent(data); if (data.bookings) { applyBookingData(data.bookings); } if (Array.isArray(data.members)) { syncedMembers = data.members; window.applyMembersData?.(data.members); } localStorage.setItem("osaka-travel-state", JSON.stringify(sharedData())); renderWhenSafe(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); }).catch(() => {});

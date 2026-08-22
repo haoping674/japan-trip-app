@@ -27,7 +27,7 @@
       bookingData = { ...bookingData, ...payload.data.bookings, flight:{ ...bookingData.flight, ...(payload.data.bookings.flight || {}) }, rental:{ ...bookingData.rental, ...(payload.data.bookings.rental || {}) }, stays:Array.isArray(payload.data.bookings.stays) ? payload.data.bookings.stays : bookingData.stays, vouchers:Array.isArray(payload.data.bookings.vouchers) ? payload.data.bookings.vouchers : bookingData.vouchers };
       syncAppBookings();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(bookingData));
-      render();
+      if (state.section === "bookings") window.renderWhenSafe?.();
     } catch {}
   };
   const imageForStay = (name, index) => stayImages[name] || Object.values(stayImages)[index % Object.values(stayImages).length];
