@@ -31,7 +31,11 @@
     } catch {}
   };
   const imageForStay = (name, index) => stayImages[name] || Object.values(stayImages)[index % Object.values(stayImages).length];
-  const field = (label, name, value, type = "text", extra = "") => `<label class="edit-field"><span>${label}</span><input name="${name}" type="${type}" value="${safe(value ?? "")}" ${extra} /></label>`;
+  const field = (label, name, value, type = "text", extra = "") => {
+    const isNativeDateTime = type === "date" || type === "time";
+    const input = `<input name="${name}" type="${type}" value="${safe(value ?? "")}" ${extra} />`;
+    return `<label class="edit-field"><span>${label}</span>${isNativeDateTime ? `<span class="edit-field__control">${input}</span>` : input}</label>`;
+  };
 
   const openModal = (content) => {
     document.querySelector(".edit-modal")?.remove();
