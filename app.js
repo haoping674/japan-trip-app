@@ -122,12 +122,148 @@ const money = (value) => {
 };
 const dayText = (date) => { const value = new Date(`${date}T12:00:00`); return [value.getMonth() + 1, value.getDate(), new Intl.DateTimeFormat("zh-TW", { weekday:"short" }).format(value).replace("週", "")]; };
 const daysUntil = () => Math.max(0, Math.ceil((new Date("2026-09-06T12:40:00+09:00") - Date.now()) / 86400000));
+const WEATHER_CACHE_KEY = "osaka-weather-state-v1";
+const WEATHER_CACHE_TTL = 6 * 60 * 60 * 1000;
+const WEATHER_LOCATIONS = {
+  "京都": { latitude:35.0116, longitude:135.7681 },
+  "若狹": { latitude:35.4950, longitude:135.7460 },
+  "宮津": { latitude:35.5350, longitude:135.1950 },
+  "大阪": { latitude:34.6937, longitude:135.5023 },
+  "關西": { latitude:34.4347, longitude:135.2440 },
+};
+const weatherCache = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || "{}");
+    return { entries: saved.entries && typeof saved.entries === "object" ? saved.entries : {} };
+  } catch {
+    return { entries:{} };
+  }
+})();
+let weatherStatus = "idle";
+let weatherStatusKey = "";
+let weatherRequest = null;
+const persistWeatherCache = () => localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(weatherCache));
+const weatherLocationFor = (tripDay) => {
+  const source = tripDay?.weatherLocation;
+  if (Number.isFinite(Number(source?.latitude)) && Number.isFinite(Number(source?.longitude))) {
+    return { latitude:Number(source.latitude), longitude:Number(source.longitude) };
+  }
+  return WEATHER_LOCATIONS[tripDay?.weather] || WEATHER_LOCATIONS[tripDay?.area] || null;
+};
+const weatherCacheKey = (tripDay, location) => `${tripDay.date}:${location.latitude.toFixed(4)},${location.longitude.toFixed(4)}`;
+const weatherCodeInfo = (code) => {
+  const groups = [
+    [[0], "晴朗", "fa-solid fa-sun"],
+    [[1, 2], "晴時多雲", "fa-solid fa-cloud-sun"],
+    [[3], "多雲", "fa-solid fa-cloud"],
+    [[45, 48], "有霧", "fa-solid fa-smog"],
+    [[51, 53, 55, 56, 57], "毛毛雨", "fa-solid fa-cloud-rain"],
+    [[61, 63, 65, 66, 67], "雨天", "fa-solid fa-cloud-showers-heavy"],
+    [[71, 73, 75, 77, 85, 86], "下雪", "fa-solid fa-snowflake"],
+    [[80, 81, 82], "陣雨", "fa-solid fa-cloud-showers-heavy"],
+    [[95, 96, 99], "雷雨", "fa-solid fa-cloud-bolt"],
+  ];
+  const match = groups.find(([codes]) => codes.includes(Number(code)));
+  return match ? { label:match[1], icon:match[2] } : { label:"天氣變化", icon:"fa-solid fa-cloud" };
+};
+const weatherNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.round(number) : null;
+};
+const weatherTime = (value) => typeof value === "string" && value.includes("T") ? value.split("T")[1].slice(0, 5) : "—";
+const weatherRecordFrom = (payload, tripDay) => {
+  const daily = payload?.daily;
+  const index = Array.isArray(daily?.time) ? daily.time.indexOf(tripDay.date) : -1;
+  if (index < 0) {
+    const error = new Error("forecast-unavailable");
+    error.code = "forecast-unavailable";
+    throw error;
+  }
+  const code = Number(daily.weather_code?.[index]);
+  if (!Number.isFinite(code)) throw new Error("forecast-invalid");
+  const info = weatherCodeInfo(code);
+  return {
+    label:info.label,
+    icon:info.icon,
+    max:weatherNumber(daily.temperature_2m_max?.[index]),
+    min:weatherNumber(daily.temperature_2m_min?.[index]),
+    rain:weatherNumber(daily.precipitation_probability_max?.[index]),
+    wind:weatherNumber(daily.wind_speed_10m_max?.[index]),
+    sunrise:weatherTime(daily.sunrise?.[index]),
+    sunset:weatherTime(daily.sunset?.[index]),
+  };
+};
+const isCurrentWeatherDay = (tripDay) => tripDay && tripDays.find((item) => item.day === state.day)?.date === tripDay.date;
+const refreshWeatherForDay = (tripDay, force = false) => {
+  const location = weatherLocationFor(tripDay);
+  if (!tripDay || !location) return Promise.resolve();
+  const key = weatherCacheKey(tripDay, location);
+  const entry = weatherCache.entries[key];
+  const isFresh = entry && Date.now() - Number(entry.fetchedAt) < WEATHER_CACHE_TTL;
+  weatherStatusKey = key;
+  if (!force && isFresh) {
+    weatherStatus = "ready";
+    return Promise.resolve(entry.weather);
+  }
+  if (weatherRequest?.key === key) return weatherRequest.promise;
+  weatherStatus = entry?.weather ? "refreshing" : "loading";
+  const params = new URLSearchParams({
+    latitude:String(location.latitude),
+    longitude:String(location.longitude),
+    daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset",
+    forecast_days:"16",
+    timezone:"Asia/Tokyo",
+  });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 10000);
+  const promise = fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { cache:"no-store", signal:controller.signal })
+    .then((response) => response.ok ? response.json() : Promise.reject(new Error(`weather-${response.status}`)))
+    .then((payload) => weatherRecordFrom(payload, tripDay));
+  weatherRequest = { key, promise };
+  if (state.section === "itinerary" && isCurrentWeatherDay(tripDay)) render();
+  promise.then((weather) => {
+    weatherCache.entries[key] = { fetchedAt:Date.now(), weather };
+    persistWeatherCache();
+    if (weatherStatusKey === key) weatherStatus = "ready";
+  }).catch((error) => {
+    if (weatherStatusKey === key) weatherStatus = error.code === "forecast-unavailable" ? "unavailable" : entry?.weather ? "stale" : "error";
+  }).finally(() => {
+    window.clearTimeout(timeout);
+    if (weatherRequest?.key === key) weatherRequest = null;
+    if (state.section === "itinerary" && isCurrentWeatherDay(tripDay)) render();
+  });
+  return promise;
+};
+const weatherCard = (current) => {
+  const location = weatherLocationFor(current);
+  const key = location ? weatherCacheKey(current, location) : "";
+  const entry = key ? weatherCache.entries[key] : null;
+  const weather = entry?.weather;
+  const status = weatherStatusKey === key ? weatherStatus : "idle";
+  const busy = ["loading", "refreshing"].includes(status);
+  const title = weather?.label || (busy ? "正在取得預報" : "尚無預報");
+  const note = weather
+    ? `${status === "refreshing" ? "正在更新；" : ""}資料來源 Open-Meteo，出發前仍建議再次確認。`
+    : status === "unavailable"
+      ? "這天目前不在 16 日預報範圍內，接近出發日後會自動更新。"
+      : busy
+        ? "正在從 Open-Meteo 取得旅行日預報。"
+        : status === "error"
+          ? "暫時無法取得預報，請稍後再試。"
+          : "準備取得旅行日預報。";
+  const temperature = weather?.max == null ? "—" : `${weather.max}°`;
+  const range = weather && weather.min != null && weather.max != null ? `${weather.min}° / ${weather.max}°` : "—";
+  const rain = weather?.rain == null ? "—" : `${weather.rain}%`;
+  const wind = weather?.wind == null ? "—" : `${weather.wind} km/h`;
+  const sunrise = weather?.sunrise || "—";
+  return `<article class="weather-card"><div class="weather-card__cloud cloud-one"></div><div class="weather-card__cloud cloud-two"></div><div><p class="weather-place">${safe(current.weather || "關西")} · 旅行日天氣</p><h2>${safe(title)} ${icon(weather?.icon || (busy ? "fa-solid fa-cloud-arrow-down" : "fa-solid fa-cloud"))}</h2><p class="weather-note">${safe(note)}</p></div><div class="weather-degree"><b>${temperature}</b><span>${range}</span></div><div class="weather-facts"><span>${icon("fa-solid fa-umbrella")} ${rain}<small>降雨機率</small></span><span>${icon("fa-solid fa-wind")} ${wind}<small>最大風速</small></span><span>${icon("fa-solid fa-sun")} ${sunrise}<small>日出</small></span></div></article>`;
+};
 
 function itineraryPage() {
   const current = tripDays.find((item) => item.day === state.day);
   if (!current) return `<section class="section itinerary-view"><div class="empty-state"><span>${icon("fa-solid fa-compass")}</span><p>正在載入旅程資料…</p></div></section>`;
   const completed = current.stops.filter((_, index) => state.done[`${current.day}-${index}`]).length;
-  return `<section class="section itinerary-view"><div class="section-intro"><p>行程日期</p><button class="tiny-action" data-action="today" type="button">今天在哪裡？</button></div><div class="day-scroller" role="tablist" aria-label="選擇旅行日">${tripDays.map((item) => { const [date, month, weekday] = dayText(item.date); return `<button class="day-chip ${item.day === state.day ? "is-active" : ""}" data-day="${item.day}" role="tab" aria-selected="${item.day === state.day}" type="button"><small>DAY ${item.day}</small><strong>${date}/${month}</strong><em>${weekday}</em></button>`; }).join("")}</div><article class="weather-card"><div class="weather-card__cloud cloud-one"></div><div class="weather-card__cloud cloud-two"></div><div><p class="weather-place">${current.weather} · 旅行日天氣</p><h2>晴朗無雲 ${icon("fa-solid fa-sun")}</h2><p class="weather-note">出發前 7 天再確認即時預報與穿著。</p></div><div class="weather-degree"><b>26°</b><span>20° / 29°</span></div><div class="weather-facts"><span>${icon("fa-solid fa-umbrella")} 10%<small>降雨機率</small></span><span>${icon("fa-solid fa-wind")} 2 級<small>風力</small></span><span>${icon("fa-solid fa-sun")} 05:35<small>日出</small></span></div></article><article class="countdown-card"><span aria-hidden="true">${icon("fa-solid fa-plane-departure")}</span><div><small>距離出發</small><strong>${daysUntil()}<i>天</i></strong></div><p>大阪，我們要來了</p></article><div class="day-heading"><div><p>DAY ${current.day}</p><h2>${current.area}</h2><span>${current.date.replaceAll("-", ".")} · 已完成 ${completed}/${current.stops.length}</span></div><span class="day-orb">${current.day}</span></div><ol class="schedule-list">${current.stops.map(([time, place, note], index) => { const key = `${current.day}-${index}`; const done = state.done[key]; return `<li class="schedule-item ${done ? "is-done" : ""}"><button class="stop-check" data-action="stop" data-key="${key}" aria-label="${done ? "標記未完成" : "標記完成"}" type="button">${done ? icon("fa-solid fa-check") : ""}</button><time>${time}</time><div class="schedule-item__copy"><h3>${safe(place)}</h3><p>${safe(note)}</p><a href="${mapUrl(place)}" target="_blank" rel="noopener">在地圖開啟 ${icon("fa-solid fa-arrow-up-right-from-square")}</a></div></li>`; }).join("")}</ol></section>`;
+  return `<section class="section itinerary-view"><div class="section-intro"><p>行程日期</p><button class="tiny-action" data-action="today" type="button">今天在哪裡？</button></div><div class="day-scroller" role="tablist" aria-label="選擇旅行日">${tripDays.map((item) => { const [date, month, weekday] = dayText(item.date); return `<button class="day-chip ${item.day === state.day ? "is-active" : ""}" data-day="${item.day}" role="tab" aria-selected="${item.day === state.day}" type="button"><small>DAY ${item.day}</small><strong>${date}/${month}</strong><em>${weekday}</em></button>`; }).join("")}</div>${weatherCard(current)}<article class="countdown-card"><span aria-hidden="true">${icon("fa-solid fa-plane-departure")}</span><div><small>距離出發</small><strong>${daysUntil()}<i>天</i></strong></div><p>大阪，我們要來了</p></article><div class="day-heading"><div><p>DAY ${current.day}</p><h2>${current.area}</h2><span>${current.date.replaceAll("-", ".")} · 已完成 ${completed}/${current.stops.length}</span></div><span class="day-orb">${current.day}</span></div><ol class="schedule-list">${current.stops.map(([time, place, note], index) => { const key = `${current.day}-${index}`; const done = state.done[key]; return `<li class="schedule-item ${done ? "is-done" : ""}"><button class="stop-check" data-action="stop" data-key="${key}" aria-label="${done ? "標記未完成" : "標記完成"}" type="button">${done ? icon("fa-solid fa-check") : ""}</button><time>${time}</time><div class="schedule-item__copy"><h3>${safe(place)}</h3><p>${safe(note)}</p><a href="${mapUrl(place)}" target="_blank" rel="noopener">在地圖開啟 ${icon("fa-solid fa-arrow-up-right-from-square")}</a></div></li>`; }).join("")}</ol></section>`;
 }
 function bookingPage() { const stays = bookings.filter(([type]) => type === "住宿"); const tickets = bookings.filter(([type]) => type === "票券"); return `<section class="section booking-view"><div class="page-title"><p>旅程收納</p><h2>我的預訂</h2><span>機票、住宿、租車與憑證都放在同一個地方。</span></div><div class="booking-summary"><span>已整理</span><strong>${bookings.length}<i>項</i></strong><p>出發前再核對一次訂單。</p></div><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-plane")}</span><h3>機票</h3><small>${flights.length} 段</small></div><div class="flight-stack">${flights.map((flight) => `<article class="boarding-pass"><div class="boarding-pass__main"><small>${flight.label} · ${flight.code}</small><div><strong>${flight.from}</strong>${icon("fa-solid fa-arrow-right")}<strong>${flight.to}</strong></div><p>${flight.date}</p></div><div class="boarding-pass__stub"><span>${flight.label.includes("去程") ? "抵達時間" : "起飛時間"}</span><b>${flight.time}</b><small>${flight.code}</small></div></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-bed")}</span><h3>住宿</h3><small>${stays.length} 間</small></div><div class="stay-stack">${stays.map(([,name,detail],index) => `<article class="stay-card"><div class="stay-card__photo stay-card__photo--${index + 1}"><span>${icon("fa-solid fa-bed")}</span></div><div><h4>${name}</h4><p>${detail}</p><small>入住資訊與地址待補</small></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">${icon("fa-solid fa-ellipsis")}</button></article>`).join("")}</div></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-car-side")}</span><h3>租車</h3></div><article class="rental-card"><div class="rental-card__car">${icon("fa-solid fa-car-side")}</div><div><h4>關西自駕</h4><p>取還車時間、車型、保險與 ETC</p><small>尚待補上預訂資訊</small></div><button type="button" disabled>待補</button></article></section><section class="booking-section"><div class="booking-section__title"><span>${icon("fa-solid fa-ticket")}</span><h3>憑證</h3><small>${tickets.length} 張</small></div><div class="voucher-list">${tickets.map(([,name,detail,iconClass]) => `<article><span>${icon(iconClass)}</span><div><h4>${name}</h4><p>${detail}</p></div><button data-action="copy" data-name="${safe(name)}" type="button" aria-label="複製 ${safe(name)}">查看</button></article>`).join("")}</div></section></section>`; }
 function journalPage() { return `<section class="section"><div class="page-title"><p>旅行回憶</p><h2>今日手記</h2><span>照片會褪色，當下的心情不會。</span></div><form class="journal-compose" id="journal-form"><textarea name="note" required maxlength="180" placeholder="今天最想記住的是⋯⋯"></textarea><button class="primary-button" type="submit">留下這一頁</button></form><div class="journal-list">${state.journal.length ? state.journal.slice().reverse().map((item) => `<article class="journal-entry"><div class="journal-entry__stamp">${item.day}</div><div><p>${safe(item.note)}</p><span>${item.date}</span></div><button data-action="journal-delete" data-id="${item.id}" type="button" aria-label="刪除日誌">${icon("fa-solid fa-trash-can")}</button></article>`).join("") : `<div class="empty-state journal-empty"><span>${icon("fa-solid fa-feather-pointed")}</span><p>旅程還沒開始。<br />等第一個想留下的瞬間。</p></div>`}</div></section>`; }
@@ -371,7 +507,7 @@ document.querySelector(".bottom-nav").addEventListener("click", (event) => { con
 app.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action], [data-day]");
   if (!button) return;
-  if (button.dataset.day) { state.day = Number(button.dataset.day); save(); render(); return; }
+  if (button.dataset.day) { state.day = Number(button.dataset.day); save(); render(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); return; }
   const { action, key, id, name } = button.dataset;
   if (action === "expense-currency") {
     state.expenseCurrency = button.dataset.currency === "TWD" ? "TWD" : "JPY";
@@ -506,4 +642,5 @@ app.addEventListener("submit", (event) => {
 }, true);
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 render();
-fetch("./api/state", { cache:"no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then(({ data }) => { if (!data || typeof data !== "object") return; state.day = Number(data.day) || state.day; state.done = data.done || state.done; state.tasks = data.tasks || state.tasks; state.expenses = Array.isArray(data.expenses) ? data.expenses : state.expenses; state.journal = Array.isArray(data.journal) ? data.journal : state.journal; state.planningTab = planningTabs.some(([id]) => id === data.planningTab) ? data.planningTab : state.planningTab; state.planningMemberFilter = data.planningMemberFilter || state.planningMemberFilter; applyTripContent(data); if (data.bookings) { applyBookingData(data.bookings); } if (Array.isArray(data.members)) { syncedMembers = data.members; window.applyMembersData?.(data.members); } localStorage.setItem("osaka-travel-state", JSON.stringify(sharedData())); render(); }).catch(() => {});
+refreshWeatherForDay(tripDays.find((item) => item.day === state.day));
+fetch("./api/state", { cache:"no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then(({ data }) => { if (!data || typeof data !== "object") return; state.day = Number(data.day) || state.day; state.done = data.done || state.done; state.tasks = data.tasks || state.tasks; state.expenses = Array.isArray(data.expenses) ? data.expenses : state.expenses; state.journal = Array.isArray(data.journal) ? data.journal : state.journal; state.planningTab = planningTabs.some(([id]) => id === data.planningTab) ? data.planningTab : state.planningTab; state.planningMemberFilter = data.planningMemberFilter || state.planningMemberFilter; applyTripContent(data); if (data.bookings) { applyBookingData(data.bookings); } if (Array.isArray(data.members)) { syncedMembers = data.members; window.applyMembersData?.(data.members); } localStorage.setItem("osaka-travel-state", JSON.stringify(sharedData())); render(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); }).catch(() => {});
