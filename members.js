@@ -109,7 +109,7 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
     window.setSharedMembers?.(members);
     renderHeader();
-    if (state.section === "members") render();
+    render();
   };
 
   const baseRender = render;

@@ -108,6 +108,12 @@ body { color:var(--ink); background-color:#ebe7dc; background-image:radial-gradi
 .planning-note-toggle { align-self:start; border:2px solid #e7e1d6; background:#fffdf8; color:#8b8175; }
 .planning-add { align-self:start; border:0; background:#83b95e; color:#fff; font-size:1.4rem; box-shadow:0 3px 0 #669448; }
 .planning-add:active { transform:translateY(2px); box-shadow:0 1px 0 #669448; }
+
+@media (max-width:480px) {
+  /* Keep mobile form controls at the iOS Safari zoom threshold when focused. */
+  input:not([type="file"]), textarea, select { font-size:1rem; }
+  .amount-input input { font-size:1.25rem; }
+}
 .preparation-summary { display:flex; align-items:baseline; gap:.5rem; padding:.1rem .2rem 0; color:#887d70; }
 .preparation-summary span { font-size:.68rem; font-weight:900; letter-spacing:.08em; }
 .preparation-summary strong { color:#6d6257; font-family:"Kiwi Maru",serif; font-size:1.08rem; }
