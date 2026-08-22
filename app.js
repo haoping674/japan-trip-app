@@ -15,6 +15,25 @@ let syncedMembers = (() => {
   return Array.isArray(initial.members) ? initial.members : null;
 })();
 const app = document.querySelector("#app-content");
+const clearCacheButton = document.querySelector("[data-action='clear-cache']");
+clearCacheButton?.addEventListener("click", async () => {
+  if (!window.confirm("清除 PWA 快取並重新載入？現有行程與記帳資料會保留。")) return;
+  clearCacheButton.disabled = true;
+  clearCacheButton.setAttribute("aria-busy", "true");
+  if ("serviceWorker" in navigator) {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    } catch {}
+  }
+  if ("caches" in window) {
+    try {
+      const cacheKeys = await window.caches.keys();
+      await Promise.all(cacheKeys.filter((key) => key.startsWith("osaka-travel-")).map((key) => window.caches.delete(key)));
+    } catch {}
+  }
+  window.location.reload();
+});
 const safe = (text) => String(text).replace(/[&<>'"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"})[char]);
 const icon = (classes) => `<i class="${classes}" aria-hidden="true"></i>`;
 const categoryIcon = (category) => ({餐飲:"fa-solid fa-utensils",交通:"fa-solid fa-train-subway",門票:"fa-solid fa-ticket",購物:"fa-solid fa-bag-shopping",住宿:"fa-solid fa-bed"}[category] || "fa-solid fa-receipt");
