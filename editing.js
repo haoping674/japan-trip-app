@@ -74,8 +74,6 @@
       openModal(`<div class="edit-modal__head"><div><small>租車資料</small><h2>編輯租車預約</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><form class="edit-form" data-editor="rental">${field("租車標題", "title", item.title)}${field("租車公司", "company", item.company)}${field("預約編號", "reservation", item.reservation)}<div class="edit-grid">${field("取車時間", "pickup", item.pickup)}${field("取車地點", "pickupLocation", item.pickupLocation)}${field("還車時間", "return", item.return)}${field("還車地點", "returnLocation", item.returnLocation)}</div><div class="edit-modal__actions"><button class="outline-action" type="button" data-close-edit>取消</button><button class="primary-button" type="submit">儲存租車</button></div></form>`);
       return;
     }
-    const item = target.index === null ? { type: "憑證", title: "", file: "PDF" } : bookingData.vouchers[target.index];
-    openModal(`<div class="edit-modal__head"><div><small>票券資料</small><h2>${target.index === null ? "新增憑證" : "編輯憑證"}</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><form class="edit-form" data-editor="voucher" data-index="${target.index === null ? "new" : target.index}">${field("類型", "type", item.type)}${field("憑證名稱", "title", item.title, "text", "required")}${field("檔案類型", "file", item.file)}<div class="edit-modal__actions"><button class="outline-action" type="button" data-close-edit>取消</button><button class="primary-button" type="submit">儲存憑證</button></div></form>`);
   };
 
   let editFlightPanel = () => {
@@ -94,13 +92,13 @@
 
   const editRentalPanel = () => { const item = bookingData.rental; return `<section class="booking-panel booking-panel--rental"><article class="rental-hero"><div class="rental-hero__heading"><span class="rental-icon"><i class="fa-solid fa-car" aria-hidden="true"></i></span><div><small>租車預約</small><h2>${safe(item.title)}</h2><p>${safe(item.company)}</p></div><button type="button" data-edit="rental" aria-label="編輯租車"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></div><div class="rental-number"><small>預約編號</small><strong>${safe(item.reservation)}</strong></div><div class="rental-timeline"><div><span class="timeline-dot timeline-dot--green"><i class="fa-solid fa-key" aria-hidden="true"></i></span><small>PICK-UP 取車</small><strong>${safe(item.pickup)}</strong><p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${safe(item.pickupLocation)}</p></div><div><span class="timeline-dot timeline-dot--orange"><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i></span><small>RETURN 還車</small><strong>${safe(item.return)}</strong><p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${safe(item.returnLocation)}</p></div></div></article></section>`; };
 
-  const editVouchersPanel = () => `<section class="booking-panel booking-panel--vouchers"><label class="voucher-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="搜尋憑證／平台…" /></label><button class="primary-button voucher-add" type="button" data-new="voucher"><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增憑證</button>${bookingData.vouchers.map((item, index) => `<article class="voucher-card"><span class="voucher-card__badge">${safe(item.type)}</span><strong>${safe(item.title)}</strong><button type="button" data-edit="voucher" data-index="${index}" aria-label="編輯 ${safe(item.title)}"><i class="fa-solid fa-pen" aria-hidden="true"></i></button><div class="voucher-card__file"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><small>${safe(item.file)}</small></div></article>`).join("")}</section>`;
-
   const bookingPage = () => {
     const tab = state.bookingTab || "flights";
-    const panel = { flights:editFlightPanel, stays:editStaysPanel, rental:editRentalPanel, vouchers:editVouchersPanel }[tab]();
-    const tabItems = [["flights", "機票", "fa-solid fa-plane"], ["stays", "住宿", "fa-solid fa-building"], ["rental", "租車", "fa-solid fa-car"], ["vouchers", "憑證", "fa-solid fa-ticket"]];
-    return `<section class="section booking-view booking-redesign"><div class="booking-page-title"><p>旅程收納</p><h2>我的預訂</h2><span>把航班、住宿和旅途票券放在一起。</span></div><nav class="booking-subnav" aria-label="預訂分類">${tabItems.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${tab === id ? "is-active" : ""}" data-booking-tab="${id}" type="button"><i class="${iconClass}" aria-hidden="true"></i><span>${label}</span></button>`).join("")}</nav>${panel}</section>`;
+    const tabItems = [["flights", "機票", "fa-solid fa-plane"], ["stays", "住宿", "fa-solid fa-building"], ["rental", "租車", "fa-solid fa-car"]];
+    const activeTab = tabItems.some(([id]) => id === tab) ? tab : tabItems[0][0];
+    state.bookingTab = activeTab;
+    const panel = { flights:editFlightPanel, stays:editStaysPanel, rental:editRentalPanel }[activeTab]();
+    return `<section class="section booking-view booking-redesign"><div class="booking-page-title"><p>旅程收納</p><h2>我的預訂</h2><span>把航班、住宿和租車資訊放在一起。</span></div><nav class="booking-subnav" aria-label="預訂分類">${tabItems.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${activeTab === id ? "is-active" : ""}" data-booking-tab="${id}" type="button"><i class="${iconClass}" aria-hidden="true"></i><span>${label}</span></button>`).join("")}</nav>${panel}</section>`;
   };
 
   const baseRender = render;
@@ -142,7 +140,6 @@
     if (kind === "flight") bookingData.flight = { ...bookingData.flight, ...values };
     if (kind === "stay") { const index = form.dataset.index === "new" ? null : Number(form.dataset.index); if (index === null) bookingData.stays.push(values); else bookingData.stays[index] = { ...bookingData.stays[index], ...values }; }
     if (kind === "rental") bookingData.rental = { ...bookingData.rental, ...values };
-    if (kind === "voucher") { const index = form.dataset.index === "new" ? null : Number(form.dataset.index); if (index === null) bookingData.vouchers.push(values); else bookingData.vouchers[index] = { ...bookingData.vouchers[index], ...values }; }
     saveBookingData();
     closeModal();
     render();

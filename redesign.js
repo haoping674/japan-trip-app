@@ -10,7 +10,6 @@
     ["flights", "機票", "fa-solid fa-plane"],
     ["stays", "住宿", "fa-solid fa-building"],
     ["rental", "租車", "fa-solid fa-car"],
-    ["vouchers", "憑證", "fa-solid fa-ticket"],
   ];
 
   const tabNav = () => `<nav class="booking-subnav" aria-label="預訂分類">${tabs.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${state.bookingTab === id ? "is-active" : ""}" data-booking-tab="${id}" type="button"><i class="${iconClass}" aria-hidden="true"></i><span>${label}</span></button>`).join("")}</nav>`;
@@ -27,14 +26,14 @@
 
   const rentalPanel = () => `<section class="booking-panel booking-panel--rental"><article class="rental-hero"><div class="rental-hero__heading"><span class="rental-icon"><i class="fa-solid fa-car" aria-hidden="true"></i></span><div><small>租車預約</small><h2>樂天租車</h2><p>Jeju Island Rental Service</p></div><button type="button" aria-label="編輯租車"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></div><div class="rental-number"><small>預約編號</small><strong>RWJD-5223</strong></div><div class="rental-timeline"><div><span class="timeline-dot timeline-dot--green"><i class="fa-solid fa-key" aria-hidden="true"></i></span><small>PICK-UP 取車</small><strong>2026/09/10 15:30</strong><p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> 滋州</p></div><div><span class="timeline-dot timeline-dot--orange"><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i></span><small>RETURN 還車</small><strong>2026/09/24 08:00</strong><p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> 滋州</p></div></div></article></section>`;
 
-  const vouchersPanel = () => `<section class="booking-panel booking-panel--vouchers"><label class="voucher-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="搜尋憑證／平台…" /></label><button class="primary-button voucher-add" type="button"><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增憑證</button><article class="voucher-card"><span class="voucher-card__badge">機票</span><strong>機票_凱文</strong><button type="button" aria-label="編輯機票凱文"><i class="fa-solid fa-pen" aria-hidden="true"></i></button><div class="voucher-card__file"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><small>PDF</small></div></article></section>`;
-
   const renderBookingPage = () => {
-    const panel = { flights:flightPanel, stays:staysPanel, rental:rentalPanel, vouchers:vouchersPanel }[state.bookingTab || "flights"]();
-    return `<section class="section booking-view booking-redesign"><div class="booking-page-title"><p>旅程收納</p><h2>我的預訂</h2><span>把航班、住宿和旅途票券放在一起。</span></div>${tabNav()}${panel}</section>`;
+    const activeTab = tabs.some(([id]) => id === state.bookingTab) ? state.bookingTab : tabs[0][0];
+    state.bookingTab = activeTab;
+    const panel = { flights:flightPanel, stays:staysPanel, rental:rentalPanel }[activeTab]();
+    return `<section class="section booking-view booking-redesign"><div class="booking-page-title"><p>旅程收納</p><h2>我的預訂</h2><span>把航班、住宿和租車資訊放在一起。</span></div>${tabNav()}${panel}</section>`;
   };
 
-  state.bookingTab = state.bookingTab || "flights";
+  state.bookingTab = tabs.some(([id]) => id === state.bookingTab) ? state.bookingTab : tabs[0][0];
   const originalRender = render;
   render = (options = {}) => {
     if (state.section !== "bookings") return originalRender(options);
