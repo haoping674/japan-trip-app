@@ -20,6 +20,37 @@ function romanizedText(payload) {
   return part?.[2]?.trim() || "";
 }
 
+function googleLiteText(payload) {
+  return Array.isArray(payload) && typeof payload[0] === "string" ? payload[0].trim() : "";
+}
+
+function myMemoryText(payload) {
+  const translated = payload?.responseData?.translatedText;
+  return typeof translated === "string" ? translated.trim() : "";
+}
+
+async function fetchJson(url, label) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "osaka-travel-phrasebook/1.0" },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`${label} request failed: ${response.status}`);
+    const body = await response.text();
+    let payload;
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      throw new Error(`${label} returned invalid JSON`);
+    }
+    return payload;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -34,22 +65,42 @@ module.exports = async function handler(req, res) {
     const zh = String(payload?.zh || "").trim().slice(0, 80);
     if (!zh) return res.status(400).json({ error: "中文提示不可為空" });
 
-    const url = new URL("https://translate.googleapis.com/translate_a/single");
-    url.searchParams.set("client", "gtx");
-    url.searchParams.set("sl", "zh-TW");
-    url.searchParams.set("tl", "ja");
-    url.searchParams.append("dt", "t");
-    url.searchParams.append("dt", "rm");
-    url.searchParams.set("q", zh);
+    const googleUrl = new URL("https://translate.googleapis.com/translate_a/single");
+    googleUrl.searchParams.set("client", "gtx");
+    googleUrl.searchParams.set("sl", "zh-TW");
+    googleUrl.searchParams.set("tl", "ja");
+    googleUrl.searchParams.append("dt", "t");
+    googleUrl.searchParams.append("dt", "rm");
+    googleUrl.searchParams.set("q", zh);
 
-    const response = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error(`Translation request failed: ${response.status}`);
-    const result = await response.json();
-    const ja = translatedText(result);
-    const roma = romanizedText(result);
-    if (!ja) throw new Error("Translation response was empty");
+    const googleLiteUrl = new URL("https://clients5.google.com/translate_a/t");
+    googleLiteUrl.searchParams.set("client", "dict-chrome-ex");
+    googleLiteUrl.searchParams.set("sl", "zh-TW");
+    googleLiteUrl.searchParams.set("tl", "ja");
+    googleLiteUrl.searchParams.set("q", zh);
 
-    return res.status(200).json({ ja, roma });
+    const myMemoryUrl = new URL("https://api.mymemory.translated.net/get");
+    myMemoryUrl.searchParams.set("q", zh);
+    myMemoryUrl.searchParams.set("langpair", "zh-TW|ja-JP");
+
+    const providers = [
+      { url:googleUrl, label:"Google Translate", parse:translatedText, roma:romanizedText },
+      { url:googleLiteUrl, label:"Google Translate fallback", parse:googleLiteText },
+      { url:myMemoryUrl, label:"MyMemory fallback", parse:myMemoryText },
+    ];
+    const failures = [];
+    for (const provider of providers) {
+      try {
+        const result = await fetchJson(provider.url, provider.label);
+        const ja = provider.parse(result);
+        if (!ja) throw new Error("Translation response was empty");
+        const roma = provider.roma ? provider.roma(result) : "";
+        return res.status(200).json({ ja, roma });
+      } catch (error) {
+        failures.push(error.message);
+      }
+    }
+    throw new Error(failures.join("; "));
   } catch (error) {
     return res.status(502).json({ error: "無法自動產生日文，請確認網路後重試", detail: error.message });
   }
