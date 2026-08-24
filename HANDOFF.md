@@ -35,7 +35,7 @@
 - 準備：待辦、行李、想去、採買四組共用清單，可依旅伴篩選並逐人標記完成。
 - 工具：常用日語即時朗讀（可新增／編輯／刪除並同步給所有旅伴）、JPY／TWD 雙向換算，以及日本警察、消防／救護車和 JNTO 旅客熱線資訊。
 
-工具頁偏好與匯率快取使用獨立的 `osaka-tool-state-v1` localStorage，不會同步至共用資料庫；常用短語則放在共用狀態的 `japanesePhrases`，可由工具頁 CRUD，並透過 `/api/state` 同步給所有旅伴。新增或編輯短語時只需輸入中文與分類，`/api/translate-phrase` 會依序嘗試 Google Translate、Google Translate fallback 與 MyMemory，成功後自動產生日文與可取得的羅馬拼音；日語朗讀使用產生出的日文搭配裝置的 Web Speech API，不儲存或下載語音檔。匯率由 Frankfurter `GET /v2/rate/JPY/TWD` 每 12 小時更新一次；離線時沿用最後成功值，也可手動覆寫。天氣使用獨立的 `osaka-weather-state-v1` localStorage，每 6 小時更新一次。
+工具頁偏好與匯率快取使用獨立的 `osaka-tool-state-v1` localStorage，不會同步至共用資料庫；常用短語則放在共用狀態的 `japanesePhrases`，可由工具頁 CRUD，並透過 `/api/state` 同步給所有旅伴。新增或編輯短語時只需輸入中文與分類，`/api/translate-phrase` 會依序嘗試 Google Translate、Google Translate fallback 與 MyMemory，若翻譯備援未附羅馬拼音，會再以 Yomitan 取得讀音並交給 Romaji2Kana 轉寫；成功後自動產生日文與羅馬拼音。日語朗讀使用產生出的日文搭配裝置的 Web Speech API，不儲存或下載語音檔。匯率由 Frankfurter `GET /v2/rate/JPY/TWD` 每 12 小時更新一次；離線時沿用上次成功值，也可手動覆寫。天氣使用獨立的 `osaka-weather-state-v1` localStorage，每 6 小時更新一次。
 
  行程內容、預訂、成員與準備清單由 `trip_state` 的 JSONB 狀態提供；互動狀態會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若資料列缺少新欄位，GET API 會自動用 `api/seed-data.js` 補齊而不覆蓋既有內容。PWA 靜態 App Shell 與同源 `/api/*` GET 採快取優先，避免連線不穩時阻塞畫面；離線時沿用上次成功回應。部署時需在 Vercel 設定 `DATABASE_URL`。
 

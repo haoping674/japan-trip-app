@@ -29,6 +29,15 @@ function myMemoryText(payload) {
   return typeof translated === "string" ? translated.trim() : "";
 }
 
+function yomitanReading(payload) {
+  const reading = payload?.yomi?.[0];
+  return typeof reading === "string" ? reading.trim() : "";
+}
+
+function romajiText(payload) {
+  return typeof payload?.a === "string" ? payload.a.trim() : "";
+}
+
 async function fetchJson(url, label) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 7000);
@@ -49,6 +58,42 @@ async function fetchJson(url, label) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function spacedJapaneseReading(reading) {
+  return reading
+    .replace(/(?<=[ぁ-んァ-ン])(は|が|を|に|で(?!す)|へ|と(?!い)|も|の)(?=[ぁ-んァ-ン])/g, " $1 ")
+    .replace(/(?<=[ぁ-んァ-ン])(です)(?=[ぁ-んァ-ン?？!！。]|$)/g, " $1")
+    .replace(/(です|ます|でした|ました|ません)(?=[かねよ])/g, "$1 ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeRomaji(roma) {
+  return roma
+    .replace(/\bha(?=\s|$)/g, "wa")
+    .replace(/\bhe(?=\s|$)/g, "e")
+    .replace(/\bwo(?=\s|$)/g, "o")
+    .replace(/\s+([?？!！。])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function romanizeJapanese(ja) {
+  const readingUrl = new URL("https://yomitan.harmonicom.jp/api/v2/yomi");
+  readingUrl.searchParams.set("ic", "UTF8");
+  readingUrl.searchParams.set("oc", "UTF8");
+  readingUrl.searchParams.set("kana", "h");
+  readingUrl.searchParams.set("num", "1");
+  readingUrl.searchParams.set("text", ja);
+  const reading = yomitanReading(await fetchJson(readingUrl, "Yomitan reading"));
+  if (!reading) throw new Error("Japanese reading was empty");
+
+  const romajiUrl = new URL("https://api.romaji2kana.com/v1/to/romaji");
+  romajiUrl.searchParams.set("q", spacedJapaneseReading(reading));
+  const roma = normalizeRomaji(romajiText(await fetchJson(romajiUrl, "Romaji conversion")));
+  if (!roma) throw new Error("Romaji response was empty");
+  return roma;
 }
 
 module.exports = async function handler(req, res) {
@@ -94,7 +139,10 @@ module.exports = async function handler(req, res) {
         const result = await fetchJson(provider.url, provider.label);
         const ja = provider.parse(result);
         if (!ja) throw new Error("Translation response was empty");
-        const roma = provider.roma ? provider.roma(result) : "";
+        let roma = provider.roma ? provider.roma(result) : "";
+        if (!roma) {
+          try { roma = await romanizeJapanese(ja); } catch {}
+        }
         return res.status(200).json({ ja, roma });
       } catch (error) {
         failures.push(error.message);
