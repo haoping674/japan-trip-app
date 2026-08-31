@@ -1,6 +1,6 @@
 # 大阪｜旅行手帳交接文件
 
-更新日期：2026-08-24
+更新日期：2026-08-31
 目前分支：`main`
 
 ## 專案目的
@@ -31,13 +31,14 @@
 - 雨天備案：每天各有一張可展開的藍色備案便條，包含啟用條件、順路的替代時間軸、Google Maps 導航與官方資訊；旅行日降雨機率達 50% 時自動展開。資料由 `rain-plans.js` 同時提供前端離線 fallback 與 `api/seed-data.js`，GET API 會按 day 補進既有資料列，不覆蓋其他共用狀態。
 - 天氣：依每日行程座標串接 Open-Meteo 16 日預報，顯示天氣狀況、最高／最低溫、降雨機率、最大風速與日出；資料快取於本機，離線時沿用上次成功資料。
 - 票券：航班、住宿、遊船與 USJ 的集中清單。
+- 預訂／憑證：可將既有 QR code 圖片放進「憑證」分頁，以使用者設定的密碼在瀏覽器端使用 PBKDF2 + AES-256-GCM 加密後同步；密碼不會保存或上傳。憑證匣在切換 App、離開憑證分頁或閒置 5 分鐘後鎖上。忘記密碼無法復原加密內容。
 - 記帳：新增／刪除日圓支出，顯示合計。
 - 準備：待辦、行李、想去、採買四組共用清單，可依旅伴篩選並逐人標記完成。
 - 工具：常用日語即時朗讀（可新增／編輯／刪除並同步給所有旅伴）、JPY／TWD 雙向換算，以及日本警察、消防／救護車和 JNTO 旅客熱線資訊。
 
 工具頁偏好與匯率快取使用獨立的 `osaka-tool-state-v1` localStorage，不會同步至共用資料庫；常用短語則放在共用狀態的 `japanesePhrases`，可由工具頁 CRUD，並透過 `/api/state` 同步給所有旅伴。新增或編輯短語時只需輸入中文與分類，`/api/translate-phrase` 會依序嘗試 Google Translate、Google Translate fallback 與 MyMemory，若翻譯備援未附羅馬拼音，會再以 Yomitan 取得讀音並交給 Romaji2Kana 轉寫；成功後自動產生日文與羅馬拼音。日語朗讀使用產生出的日文搭配裝置的 Web Speech API，不儲存或下載語音檔。匯率由 Frankfurter `GET /v2/rate/JPY/TWD` 每 12 小時更新一次；離線時沿用上次成功值，也可手動覆寫。天氣使用獨立的 `osaka-weather-state-v1` localStorage，每 6 小時更新一次。
 
- 行程內容、預訂、成員與準備清單由 `trip_state` 的 JSONB 狀態提供；互動狀態會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若資料列缺少新欄位，GET API 會自動用 `api/seed-data.js` 補齊而不覆蓋既有內容。PWA 靜態 App Shell 與同源 `/api/*` GET 採快取優先，避免連線不穩時阻塞畫面；離線時沿用上次成功回應。部署時需在 Vercel 設定 `DATABASE_URL`。
+行程內容、預訂、成員與準備清單由 `trip_state` 的 JSONB 狀態提供；互動狀態會先寫入 `localStorage`，再以 700ms debounce 同步至 `./api/state`。若資料列缺少新欄位，GET API 會自動用 `api/seed-data.js` 補齊而不覆蓋既有內容。PWA 靜態 App Shell 與同源 `/api/*` GET 採快取優先，避免連線不穩時阻塞畫面；離線時沿用上次成功回應。憑證匣的 `./api/state?vault=1` 讀取例外採網路優先、離線才使用快取，以便跨裝置快速取回最新加密憑證。部署時需在 Vercel 設定 `DATABASE_URL`。
 
 ## 執行與驗證
 

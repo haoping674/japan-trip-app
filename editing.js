@@ -8,10 +8,17 @@
     "鹿の宿": "./images/stays/shika-no-yado.jpg",
   };
 
-  const defaults = { flight: {}, flights: [], stays: [], rental: {}, vouchers: [] };
+  const defaults = { flight: {}, flights: [], stays: [], rental: {}, vouchers: [], voucherVault: null };
+  const VAULT_VERSION = 1;
+  const VAULT_ITERATIONS = 600000;
+  const VAULT_IDLE_TIMEOUT = 5 * 60 * 1000;
+  const MAX_VOUCHER_FILE_SIZE = 1500000;
 
   let bookingData;
   try { bookingData = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || defaults; } catch { bookingData = defaults; }
+  let vaultKey = null;
+  let vaultEntries = [];
+  let vaultIdleTimer = null;
   const syncAppBookings = () => window.applyBookingData?.(bookingData);
   const saveBookingData = () => {
     syncAppBookings();
@@ -20,7 +27,7 @@
   };
   const loadBookingData = async () => {
     try {
-      const response = await fetch("./api/state", { cache:"no-store" });
+      const response = await fetch("./api/state?vault=1", { cache:"no-store" });
       if (!response.ok) return;
       const payload = await response.json();
       if (!payload.data || !payload.data.bookings) return;
@@ -37,6 +44,50 @@
     return `<label class="edit-field"><span>${label}</span>${isNativeDateTime ? `<span class="edit-field__control">${input}</span>` : input}</label>`;
   };
 
+  const bytesToBase64 = (bytes) => {
+    let binary = "";
+    bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+    return btoa(binary);
+  };
+  const base64ToBytes = (value) => Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+  const vaultSupported = () => Boolean(window.crypto?.subtle && window.TextEncoder && window.TextDecoder);
+  const vaultIsUnlocked = () => Boolean(vaultKey);
+  const vaultRecord = () => bookingData.voucherVault && typeof bookingData.voucherVault === "object" ? bookingData.voucherVault : null;
+  const deriveVaultKey = async (password, salt) => crypto.subtle.deriveKey(
+    { name:"PBKDF2", salt, iterations:VAULT_ITERATIONS, hash:"SHA-256" },
+    await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]),
+    { name:"AES-GCM", length:256 }, false, ["encrypt", "decrypt"]
+  );
+  const encryptVault = async (entries, key, salt = crypto.getRandomValues(new Uint8Array(16))) => {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(entries)));
+    return { version:VAULT_VERSION, kdf:"PBKDF2-SHA-256", iterations:VAULT_ITERATIONS, salt:bytesToBase64(salt), iv:bytesToBase64(iv), ciphertext:bytesToBase64(new Uint8Array(ciphertext)) };
+  };
+  const decryptVault = async (record, password) => {
+    if (!record || record.version !== VAULT_VERSION || !record.salt || !record.iv || !record.ciphertext) throw new Error("invalid-vault");
+    const key = await deriveVaultKey(password, base64ToBytes(record.salt));
+    const plaintext = await crypto.subtle.decrypt({ name:"AES-GCM", iv:base64ToBytes(record.iv) }, key, base64ToBytes(record.ciphertext));
+    const entries = JSON.parse(new TextDecoder().decode(plaintext));
+    if (!Array.isArray(entries)) throw new Error("invalid-entries");
+    return { key, entries };
+  };
+  const resetVaultTimer = () => {
+    clearTimeout(vaultIdleTimer);
+    if (vaultIsUnlocked()) vaultIdleTimer = window.setTimeout(() => lockVault(true), VAULT_IDLE_TIMEOUT);
+  };
+  const lockVault = (shouldRender = false) => {
+    vaultKey = null;
+    vaultEntries = [];
+    clearTimeout(vaultIdleTimer);
+    if (shouldRender && state.section === "bookings" && state.bookingTab === "vouchers") render();
+  };
+  const persistVault = async () => {
+    if (!vaultKey) throw new Error("vault-locked");
+    bookingData.voucherVault = await encryptVault(vaultEntries, vaultKey, base64ToBytes(vaultRecord().salt));
+    resetVaultTimer();
+    return saveBookingData();
+  };
+
   const openModal = (content) => {
     document.querySelector(".edit-modal")?.remove();
     const modal = document.createElement("div");
@@ -45,6 +96,93 @@
     document.body.appendChild(modal);
     if (!window.matchMedia("(pointer: coarse)").matches) modal.querySelector("input")?.focus();
     return modal;
+  };
+
+  const vaultSetupGate = () => {
+    if (!vaultSupported()) { window.alert("這個瀏覽器不支援加密憑證匣，請改用最新版 Chrome 或 Safari。"); return; }
+    const modal = openModal(`<div class="edit-modal__head"><div><small>加密憑證匣</small><h2>設定憑證密碼</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><p class="edit-modal__hint">密碼不會儲存或上傳；忘記後無法復原現有 QR 憑證。</p><form class="voucher-password-form" data-vault-setup><label class="edit-field"><span>憑證密碼（至少 6 碼）</span><input name="password" type="password" autocomplete="new-password" minlength="6" required /></label><label class="edit-field"><span>再輸入一次</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required /></label><p class="edit-error" aria-live="polite"></p><button class="primary-button" type="submit">建立加密憑證匣</button></form>`);
+    modal.querySelector("[data-vault-setup]").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const error = modal.querySelector(".edit-error");
+      const values = new FormData(form);
+      const password = String(values.get("password") || "");
+      if (password !== values.get("confirmPassword")) { error.textContent = "兩次輸入的密碼不同。"; return; }
+      const submit = form.querySelector("button[type='submit']");
+      submit.disabled = true; submit.textContent = "正在建立…";
+      try {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        vaultKey = await deriveVaultKey(password, salt);
+        vaultEntries = [];
+        bookingData.voucherVault = await encryptVault(vaultEntries, vaultKey, salt);
+        await saveBookingData();
+        resetVaultTimer();
+        modal.remove();
+        render();
+      } catch {
+        submit.disabled = false; submit.textContent = "建立加密憑證匣";
+        error.textContent = "建立失敗，請確認網路後重試。";
+      }
+    });
+  };
+
+  const vaultUnlockGate = () => {
+    if (!vaultSupported()) { window.alert("這個瀏覽器不支援加密憑證匣，請改用最新版 Chrome 或 Safari。"); return; }
+    const modal = openModal(`<div class="edit-modal__head"><div><small>加密憑證匣</small><h2>輸入憑證密碼</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><p class="edit-modal__hint">解鎖後可快速顯示 QR code；閒置 5 分鐘或切換 App 時會自動鎖上。</p><form class="voucher-password-form" data-vault-unlock><label class="edit-field"><span>憑證密碼</span><input name="password" type="password" autocomplete="current-password" required autofocus /></label><p class="edit-error" aria-live="polite"></p><button class="primary-button" type="submit">解鎖憑證匣</button></form>`);
+    modal.querySelector("[data-vault-unlock]").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const submit = form.querySelector("button[type='submit']");
+      const error = modal.querySelector(".edit-error");
+      submit.disabled = true; submit.textContent = "正在解鎖…";
+      try {
+        const unlocked = await decryptVault(vaultRecord(), String(new FormData(form).get("password") || ""));
+        vaultKey = unlocked.key;
+        vaultEntries = unlocked.entries;
+        resetVaultTimer();
+        modal.remove();
+        render();
+      } catch {
+        submit.disabled = false; submit.textContent = "解鎖憑證匣";
+        error.textContent = "密碼不正確，或憑證資料無法讀取。";
+      }
+    });
+  };
+
+  const voucherEditor = () => {
+    const modal = openModal(`<div class="edit-modal__head"><div><small>加密憑證匣</small><h2>新增 QR 憑證</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><p class="edit-modal__hint">選取 QR code 圖片（PNG、JPG 或 WebP，最大 1.5 MB）。內容加密後才會同步。</p><form class="voucher-form" data-voucher-form><label class="edit-field"><span>憑證名稱</span><input name="title" maxlength="48" placeholder="例如：去程登機證" required /></label><label class="voucher-upload"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><span>選取 QR 圖片</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp" required /></label><p class="voucher-file-name" aria-live="polite">尚未選取圖片</p><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-close-edit>取消</button><button class="primary-button" type="submit">加密並儲存</button></div></form>`);
+    const form = modal.querySelector("[data-voucher-form]");
+    form.querySelector("input[type='file']").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      form.querySelector(".voucher-file-name").textContent = file ? `${file.name} · ${Math.ceil(file.size / 1024)} KB` : "尚未選取圖片";
+    });
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const error = form.querySelector(".edit-error");
+      const values = new FormData(form);
+      const image = values.get("image");
+      if (!(image instanceof File) || !image.size) { error.textContent = "請先選取 QR 圖片。"; return; }
+      if (image.size > MAX_VOUCHER_FILE_SIZE) { error.textContent = "圖片超過 1.5 MB，請先裁切或壓縮後再加入。"; return; }
+      const submit = form.querySelector("button[type='submit']");
+      submit.disabled = true; submit.textContent = "正在加密…";
+      try {
+        const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(image); });
+        vaultEntries.unshift({ id:crypto.randomUUID?.() || `voucher-${Date.now()}`, title:String(values.get("title") || "QR 憑證"), image:dataUrl, createdAt:new Date().toISOString() });
+        await persistVault();
+        modal.remove();
+        render();
+      } catch {
+        submit.disabled = false; submit.textContent = "加密並儲存";
+        error.textContent = "儲存失敗，請稍後再試。";
+      }
+    });
+  };
+
+  const voucherPanel = () => {
+    const record = vaultRecord();
+    if (!record) return `<section class="booking-panel voucher-vault voucher-vault--empty"><div class="voucher-vault__seal"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></div><small>加密 QR 憑證匣</small><h2>隨時取回你的憑證</h2><p>把既有的登機證、景點票券或預約 QR 圖片加進來。每一張都以你設定的密碼加密後同步。</p><button class="primary-button voucher-vault__action" type="button" data-vault-setup><i class="fa-solid fa-lock" aria-hidden="true"></i> 設定密碼並新增憑證</button></section>`;
+    if (!vaultIsUnlocked()) return `<section class="booking-panel voucher-vault voucher-vault--locked"><div class="voucher-vault__seal"><i class="fa-solid fa-lock" aria-hidden="true"></i></div><small>已加密保護</small><h2>QR 憑證匣已鎖上</h2><p>輸入憑證密碼，即可快速查看已同步的 QR code。</p><button class="primary-button voucher-vault__action" type="button" data-vault-unlock><i class="fa-solid fa-key" aria-hidden="true"></i> 輸入密碼取回憑證</button></section>`;
+    return `<section class="booking-panel voucher-vault voucher-vault--open"><div class="voucher-vault__head"><div><small><i class="fa-solid fa-lock-open" aria-hidden="true"></i> 已解鎖 · 5 分鐘後自動鎖上</small><h2>QR 憑證匣</h2></div><button type="button" class="voucher-vault__lock" data-vault-lock aria-label="鎖上憑證匣"><i class="fa-solid fa-lock" aria-hidden="true"></i></button></div><button class="voucher-add" type="button" data-voucher-add><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增 QR 憑證</button><div class="voucher-qr-list">${vaultEntries.length ? vaultEntries.map((entry) => `<article class="voucher-qr-card"><div><small>加密憑證</small><h3>${safe(entry.title)}</h3></div><button type="button" data-voucher-delete="${safe(entry.id)}" aria-label="刪除 ${safe(entry.title)}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button><img src="${entry.image}" alt="${safe(entry.title)} QR code" /></article>`).join("") : `<div class="voucher-empty"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><p>還沒有 QR 憑證。從上方加入第一張吧。</p></div>`}</div></section>`;
   };
 
   const passwordGate = (target) => {
@@ -94,10 +232,10 @@
 
   const bookingPage = () => {
     const tab = state.bookingTab || "flights";
-    const tabItems = [["flights", "機票", "fa-solid fa-plane"], ["stays", "住宿", "fa-solid fa-building"], ["rental", "租車", "fa-solid fa-car"]];
+    const tabItems = [["flights", "機票", "fa-solid fa-plane"], ["stays", "住宿", "fa-solid fa-building"], ["rental", "租車", "fa-solid fa-car"], ["vouchers", "憑證", "fa-solid fa-qrcode"]];
     const activeTab = tabItems.some(([id]) => id === tab) ? tab : tabItems[0][0];
     state.bookingTab = activeTab;
-    const panel = { flights:editFlightPanel, stays:editStaysPanel, rental:editRentalPanel }[activeTab]();
+    const panel = { flights:editFlightPanel, stays:editStaysPanel, rental:editRentalPanel, vouchers:voucherPanel }[activeTab]();
     return `<section class="section booking-view booking-redesign"><div class="booking-page-title"><p>旅程收納</p><h2>我的預訂</h2><span>把航班、住宿和租車資訊放在一起。</span></div><nav class="booking-subnav" aria-label="預訂分類">${tabItems.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${activeTab === id ? "is-active" : ""}" data-booking-tab="${id}" type="button"><i class="${iconClass}" aria-hidden="true"></i><span>${label}</span></button>`).join("")}</nav>${panel}</section>`;
   };
 
@@ -124,7 +262,19 @@
     const close = event.target.closest("[data-close-edit]");
     if (close) { closeModal(); return; }
     const tab = event.target.closest("[data-booking-tab]");
-    if (tab) { state.bookingTab = tab.dataset.bookingTab; render(); return; }
+    if (tab) { state.bookingTab = tab.dataset.bookingTab; if (state.bookingTab !== "vouchers") lockVault(); render(); return; }
+    if (event.target.closest("[data-vault-setup]")) { vaultSetupGate(); return; }
+    if (event.target.closest("[data-vault-unlock]")) { vaultUnlockGate(); return; }
+    if (event.target.closest("[data-vault-lock]")) { lockVault(true); return; }
+    if (event.target.closest("[data-voucher-add]")) { voucherEditor(); return; }
+    const voucherDelete = event.target.closest("[data-voucher-delete]");
+    if (voucherDelete) {
+      const entry = vaultEntries.find((item) => item.id === voucherDelete.dataset.voucherDelete);
+      if (!entry || !window.confirm(`刪除「${entry.title}」？這會移除所有裝置上同步的加密憑證。`)) return;
+      vaultEntries = vaultEntries.filter((item) => item.id !== entry.id);
+      persistVault().then(() => render()).catch(() => window.alert("刪除失敗，請稍後再試。"));
+      return;
+    }
     const edit = event.target.closest("[data-edit]");
     if (edit) { passwordGate({ type:edit.dataset.edit, index:edit.dataset.index === undefined ? null : Number(edit.dataset.index) }); return; }
     const add = event.target.closest("[data-new]");
@@ -144,6 +294,16 @@
     closeModal();
     render();
   });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) lockVault(true);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (vaultIsUnlocked() && event.target.closest(".voucher-vault")) resetVaultTimer();
+  });
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-section]") && state.section === "bookings") lockVault();
+  }, true);
 
   render();
   loadBookingData();
