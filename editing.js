@@ -263,8 +263,8 @@
     if (close) { closeModal(); return; }
     const tab = event.target.closest("[data-booking-tab]");
     if (tab) { state.bookingTab = tab.dataset.bookingTab; if (state.bookingTab !== "vouchers") lockVault(); render(); return; }
-    if (event.target.closest("[data-vault-setup]")) { vaultSetupGate(); return; }
-    if (event.target.closest("[data-vault-unlock]")) { vaultUnlockGate(); return; }
+    if (event.target.closest("button[data-vault-setup]")) { vaultSetupGate(); return; }
+    if (event.target.closest("button[data-vault-unlock]")) { vaultUnlockGate(); return; }
     if (event.target.closest("[data-vault-lock]")) { lockVault(true); return; }
     if (event.target.closest("[data-voucher-add]")) { voucherEditor(); return; }
     const voucherDelete = event.target.closest("[data-voucher-delete]");
