@@ -19,6 +19,7 @@
   let vaultKey = null;
   let vaultEntries = [];
   let vaultIdleTimer = null;
+  let voucherPreviewReturnFocus = null;
   const syncAppBookings = () => window.applyBookingData?.(bookingData);
   const saveBookingData = () => {
     syncAppBookings();
@@ -76,6 +77,7 @@
     if (vaultIsUnlocked()) vaultIdleTimer = window.setTimeout(() => lockVault(true), VAULT_IDLE_TIMEOUT);
   };
   const lockVault = (shouldRender = false) => {
+    closeVoucherPreview();
     vaultKey = null;
     vaultEntries = [];
     clearTimeout(vaultIdleTimer);
@@ -96,6 +98,23 @@
     document.body.appendChild(modal);
     if (!window.matchMedia("(pointer: coarse)").matches) modal.querySelector("input")?.focus();
     return modal;
+  };
+
+  const closeVoucherPreview = () => {
+    document.querySelector(".voucher-preview")?.remove();
+    document.body.classList.remove("has-voucher-preview");
+    voucherPreviewReturnFocus?.focus?.();
+    voucherPreviewReturnFocus = null;
+  };
+  const openVoucherPreview = (entry, opener) => {
+    document.querySelector(".voucher-preview")?.remove();
+    voucherPreviewReturnFocus = opener;
+    const preview = document.createElement("div");
+    preview.className = "voucher-preview";
+    preview.innerHTML = `<button class="voucher-preview__backdrop" type="button" data-voucher-preview-close aria-label="關閉全螢幕憑證"></button><figure class="voucher-preview__sheet" role="dialog" aria-modal="true" aria-label="${safe(entry.title)} 全螢幕憑證"><figcaption><div><small>加密憑證</small><h2>${safe(entry.title)}</h2></div><button type="button" data-voucher-preview-close aria-label="關閉全螢幕憑證"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></figcaption><img src="${entry.image}" alt="${safe(entry.title)} QR code" /><p>請直接出示此 QR code</p></figure>`;
+    document.body.appendChild(preview);
+    document.body.classList.add("has-voucher-preview");
+    preview.querySelector("[data-voucher-preview-close]")?.focus();
   };
 
   const vaultSetupGate = () => {
@@ -182,7 +201,7 @@
     const record = vaultRecord();
     if (!record) return `<section class="booking-panel voucher-vault voucher-vault--empty"><div class="voucher-vault__seal"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></div><small>加密 QR 憑證匣</small><h2>隨時取回你的憑證</h2><p>把既有的登機證、景點票券或預約 QR 圖片加進來。每一張都以你設定的密碼加密後同步。</p><button class="primary-button voucher-vault__action" type="button" data-vault-setup><i class="fa-solid fa-lock" aria-hidden="true"></i> 設定密碼並新增憑證</button></section>`;
     if (!vaultIsUnlocked()) return `<section class="booking-panel voucher-vault voucher-vault--locked"><div class="voucher-vault__seal"><i class="fa-solid fa-lock" aria-hidden="true"></i></div><small>已加密保護</small><h2>QR 憑證匣已鎖上</h2><p>輸入憑證密碼，即可快速查看已同步的 QR code。</p><button class="primary-button voucher-vault__action" type="button" data-vault-unlock><i class="fa-solid fa-key" aria-hidden="true"></i> 輸入密碼取回憑證</button></section>`;
-    return `<section class="booking-panel voucher-vault voucher-vault--open"><div class="voucher-vault__head"><div><small><i class="fa-solid fa-lock-open" aria-hidden="true"></i> 已解鎖 · 5 分鐘後自動鎖上</small><h2>QR 憑證匣</h2></div><button type="button" class="voucher-vault__lock" data-vault-lock aria-label="鎖上憑證匣"><i class="fa-solid fa-lock" aria-hidden="true"></i></button></div><button class="voucher-add" type="button" data-voucher-add><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增 QR 憑證</button><div class="voucher-qr-list">${vaultEntries.length ? vaultEntries.map((entry) => `<article class="voucher-qr-card"><div><small>加密憑證</small><h3>${safe(entry.title)}</h3></div><button type="button" data-voucher-delete="${safe(entry.id)}" aria-label="刪除 ${safe(entry.title)}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button><img src="${entry.image}" alt="${safe(entry.title)} QR code" /></article>`).join("") : `<div class="voucher-empty"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><p>還沒有 QR 憑證。從上方加入第一張吧。</p></div>`}</div></section>`;
+    return `<section class="booking-panel voucher-vault voucher-vault--open"><div class="voucher-vault__head"><div><small><i class="fa-solid fa-lock-open" aria-hidden="true"></i> 已解鎖 · 5 分鐘後自動鎖上</small><h2>QR 憑證匣</h2></div><button type="button" class="voucher-vault__lock" data-vault-lock aria-label="鎖上憑證匣"><i class="fa-solid fa-lock" aria-hidden="true"></i></button></div><button class="voucher-add" type="button" data-voucher-add><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增 QR 憑證</button><div class="voucher-qr-list">${vaultEntries.length ? vaultEntries.map((entry) => `<article class="voucher-qr-card"><div><small>加密憑證</small><h3>${safe(entry.title)}</h3></div><button class="voucher-qr-card__delete" type="button" data-voucher-delete="${safe(entry.id)}" aria-label="刪除 ${safe(entry.title)}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button><button class="voucher-qr-preview" type="button" data-voucher-preview="${safe(entry.id)}" aria-label="全螢幕顯示 ${safe(entry.title)}"><img src="${entry.image}" alt="${safe(entry.title)} QR code" /><span><i class="fa-solid fa-expand" aria-hidden="true"></i> 點擊全螢幕顯示</span></button></article>`).join("") : `<div class="voucher-empty"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><p>還沒有 QR 憑證。從上方加入第一張吧。</p></div>`}</div></section>`;
   };
 
   const passwordGate = (target) => {
@@ -259,6 +278,7 @@
     bookingData.flights[activeFlightIndex] = { ...bookingData.flights[activeFlightIndex], ...Object.fromEntries(new FormData(form).entries()) };
   }, true);
   document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-voucher-preview-close]")) { closeVoucherPreview(); return; }
     const close = event.target.closest("[data-close-edit]");
     if (close) { closeModal(); return; }
     const tab = event.target.closest("[data-booking-tab]");
@@ -267,6 +287,12 @@
     if (event.target.closest("button[data-vault-unlock]")) { vaultUnlockGate(); return; }
     if (event.target.closest("[data-vault-lock]")) { lockVault(true); return; }
     if (event.target.closest("[data-voucher-add]")) { voucherEditor(); return; }
+    const voucherPreview = event.target.closest("[data-voucher-preview]");
+    if (voucherPreview) {
+      const entry = vaultEntries.find((item) => item.id === voucherPreview.dataset.voucherPreview);
+      if (entry) openVoucherPreview(entry, voucherPreview);
+      return;
+    }
     const voucherDelete = event.target.closest("[data-voucher-delete]");
     if (voucherDelete) {
       const entry = vaultEntries.find((item) => item.id === voucherDelete.dataset.voucherDelete);
@@ -297,6 +323,9 @@
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) lockVault(true);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.querySelector(".voucher-preview")) closeVoucherPreview();
   });
   document.addEventListener("pointerdown", (event) => {
     if (vaultIsUnlocked() && event.target.closest(".voucher-vault")) resetVaultTimer();
