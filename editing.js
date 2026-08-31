@@ -168,6 +168,36 @@
     });
   };
 
+  const vaultChangePasswordGate = () => {
+    if (!vaultIsUnlocked() || !vaultSupported()) return;
+    const modal = openModal(`<div class="edit-modal__head"><div><small>加密憑證匣</small><h2>修改憑證密碼</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><p class="edit-modal__hint">先驗證舊密碼，再用新密碼重新加密所有 QR 憑證。新密碼不會儲存或上傳。</p><form class="voucher-password-form" data-vault-change-password-form><label class="edit-field"><span>目前密碼</span><input name="currentPassword" type="password" autocomplete="current-password" required autofocus /></label><label class="edit-field"><span>新密碼（至少 6 碼）</span><input name="newPassword" type="password" autocomplete="new-password" minlength="6" required /></label><label class="edit-field"><span>再輸入一次新密碼</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required /></label><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-close-edit>取消</button><button class="primary-button" type="submit">更新並重新加密</button></div></form>`);
+    modal.querySelector("[data-vault-change-password-form]").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const values = new FormData(form);
+      const error = form.querySelector(".edit-error");
+      const newPassword = String(values.get("newPassword") || "");
+      if (newPassword !== values.get("confirmPassword")) { error.textContent = "兩次輸入的新密碼不同。"; return; }
+      const submit = form.querySelector("button[type='submit']");
+      submit.disabled = true; submit.textContent = "正在重新加密…";
+      try {
+        const currentVault = await decryptVault(vaultRecord(), String(values.get("currentPassword") || ""));
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const newKey = await deriveVaultKey(newPassword, salt);
+        bookingData.voucherVault = await encryptVault(currentVault.entries, newKey, salt);
+        vaultKey = newKey;
+        vaultEntries = currentVault.entries;
+        await saveBookingData();
+        resetVaultTimer();
+        modal.remove();
+        render();
+      } catch {
+        submit.disabled = false; submit.textContent = "更新並重新加密";
+        error.textContent = "目前密碼不正確，或憑證資料無法讀取。";
+      }
+    });
+  };
+
   const voucherEditor = () => {
     const modal = openModal(`<div class="edit-modal__head"><div><small>加密憑證匣</small><h2>新增 QR 憑證</h2></div><button type="button" data-close-edit aria-label="關閉">×</button></div><p class="edit-modal__hint">選取 QR code 圖片（PNG、JPG 或 WebP，最大 1.5 MB）。內容加密後才會同步。</p><form class="voucher-form" data-voucher-form><label class="edit-field"><span>憑證名稱</span><input name="title" maxlength="48" placeholder="例如：去程登機證" required /></label><label class="voucher-upload"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><span>選取 QR 圖片</span><input name="image" type="file" accept="image/png,image/jpeg,image/webp" required /></label><p class="voucher-file-name" aria-live="polite">尚未選取圖片</p><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-close-edit>取消</button><button class="primary-button" type="submit">加密並儲存</button></div></form>`);
     const form = modal.querySelector("[data-voucher-form]");
@@ -201,7 +231,7 @@
     const record = vaultRecord();
     if (!record) return `<section class="booking-panel voucher-vault voucher-vault--empty"><div class="voucher-vault__seal"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></div><small>加密 QR 憑證匣</small><h2>隨時取回你的憑證</h2><p>把既有的登機證、景點票券或預約 QR 圖片加進來。每一張都以你設定的密碼加密後同步。</p><button class="primary-button voucher-vault__action" type="button" data-vault-setup><i class="fa-solid fa-lock" aria-hidden="true"></i> 設定密碼並新增憑證</button></section>`;
     if (!vaultIsUnlocked()) return `<section class="booking-panel voucher-vault voucher-vault--locked"><div class="voucher-vault__seal"><i class="fa-solid fa-lock" aria-hidden="true"></i></div><small>已加密保護</small><h2>QR 憑證匣已鎖上</h2><p>輸入憑證密碼，即可快速查看已同步的 QR code。</p><button class="primary-button voucher-vault__action" type="button" data-vault-unlock><i class="fa-solid fa-key" aria-hidden="true"></i> 輸入密碼取回憑證</button></section>`;
-    return `<section class="booking-panel voucher-vault voucher-vault--open"><div class="voucher-vault__head"><div><small><i class="fa-solid fa-lock-open" aria-hidden="true"></i> 已解鎖 · 5 分鐘後自動鎖上</small><h2>QR 憑證匣</h2></div><button type="button" class="voucher-vault__lock" data-vault-lock aria-label="鎖上憑證匣"><i class="fa-solid fa-lock" aria-hidden="true"></i></button></div><button class="voucher-add" type="button" data-voucher-add><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增 QR 憑證</button><div class="voucher-qr-list">${vaultEntries.length ? vaultEntries.map((entry) => `<article class="voucher-qr-card"><div><small>加密憑證</small><h3>${safe(entry.title)}</h3></div><button class="voucher-qr-card__delete" type="button" data-voucher-delete="${safe(entry.id)}" aria-label="刪除 ${safe(entry.title)}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button><button class="voucher-qr-preview" type="button" data-voucher-preview="${safe(entry.id)}" aria-label="全螢幕顯示 ${safe(entry.title)}"><img src="${entry.image}" alt="${safe(entry.title)} QR code" /><span><i class="fa-solid fa-expand" aria-hidden="true"></i> 點擊全螢幕顯示</span></button></article>`).join("") : `<div class="voucher-empty"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><p>還沒有 QR 憑證。從上方加入第一張吧。</p></div>`}</div></section>`;
+    return `<section class="booking-panel voucher-vault voucher-vault--open"><div class="voucher-vault__head"><div><small><i class="fa-solid fa-lock-open" aria-hidden="true"></i> 已解鎖 · 5 分鐘後自動鎖上</small><h2>QR 憑證匣</h2></div><div class="voucher-vault__actions"><button type="button" class="voucher-vault__change" data-vault-change-password aria-label="修改憑證密碼"><i class="fa-solid fa-key" aria-hidden="true"></i></button><button type="button" class="voucher-vault__lock" data-vault-lock aria-label="鎖上憑證匣"><i class="fa-solid fa-lock" aria-hidden="true"></i></button></div></div><button class="voucher-add" type="button" data-voucher-add><i class="fa-solid fa-plus" aria-hidden="true"></i> 新增 QR 憑證</button><div class="voucher-qr-list">${vaultEntries.length ? vaultEntries.map((entry) => `<article class="voucher-qr-card"><div><small>加密憑證</small><h3>${safe(entry.title)}</h3></div><button class="voucher-qr-card__delete" type="button" data-voucher-delete="${safe(entry.id)}" aria-label="刪除 ${safe(entry.title)}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button><button class="voucher-qr-preview" type="button" data-voucher-preview="${safe(entry.id)}" aria-label="全螢幕顯示 ${safe(entry.title)}"><img src="${entry.image}" alt="${safe(entry.title)} QR code" /><span><i class="fa-solid fa-expand" aria-hidden="true"></i> 點擊全螢幕顯示</span></button></article>`).join("") : `<div class="voucher-empty"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><p>還沒有 QR 憑證。從上方加入第一張吧。</p></div>`}</div></section>`;
   };
 
   const passwordGate = (target) => {
@@ -285,6 +315,7 @@
     if (tab) { state.bookingTab = tab.dataset.bookingTab; if (state.bookingTab !== "vouchers") lockVault(); render(); return; }
     if (event.target.closest("button[data-vault-setup]")) { vaultSetupGate(); return; }
     if (event.target.closest("button[data-vault-unlock]")) { vaultUnlockGate(); return; }
+    if (event.target.closest("button[data-vault-change-password]")) { vaultChangePasswordGate(); return; }
     if (event.target.closest("[data-vault-lock]")) { lockVault(true); return; }
     if (event.target.closest("[data-voucher-add]")) { voucherEditor(); return; }
     const voucherPreview = event.target.closest("[data-voucher-preview]");
