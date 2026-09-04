@@ -1,4 +1,4 @@
-const CACHE_NAME = "osaka-travel-v56";
+const CACHE_NAME = "osaka-travel-v57";
 const APP_SHELL = ["./", "./index.html", "./styles.css?v=30", "./rain-plans.js?v=1", "./app.js?v=37", "./redesign.js?v=2", "./editing.js?v=8", "./members.js?v=3", "./vendor/fontawesome/css/all.min.css", "./vendor/fontawesome/webfonts/fa-solid-900.woff2", "./vendor/fontawesome/webfonts/fa-regular-400.woff2", "./vendor/fontawesome/webfonts/fa-brands-400.woff2", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())));

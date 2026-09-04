@@ -7,7 +7,14 @@ const defaultState = () => buildDefaultState();
 
 function mergeWithDefaults(data) {
   const defaults = defaultState();
-  const merged = { ...defaults, ...(data && typeof data === "object" ? data : {}) };
+  const source = data && typeof data === "object" ? data : {};
+  const requiresItineraryRefresh = source.itineraryRevision !== defaults.itineraryRevision;
+  const merged = { ...defaults, ...source };
+  if (requiresItineraryRefresh) {
+    // A Funliday revision changes only the curated route, never companion data.
+    merged.tripDays = defaults.tripDays;
+    merged.itineraryRevision = defaults.itineraryRevision;
+  }
   ["tripDays", "planningItems", "members"].forEach((key) => {
     if (!Array.isArray(merged[key]) || !merged[key].length) merged[key] = defaults[key];
   });
