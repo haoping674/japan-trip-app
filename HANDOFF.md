@@ -23,7 +23,7 @@
 | `api/seed-data.js` | 現有行程、預訂、成員與四類準備清單的唯一 seed 來源。 |
 | `scripts/seed-db.js` | 使用 `npm run db:seed` 將 seed 補進 Neon，不覆蓋既有旅伴／使用者資料。 |
 | `scripts/update-trip-itinerary.js` | 使用 `npm run db:update-itinerary` 將 seed 中的行程欄位精確覆寫到 Neon，保留既有預訂、旅伴、待辦與其他共用資料。 |
-| `sw.js` | `osaka-travel-v57` 的離線 App Shell。 |
+| `sw.js` | `osaka-travel-v58` 的離線 App Shell。 |
 | `manifest.webmanifest` | PWA 名稱、色彩與圖示設定。 |
 
 ## 功能
@@ -58,7 +58,9 @@ python -m http.server 4173
 
 靜態伺服器不提供 `/api/state`，這時共用同步會靜默退回本機資料。
 
-每次修改 `index.html`、`styles.css`、`app.js`、manifest、圖示或會影響快取資料的 API 行為時，都要同步更新 `sw.js` 的 `CACHE_NAME` 與資源版本 query，避免已安裝的 PWA 顯示舊版。目前為 `osaka-travel-v57`。
+每次修改 `index.html`、`styles.css`、`app.js`、manifest、圖示或會影響快取資料的 API 行為時，都要同步更新 `sw.js` 的 `CACHE_NAME` 與資源版本 query，避免已安裝的 PWA 顯示舊版。目前為 `osaka-travel-v58`。
+
+`app.js` 的 `knownPlaceLocations` 會覆寫模糊地名的文字搜尋；已固定 Day 5 的京丹波 PA 停車場、Day 3 的 Sotomo Cruise 乘船處，以及 Day 7 的 Wonder Cruise 日本橋船著場，避免 Google Maps 導向相近但錯誤的地點。
 
 ## 部署流程
 

@@ -134,6 +134,18 @@ const knownPlaceLocations = Object.freeze({
     address: "1-chōme-8 Tamadenaka, Nishinari Ward, Osaka 557-0044, Japan",
     mapUrl: "https://maps.app.goo.gl/q3bXmjiCHYFD6WCZ7?g_st=il",
   }),
+  "休息站": Object.freeze({
+    address: "Kyotamba Parking Area, 65 Sone, Kyotamba, Kyoto 622-0232, Japan",
+    mapUrl: "https://maps.app.goo.gl/18HC7mDpjEH7KbjXA?g_st=il",
+  }),
+  "若狹漁人碼頭": Object.freeze({
+    address: "Sotomo Cruise, 1-chōme-3-2 Kawasaki, Obama, Fukui 917-0081, Japan",
+    mapUrl: "https://maps.app.goo.gl/FxeTLzLFigLHhZac9?g_st=il",
+  }),
+  "道頓堀水上觀光船": Object.freeze({
+    address: "Wonder Cruise, 1-chōme-1-6 Dotonbori, Chuo Ward, Osaka 542-0071, Japan",
+    mapUrl: "https://maps.app.goo.gl/kP1F5px4Byp76mHc8?g_st=il",
+  }),
 });
 const mapUrl = (place) => knownPlaceLocations[place]?.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
 const placeAddress = (place) => knownPlaceLocations[place]?.address || "";
