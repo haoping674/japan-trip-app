@@ -94,6 +94,10 @@ const applyBookingData = (data) => {
       time: [flight.departure, flight.arrival].filter(Boolean).join("-"),
       from: flight.from || flight.fromCode || "",
       to: flight.to || flight.toCode || "",
+      airline: flight.airline || "",
+      terminal: flight.terminal || "",
+      baggageNote: flight.baggageNote || "",
+      verifyNote: flight.verifyNote || "",
     }));
   }
   const stayItems = Array.isArray(data.stays) ? data.stays : [];

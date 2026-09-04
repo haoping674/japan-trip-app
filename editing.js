@@ -281,11 +281,11 @@
 
   const bookingPage = () => {
     const tab = state.bookingTab || "flights";
-    const tabItems = [["flights", "機票", "fa-solid fa-plane"], ["stays", "住宿", "fa-solid fa-building"], ["rental", "租車", "fa-solid fa-car"], ["vouchers", "憑證", "fa-solid fa-qrcode"]];
+    const tabItems = [["flights", "機票", "fa-solid fa-plane"], ["activities", "活動", "fa-solid fa-ticket"], ["stays", "住宿", "fa-solid fa-building"], ["rental", "租車", "fa-solid fa-car"], ["vouchers", "憑證", "fa-solid fa-qrcode"]];
     const activeTab = tabItems.some(([id]) => id === tab) ? tab : tabItems[0][0];
     state.bookingTab = activeTab;
-    const panel = { flights:editFlightPanel, stays:editStaysPanel, rental:editRentalPanel, vouchers:voucherPanel }[activeTab]();
-    return `<section class="section booking-view booking-redesign"><div class="booking-page-title"><p>旅程收納</p><h2>我的預訂</h2><span>把航班、住宿和租車資訊放在一起。</span></div><nav class="booking-subnav" aria-label="預訂分類">${tabItems.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${activeTab === id ? "is-active" : ""}" data-booking-tab="${id}" type="button"><i class="${iconClass}" aria-hidden="true"></i><span>${label}</span></button>`).join("")}</nav>${panel}</section>`;
+    const panel = { flights:editFlightPanel, activities:() => "", stays:editStaysPanel, rental:editRentalPanel, vouchers:voucherPanel }[activeTab]();
+    return `<section class="section booking-view booking-redesign"><div class="booking-page-title"><p>旅程收納</p><h2>我的預訂</h2><span>把航班、活動、住宿與租車資訊放在一起。</span></div><nav class="booking-subnav" aria-label="預訂分類">${tabItems.map(([id, label, iconClass]) => `<button class="booking-subnav__item ${activeTab === id ? "is-active" : ""}" data-booking-tab="${id}" type="button"><i class="${iconClass}" aria-hidden="true"></i><span>${label}</span></button>`).join("")}</nav>${panel}</section>`;
   };
 
   const baseRender = render;

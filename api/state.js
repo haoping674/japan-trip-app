@@ -4,11 +4,17 @@ const { buildDefaultState } = require("./seed-data");
 const TRIP_ID = "osaka-2026";
 
 const defaultState = () => buildDefaultState();
+const appendMissingById = (current, defaults) => {
+  const currentItems = Array.isArray(current) ? current : [];
+  const currentIds = new Set(currentItems.map((item) => item?.id).filter(Boolean));
+  return [...currentItems, ...defaults.filter((item) => item?.id && !currentIds.has(item.id))];
+};
 
 function mergeWithDefaults(data) {
   const defaults = defaultState();
   const source = data && typeof data === "object" ? data : {};
   const requiresItineraryRefresh = source.itineraryRevision !== defaults.itineraryRevision;
+  const requiresKansaiNotesRefresh = source.kansaiNotesRevision !== defaults.kansaiNotesRevision;
   const merged = { ...defaults, ...source };
   if (requiresItineraryRefresh) {
     // A Funliday revision changes only the curated route, never companion data.
@@ -18,6 +24,13 @@ function mergeWithDefaults(data) {
   ["tripDays", "planningItems", "members"].forEach((key) => {
     if (!Array.isArray(merged[key]) || !merged[key].length) merged[key] = defaults[key];
   });
+  if (requiresKansaiNotesRefresh) {
+    // This content refresh is independent of the Funliday route revision so an
+    // older deployed API cannot roll these practical notes back.
+    merged.tripDays = defaults.tripDays;
+    merged.planningItems = appendMissingById(merged.planningItems, defaults.planningItems);
+    merged.kansaiNotesRevision = defaults.kansaiNotesRevision;
+  }
   if (Array.isArray(merged.tripDays)) {
     const defaultDays = new Map(defaults.tripDays.map((item) => [item.day, item]));
     merged.tripDays = merged.tripDays.map((item) => {
@@ -38,6 +51,14 @@ function mergeWithDefaults(data) {
     ["flights", "stays", "vouchers"].forEach((key) => {
       if (!Array.isArray(merged.bookings[key]) || !merged.bookings[key].length) merged.bookings[key] = defaults.bookings[key];
     });
+    const defaultFlights = new Map(defaults.bookings.flights.map((flight) => [flight.code, flight]));
+    merged.bookings.flights = merged.bookings.flights.map((flight) => {
+      const fallback = defaultFlights.get(flight?.code);
+      return fallback ? { ...fallback, ...flight } : flight;
+    });
+    if (requiresKansaiNotesRefresh) {
+      merged.bookings.activities = appendMissingById(merged.bookings.activities, defaults.bookings.activities);
+    }
     const defaultStays = new Map(defaults.bookings.stays.map((stay) => [stay.name, stay]));
     merged.bookings.stays = merged.bookings.stays.map((stay) => {
       const fallback = defaultStays.get(stay?.name);
