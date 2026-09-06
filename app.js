@@ -956,7 +956,13 @@ app.addEventListener("submit", async (event) => {
     render();
     return;
   }
-  if (form.id === "expense-form") state.expenses.push({ id:crypto.randomUUID(), item:data.get("item"), amount:Number(data.get("amount")), category:data.get("category"), payer:data.get("payer") });
+  if (form.id === "expense-form") {
+    const currency = currentExpenseCurrency();
+    const displayedAmount = Number(data.get("amount"));
+    const amount = currency.code === "TWD" ? Math.round(displayedAmount / currency.rate) : Math.round(displayedAmount);
+    if (!(amount > 0)) return;
+    state.expenses.push({ id:crypto.randomUUID(), item:data.get("item"), amount, category:data.get("category"), payer:data.get("payer") });
+  }
   if (form.id === "journal-form") state.journal.push({ id:crypto.randomUUID(), note:data.get("note"), day:`DAY ${state.day}`, date:new Date().toLocaleDateString("zh-TW") });
   if (form.id === "planning-form") {
     const title = String(data.get("title") || "").trim();
@@ -967,11 +973,6 @@ app.addEventListener("submit", async (event) => {
   save();
   render({ preserveFormValues:false });
 });
-app.addEventListener("submit", (event) => {
-  if (event.target.id !== "expense-form" || state.expenseCurrency === "JPY") return;
-  const amount = event.target.elements.amount;
-  if (amount?.value) amount.value = Math.round(Number(amount.value) / currentExpenseCurrency().rate);
-}, true);
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 if (initial.tripDays || initial.planningItems || initial.japanesePhrases) applyTripContent(initial);
 render();
