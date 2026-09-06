@@ -5,6 +5,16 @@ let planningItems = [];
 const rainyPlans = window.RAINY_PLANS || {};
 const initial = JSON.parse(localStorage.getItem("osaka-travel-state") || "{}");
 const state = { section:"itinerary", day:Number(initial.day) || 1, done:initial.done || {}, tasks:initial.tasks || {}, expenses:initial.expenses || [], journal:initial.journal || [], planningTab:initial.planningTab || "todo", planningMemberFilter:initial.planningMemberFilter || "all", rainPlanModes:initial.rainPlanModes || {}, rainPlanDetails:initial.rainPlanDetails || {} };
+const EXPENSE_SYNC_STORAGE_KEY = "osaka-expense-sync-v1";
+const storedExpenseSync = (() => {
+  try { return JSON.parse(localStorage.getItem(EXPENSE_SYNC_STORAGE_KEY) || "{}"); } catch { return {}; }
+})();
+let expenseSyncQueue = Array.isArray(storedExpenseSync.queue) ? storedExpenseSync.queue.filter((entry) => entry && ["create", "update", "delete"].includes(entry.type)) : [];
+let expenseSyncState = {
+  phase:expenseSyncQueue.length ? "pending" : "idle",
+  message:"",
+  lastSyncedAt:Number(storedExpenseSync.lastSyncedAt) || 0,
+};
 const storedToolState = (() => {
   try { return JSON.parse(localStorage.getItem("osaka-tool-state-v1") || "{}"); } catch { return {}; }
 })();
@@ -130,14 +140,105 @@ window.setSharedMembers = (members) => {
 if (syncedBookings) applyBookingData(syncedBookings);
 const sharedData = () => ({ day:state.day, done:state.done, tasks:state.tasks, expenses:state.expenses, journal:state.journal, planningTab:state.planningTab, planningMemberFilter:state.planningMemberFilter, rainPlanModes:state.rainPlanModes, tripDays, planningItems, japanesePhrases, ...(syncedBookings ? { bookings:syncedBookings } : {}), ...(syncedMembers ? { members:syncedMembers } : {}) });
 const persistLocalState = () => localStorage.setItem("osaka-travel-state", JSON.stringify({ ...sharedData(), rainPlanDetails:state.rainPlanDetails }));
-const save = () => { const data = sharedData(); persistLocalState(); clearTimeout(syncTimer); syncTimer = setTimeout(() => fetch("./api/state", { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ data }) }).catch(() => {}), 700); };
+const persistExpenseSyncState = () => localStorage.setItem(EXPENSE_SYNC_STORAGE_KEY, JSON.stringify({ queue:expenseSyncQueue, lastSyncedAt:expenseSyncState.lastSyncedAt }));
+const save = () => {
+  const { expenses:_expenses, ...data } = sharedData();
+  persistLocalState();
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => fetch("./api/state", { method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ data }) }).catch(() => {}), 700);
+};
+const expenseSyncSummary = () => {
+  const pending = expenseSyncQueue.length;
+  if (expenseSyncState.phase === "syncing") return { tone:"syncing", title:"正在儲存到資料庫…", detail:`正在處理 ${pending} 筆記帳資料。` };
+  if (expenseSyncState.phase === "failed") return { tone:"failed", title:"尚未儲存到資料庫", detail:expenseSyncState.message || `${pending} 筆資料已保留在這台裝置，可再試一次。` };
+  if (pending) return { tone:"pending", title:`${pending} 筆待儲存到資料庫`, detail:"資料已暫存在這台裝置；請按右側按鈕完成同步。" };
+  if (expenseSyncState.lastSyncedAt) return { tone:"synced", title:"已儲存到資料庫", detail:`最後確認 ${new Date(expenseSyncState.lastSyncedAt).toLocaleTimeString("zh-TW", { hour:"2-digit", minute:"2-digit" })}` };
+  return { tone:"idle", title:"尚未有待儲存資料", detail:"新增支出後，會顯示資料庫儲存結果。" };
+};
+const queueExpenseCreate = (expense) => {
+  const index = expenseSyncQueue.findIndex((entry) => entry.expense?.id === expense.id);
+  if (index >= 0) expenseSyncQueue[index] = { type:"create", expense };
+  else expenseSyncQueue.push({ type:"create", expense });
+  expenseSyncState = { ...expenseSyncState, phase:"pending", message:"" };
+  persistExpenseSyncState();
+};
+const queueExpenseUpdate = (expense) => {
+  const createIndex = expenseSyncQueue.findIndex((entry) => entry.type === "create" && entry.expense?.id === expense.id);
+  if (createIndex >= 0 && expenseSyncState.phase !== "syncing") expenseSyncQueue[createIndex] = { type:"create", expense };
+  else {
+    const updateIndex = expenseSyncQueue.findIndex((entry) => entry.type === "update" && entry.expense?.id === expense.id);
+    if (updateIndex >= 0 && !(expenseSyncState.phase === "syncing" && updateIndex === 0)) expenseSyncQueue[updateIndex] = { type:"update", expense };
+    else expenseSyncQueue.push({ type:"update", expense });
+  }
+  expenseSyncState = { ...expenseSyncState, phase:"pending", message:"" };
+  persistExpenseSyncState();
+};
+const queueExpenseDelete = (id) => {
+  const createIndex = expenseSyncQueue.findIndex((entry) => entry.type === "create" && entry.expense?.id === id);
+  const isSyncingCreate = expenseSyncState.phase === "syncing" && createIndex === 0;
+  const isRelated = (entry) => entry.expense?.id === id || entry.id === id;
+  if (createIndex >= 0 && !isSyncingCreate) expenseSyncQueue = expenseSyncQueue.filter((entry) => !isRelated(entry));
+  else {
+    expenseSyncQueue = expenseSyncQueue.filter((entry, index) => expenseSyncState.phase === "syncing" && index === 0 || !isRelated(entry));
+    if (!expenseSyncQueue.some((entry) => entry.type === "delete" && entry.id === id)) expenseSyncQueue.push({ type:"delete", id });
+  }
+  expenseSyncState = { ...expenseSyncState, phase:expenseSyncQueue.length ? "pending" : "idle", message:"" };
+  persistExpenseSyncState();
+};
+const applyRemoteExpenses = (expenses) => {
+  const remote = new Map((Array.isArray(expenses) ? expenses : []).filter((expense) => expense?.id).map((expense) => [expense.id, expense]));
+  expenseSyncQueue.forEach((entry) => {
+    if (entry.type === "delete") remote.delete(entry.id);
+    else if (entry.expense?.id) remote.set(entry.expense.id, entry.expense);
+  });
+  state.expenses = [...remote.values()];
+  persistLocalState();
+};
+const requestExpenseSync = async (entry) => {
+  const method = entry.type === "create" ? "POST" : entry.type === "update" ? "PUT" : "DELETE";
+  const body = entry.type === "delete" ? { id:entry.id } : { expense:entry.expense };
+  const response = await fetch("./api/expenses", { method, headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
+  let payload = {};
+  try { payload = await response.json(); } catch {}
+  if (!response.ok) throw new Error(payload.error || "資料庫暫時無法儲存");
+  return payload;
+};
+const refreshExpensesFromDatabase = async () => {
+  const response = await fetch("./api/expenses", { cache:"no-store" });
+  if (!response.ok) throw new Error("無法確認資料庫內容");
+  const payload = await response.json();
+  applyRemoteExpenses(payload.expenses);
+};
+async function syncPendingExpenses({ preserveFormValues = true } = {}) {
+  if (expenseSyncState.phase === "syncing") return;
+  expenseSyncState = { ...expenseSyncState, phase:"syncing", message:"" };
+  renderWhenSafe({ preserveFormValues });
+  try {
+    while (expenseSyncQueue.length) {
+      const entry = expenseSyncQueue[0];
+      await requestExpenseSync(entry);
+      const index = expenseSyncQueue.indexOf(entry);
+      if (index >= 0) expenseSyncQueue.splice(index, 1);
+      persistExpenseSyncState();
+    }
+    await refreshExpensesFromDatabase();
+    expenseSyncState = { phase:"synced", message:"", lastSyncedAt:Date.now() };
+    persistExpenseSyncState();
+  } catch (error) {
+    expenseSyncState = { ...expenseSyncState, phase:"failed", message:error.message || "無法連線到資料庫" };
+    persistExpenseSyncState();
+  }
+  renderWhenSafe({ preserveFormValues });
+}
 function syncedExpensePage() {
   const total = state.expenses.reduce((sum, item) => sum + Number(item.amount), 0);
   const currency = currentExpenseCurrency();
   const isTwd = currency.code === "TWD";
   const rateReady = !isTwd || currency.rate > 0;
   const rateNote = isTwd ? expenseRateNote(currency.rate) : "以日圓記帳；台幣換算請切換至台幣。";
-  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>預設日幣；切換台幣時會套用工具頁的最新匯率。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category">${expenseCategoryOptions()}</select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>記下這筆${currency.label}支出</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article data-render-key="expense:${safe(item.id)}"><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><div class="ledger__actions"><button data-action="expense-edit" data-id="${safe(item.id)}" type="button" aria-label="修改 ${safe(item.item)}">${icon("fa-solid fa-pen")}</button><button data-action="expense-delete" data-id="${safe(item.id)}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></div></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
+  const sync = expenseSyncSummary();
+  const syncButton = expenseSyncState.phase === "syncing" ? "儲存中…" : expenseSyncQueue.length ? `立即儲存 ${expenseSyncQueue.length} 筆` : "確認資料庫";
+  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>每筆支出會個別寫入資料庫，不會用整份帳本覆蓋其他旅伴的資料。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><aside class="expense-sync expense-sync--${sync.tone}" role="status" aria-live="polite"><div><small>資料庫同步</small><strong>${safe(sync.title)}</strong><p>${safe(sync.detail)}</p></div><button class="expense-sync__button" data-action="expense-sync" type="button" ${expenseSyncState.phase === "syncing" ? "disabled" : ""}>${icon(expenseSyncState.phase === "syncing" ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-cloud-arrow-up")} ${syncButton}</button></aside><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category">${expenseCategoryOptions()}</select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>${icon("fa-solid fa-cloud-arrow-up")} 記下並儲存到資料庫</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article data-render-key="expense:${safe(item.id)}"><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><div class="ledger__actions"><button data-action="expense-edit" data-id="${safe(item.id)}" type="button" aria-label="修改 ${safe(item.item)}">${icon("fa-solid fa-pen")}</button><button data-action="expense-delete" data-id="${safe(item.id)}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></div></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
 }
 
 const closeExpenseEditor = () => document.querySelector(".expense-editor-modal")?.remove();
@@ -146,7 +247,7 @@ const openExpenseEditor = (expense) => {
   const displayedAmount = currency.code === "TWD" ? (Number(expense.amount) * currency.rate).toFixed(2) : String(Math.round(Number(expense.amount)));
   const modal = document.createElement("div");
   modal.className = "edit-modal expense-editor-modal";
-  modal.innerHTML = `<div class="edit-modal__backdrop" data-expense-editor-close></div><section class="edit-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="expense-editor-title"><div class="edit-modal__head"><div><small>旅行帳本</small><h2 id="expense-editor-title">修改支出</h2></div><button type="button" data-expense-editor-close aria-label="關閉">×</button></div><p class="edit-modal__hint">修改後會同步更新所有旅伴看到的這筆紀錄。</p><form class="expense-editor-form" id="expense-edit-form" data-expense-id="${safe(expense.id)}"><label class="edit-field"><span>金額（${currency.code}）</span><span class="edit-field__control"><b>${currency.code === "TWD" ? "NT$" : "¥"}</b><input name="amount" type="number" min="1" step="${currency.code === "TWD" ? "0.01" : "1"}" inputmode="${currency.code === "TWD" ? "decimal" : "numeric"}" value="${displayedAmount}" required /></span></label><label class="edit-field"><span>項目</span><input name="item" maxlength="36" value="${safe(expense.item)}" required /></label><div class="edit-grid"><label class="edit-field"><span>類別</span><select name="category">${expenseCategoryOptions(expense.category)}</select></label><label class="edit-field"><span>付款人</span><select name="payer">${expensePayerOptions(expense.payer)}</select></label></div><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-expense-editor-close>取消</button><button class="primary-button" type="submit">儲存變更</button></div></form></section>`;
+  modal.innerHTML = `<div class="edit-modal__backdrop" data-expense-editor-close></div><section class="edit-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="expense-editor-title"><div class="edit-modal__head"><div><small>旅行帳本</small><h2 id="expense-editor-title">修改支出</h2></div><button type="button" data-expense-editor-close aria-label="關閉">×</button></div><p class="edit-modal__hint">儲存後會個別寫入資料庫；若暫時離線，記帳頁會顯示可重試的同步提示。</p><form class="expense-editor-form" id="expense-edit-form" data-expense-id="${safe(expense.id)}"><label class="edit-field"><span>金額（${currency.code}）</span><span class="edit-field__control"><b>${currency.code === "TWD" ? "NT$" : "¥"}</b><input name="amount" type="number" min="1" step="${currency.code === "TWD" ? "0.01" : "1"}" inputmode="${currency.code === "TWD" ? "decimal" : "numeric"}" value="${displayedAmount}" required /></span></label><label class="edit-field"><span>項目</span><input name="item" maxlength="36" value="${safe(expense.item)}" required /></label><div class="edit-grid"><label class="edit-field"><span>類別</span><select name="category">${expenseCategoryOptions(expense.category)}</select></label><label class="edit-field"><span>付款人</span><select name="payer">${expensePayerOptions(expense.payer)}</select></label></div><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-expense-editor-close>取消</button><button class="primary-button" type="submit">儲存變更</button></div></form></section>`;
   document.body.appendChild(modal);
   if (!window.matchMedia("(pointer: coarse)").matches) modal.querySelector("input[name='amount']")?.focus();
 };
@@ -596,7 +697,7 @@ function updateExpenseCurrencyUI() {
   }
   const submit = document.querySelector("#expense-form .primary-button");
   if (submit) {
-    submit.textContent = `記下這筆${currency.label}支出`;
+    submit.innerHTML = `${icon("fa-solid fa-cloud-arrow-up")} 記下並儲存到資料庫`;
     submit.disabled = currency.code === "TWD" && !(currency.rate > 0);
   }
   const rateHint = document.querySelector(".expense-rate-hint");
@@ -762,6 +863,7 @@ app.addEventListener("click", (event) => {
     render();
     return;
   }
+  if (action === "expense-sync") { syncPendingExpenses(); return; }
   if (action === "stop") { state.done[key] = !state.done[key]; save(); render(); }
   if (action === "task") { state.tasks[key] = !state.tasks[key]; save(); render(); }
   if (action === "expense-edit") {
@@ -769,7 +871,13 @@ app.addEventListener("click", (event) => {
     if (expense) openExpenseEditor(expense);
     return;
   }
-  if (action === "expense-delete") { state.expenses = state.expenses.filter((item) => item.id !== id); save(); render(); }
+  if (action === "expense-delete") {
+    state.expenses = state.expenses.filter((item) => item.id !== id);
+    queueExpenseDelete(id);
+    persistLocalState();
+    render();
+    syncPendingExpenses();
+  }
   if (action === "copy") { navigator.clipboard?.writeText(name).catch(() => {}); button.textContent = "已複製"; }
   if (action === "tool-tab") {
     toolState.tab = button.dataset.tab;
@@ -881,8 +989,10 @@ document.addEventListener("submit", (event) => {
     if (!(amount > 0)) { if (error) error.textContent = "目前無法換算這筆金額，請稍後再試。"; return; }
     Object.assign(expense, { item:item.slice(0, 36), amount, category:String(data.get("category") || "餐飲"), payer:String(data.get("payer") || "") });
     closeExpenseEditor();
-    save();
+    queueExpenseUpdate(expense);
+    persistLocalState();
     render({ preserveFormValues:false });
+    syncPendingExpenses();
     return;
   }
   const form = event.target.closest("#planning-edit-form");
@@ -961,7 +1071,15 @@ app.addEventListener("submit", async (event) => {
     const displayedAmount = Number(data.get("amount"));
     const amount = currency.code === "TWD" ? Math.round(displayedAmount / currency.rate) : Math.round(displayedAmount);
     if (!(amount > 0)) return;
-    state.expenses.push({ id:crypto.randomUUID(), item:data.get("item"), amount, category:data.get("category"), payer:data.get("payer") });
+    const expense = { id:crypto.randomUUID(), item:String(data.get("item") || "").trim().slice(0, 36), amount, category:String(data.get("category") || "餐飲"), payer:String(data.get("payer") || "") };
+    state.expenses.push(expense);
+    queueExpenseCreate(expense);
+    persistLocalState();
+    form.reset();
+    document.activeElement?.blur();
+    render({ preserveFormValues:false });
+    syncPendingExpenses({ preserveFormValues:false });
+    return;
   }
   if (form.id === "journal-form") state.journal.push({ id:crypto.randomUUID(), note:data.get("note"), day:`DAY ${state.day}`, date:new Date().toLocaleDateString("zh-TW") });
   if (form.id === "planning-form") {
@@ -978,4 +1096,4 @@ if (initial.tripDays || initial.planningItems || initial.japanesePhrases) applyT
 render();
 refreshWeatherForDay(tripDays.find((item) => item.day === state.day));
 if (state.section === "expenses" || (state.section === "tools" && toolState.tab === "exchange")) refreshExchangeRate();
-fetch("./api/state", { cache:"no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then(({ data }) => { if (!data || typeof data !== "object") return; state.day = Number(data.day) || state.day; state.done = data.done || state.done; state.tasks = data.tasks || state.tasks; state.expenses = Array.isArray(data.expenses) ? data.expenses : state.expenses; state.journal = Array.isArray(data.journal) ? data.journal : state.journal; state.planningTab = planningTabs.some(([id]) => id === data.planningTab) ? data.planningTab : state.planningTab; state.planningMemberFilter = data.planningMemberFilter || state.planningMemberFilter; state.rainPlanModes = data.rainPlanModes && typeof data.rainPlanModes === "object" ? data.rainPlanModes : state.rainPlanModes; applyTripContent(data); if (data.bookings) { applyBookingData(data.bookings); } if (Array.isArray(data.members)) { syncedMembers = data.members; window.applyMembersData?.(data.members); } persistLocalState(); renderWhenSafe(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); }).catch(() => {});
+fetch("./api/state", { cache:"no-store" }).then((response) => response.ok ? response.json() : Promise.reject()).then(({ data }) => { if (!data || typeof data !== "object") return; state.day = Number(data.day) || state.day; state.done = data.done || state.done; state.tasks = data.tasks || state.tasks; applyRemoteExpenses(data.expenses); state.journal = Array.isArray(data.journal) ? data.journal : state.journal; state.planningTab = planningTabs.some(([id]) => id === data.planningTab) ? data.planningTab : state.planningTab; state.planningMemberFilter = data.planningMemberFilter || state.planningMemberFilter; state.rainPlanModes = data.rainPlanModes && typeof data.rainPlanModes === "object" ? data.rainPlanModes : state.rainPlanModes; applyTripContent(data); if (data.bookings) { applyBookingData(data.bookings); } if (Array.isArray(data.members)) { syncedMembers = data.members; window.applyMembersData?.(data.members); } persistLocalState(); renderWhenSafe(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); }).catch(() => {});

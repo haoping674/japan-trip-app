@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check": "node --check rain-plans.js && node --check app.js && node --check sw.js && node --check api/seed-data.js && node --check api/state.js && node --check api/translate-phrase.js && node --check scripts/update-trip-itinerary.js",
+    "check": "node --check rain-plans.js && node --check app.js && node --check sw.js && node --check api/seed-data.js && node --check api/expense-store.js && node --check api/expenses.js && node --check api/state.js && node --check api/translate-phrase.js && node --check scripts/update-trip-itinerary.js",
     "db:seed": "node scripts/seed-db.js",
     "db:update-itinerary": "node scripts/update-trip-itinerary.js",
     "vercel-dev": "vercel dev --listen 4173"

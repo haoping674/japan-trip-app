@@ -1,7 +1,6 @@
 const { neon } = require("@neondatabase/serverless");
 const { buildDefaultState } = require("./seed-data");
-
-const TRIP_ID = "osaka-2026";
+const { TRIP_ID, ensureExpenseStore, listExpenses } = require("./expense-store");
 
 const defaultState = () => buildDefaultState();
 const appendMissingById = (current, defaults) => {
@@ -78,16 +77,6 @@ function parseBody(body) {
   return JSON.parse(body);
 }
 
-async function ensureTable(sql) {
-  await sql`
-    create table if not exists trip_state (
-      id text primary key,
-      data jsonb not null,
-      updated_at timestamptz not null default now()
-    )
-  `;
-}
-
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -106,26 +95,22 @@ module.exports = async function handler(req, res) {
 
   try {
     const sql = neon(process.env.DATABASE_URL);
-    await ensureTable(sql);
+    let currentData = await ensureExpenseStore(sql);
 
     if (req.method === "GET") {
-      const seed = defaultState();
-      await sql`
-        insert into trip_state (id, data)
-        values (${TRIP_ID}, ${JSON.stringify(seed)}::jsonb)
-        on conflict (id) do nothing
-      `;
-      const rows = await sql`select data, updated_at from trip_state where id = ${TRIP_ID}`;
-      const data = mergeWithDefaults(rows[0].data);
-      if (JSON.stringify(data) !== JSON.stringify(rows[0].data)) {
+      const data = mergeWithDefaults(currentData);
+      const storageData = { ...data, expenses:currentData.expenses, expenseStoreRevision:currentData.expenseStoreRevision };
+      if (JSON.stringify(storageData) !== JSON.stringify(currentData)) {
         const updated = await sql`
-          update trip_state set data = ${JSON.stringify(data)}::jsonb, updated_at = now()
+          update trip_state set data = ${JSON.stringify(storageData)}::jsonb, updated_at = now()
           where id = ${TRIP_ID}
           returning data, updated_at
         `;
-        return res.status(200).json({ data: updated[0].data, updatedAt: updated[0].updated_at });
+        currentData = updated[0].data;
+        return res.status(200).json({ data: { ...currentData, expenses:await listExpenses(sql) }, updatedAt: updated[0].updated_at });
       }
-      return res.status(200).json({ data, updatedAt: rows[0].updated_at });
+      const rows = await sql`select updated_at from trip_state where id = ${TRIP_ID}`;
+      return res.status(200).json({ data: { ...data, expenses:await listExpenses(sql) }, updatedAt: rows[0].updated_at });
     }
 
     const payload = parseBody(req.body);
@@ -133,8 +118,8 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "Expected JSON body with object field: data" });
     }
 
-    const current = await sql`select data from trip_state where id = ${TRIP_ID}`;
-    const nextData = mergeWithDefaults({ ...(current[0]?.data || {}), ...payload.data });
+    const { expenses:_ignoredExpenses, expenseStoreRevision:_ignoredRevision, ...statePatch } = payload.data;
+    const nextData = mergeWithDefaults({ ...currentData, ...statePatch, expenses:currentData.expenses, expenseStoreRevision:currentData.expenseStoreRevision });
     const rows = await sql`
       insert into trip_state (id, data, updated_at)
       values (${TRIP_ID}, ${JSON.stringify(nextData)}::jsonb, now())
@@ -143,7 +128,7 @@ module.exports = async function handler(req, res) {
       returning data, updated_at
     `;
 
-    return res.status(200).json({ data: rows[0].data, updatedAt: rows[0].updated_at });
+    return res.status(200).json({ data: { ...rows[0].data, expenses:await listExpenses(sql) }, updatedAt: rows[0].updated_at });
   } catch (error) {
     return res.status(500).json({ error: "Database request failed", detail: error.message });
   }
