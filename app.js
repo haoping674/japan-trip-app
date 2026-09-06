@@ -52,7 +52,7 @@ clearCacheButton?.addEventListener("click", async () => {
 });
 const safe = (text) => String(text).replace(/[&<>'"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"})[char]);
 const icon = (classes) => `<i class="${classes}" aria-hidden="true"></i>`;
-const categoryIcon = (category) => ({餐飲:"fa-solid fa-utensils",交通:"fa-solid fa-train-subway",門票:"fa-solid fa-ticket",購物:"fa-solid fa-bag-shopping",住宿:"fa-solid fa-bed"}[category] || "fa-solid fa-receipt");
+const categoryIcon = (category) => ({餐飲:"fa-solid fa-utensils",交通:"fa-solid fa-train-subway",門票:"fa-solid fa-ticket",購物:"fa-solid fa-bag-shopping",住宿:"fa-solid fa-bed",保險:"fa-solid fa-shield-heart","網路/通訊":"fa-solid fa-wifi"}[category] || "fa-solid fa-receipt");
 const expenseMembers = () => Array.isArray(syncedMembers) ? syncedMembers.filter((member) => member && member.id && member.name) : [];
 const expensePayerName = (payer) => {
   if (payer === "all" || payer === "全體") return "全體";
@@ -73,7 +73,7 @@ const EXPENSE_CURRENCIES = {
   JPY: { code: "JPY", label: "日幣", icon: "fa-solid fa-yen-sign", rate: 1, note: "日本円" },
   TWD: { code: "TWD", label: "台幣", icon: "fa-solid fa-dollar-sign", rate: null, note: "尚未取得最新匯率" },
 };
-const expenseCategories = ["餐飲", "交通", "門票", "購物", "住宿"];
+const expenseCategories = ["餐飲", "交通", "門票", "購物", "住宿", "保險", "網路/通訊"];
 const expenseCategoryOptions = (selectedCategory = "餐飲") => {
   const categories = expenseCategories.includes(selectedCategory) ? expenseCategories : [...expenseCategories, selectedCategory];
   return categories.map((category) => `<option${category === selectedCategory ? " selected" : ""}>${safe(category)}</option>`).join("");
@@ -136,7 +136,7 @@ function syncedExpensePage() {
   const currency = currentExpenseCurrency();
   const isTwd = currency.code === "TWD";
   const rateReady = !isTwd || currency.rate > 0;
-  const rateNote = expenseRateNote(currency.rate);
+  const rateNote = isTwd ? expenseRateNote(currency.rate) : "以日圓記帳；台幣換算請切換至台幣。";
   return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>預設日幣；切換台幣時會套用工具頁的最新匯率。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category">${expenseCategoryOptions()}</select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>記下這筆${currency.label}支出</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article data-render-key="expense:${safe(item.id)}"><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><div class="ledger__actions"><button data-action="expense-edit" data-id="${safe(item.id)}" type="button" aria-label="修改 ${safe(item.item)}">${icon("fa-solid fa-pen")}</button><button data-action="expense-delete" data-id="${safe(item.id)}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></div></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
 }
 
@@ -600,7 +600,7 @@ function updateExpenseCurrencyUI() {
     submit.disabled = currency.code === "TWD" && !(currency.rate > 0);
   }
   const rateHint = document.querySelector(".expense-rate-hint");
-  if (rateHint) rateHint.textContent = expenseRateNote(currency.rate);
+  if (rateHint) rateHint.textContent = currency.code === "TWD" ? expenseRateNote(currency.rate) : "以日圓記帳；台幣換算請切換至台幣。";
   document.querySelectorAll(".ledger article p").forEach((entry) => {
     entry.textContent = entry.textContent.replace(/·\s*(JPY|TWD)$/, `· ${currency.code}`);
   });
