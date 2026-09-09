@@ -32,6 +32,19 @@ const toolState = {
 const saveToolState = () => localStorage.setItem("osaka-tool-state-v1", JSON.stringify(toolState));
 const savedExpenseCurrency = localStorage.getItem("osaka-expense-currency");
 state.expenseCurrency = savedExpenseCurrency === "TWD" ? "TWD" : "JPY";
+const EXPENSE_ANALYSIS_STORAGE_KEY = "osaka-expense-analysis-v1";
+const storedExpenseAnalysis = (() => {
+  try { return JSON.parse(localStorage.getItem(EXPENSE_ANALYSIS_STORAGE_KEY) || "{}"); } catch { return {}; }
+})();
+let expenseView = storedExpenseAnalysis.view === "analysis" ? "analysis" : "entry";
+let expenseFilters = {
+  date:typeof storedExpenseAnalysis.date === "string" ? storedExpenseAnalysis.date : "all",
+  category:typeof storedExpenseAnalysis.category === "string" ? storedExpenseAnalysis.category : "all",
+  payer:typeof storedExpenseAnalysis.payer === "string" ? storedExpenseAnalysis.payer : "all",
+  sort:["date-desc", "amount-desc", "amount-asc"].includes(storedExpenseAnalysis.sort) ? storedExpenseAnalysis.sort : "date-desc",
+  query:typeof storedExpenseAnalysis.query === "string" ? storedExpenseAnalysis.query : "",
+};
+const persistExpenseAnalysis = () => localStorage.setItem(EXPENSE_ANALYSIS_STORAGE_KEY, JSON.stringify({ view:expenseView, ...expenseFilters }));
 let syncedBookings = initial.bookings || null;
 let syncedMembers = (() => {
   try {
@@ -87,6 +100,52 @@ const expenseCategories = ["餐飲", "交通", "門票", "購物", "住宿", "�
 const expenseCategoryOptions = (selectedCategory = "餐飲") => {
   const categories = expenseCategories.includes(selectedCategory) ? expenseCategories : [...expenseCategories, selectedCategory];
   return categories.map((category) => `<option${category === selectedCategory ? " selected" : ""}>${safe(category)}</option>`).join("");
+};
+const validExpenseDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+const localExpenseDate = () => {
+  const parts = new Intl.DateTimeFormat("en", { timeZone:"Asia/Tokyo", year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(new Date());
+  const get = (type) => parts.find((part) => part.type === type)?.value || "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+};
+const tripDayForDate = (date) => tripDays.find((day) => day.date === date);
+const preferredExpenseDate = () => tripDays.find((day) => day.day === state.day)?.date || localExpenseDate();
+const expenseOccurredOn = (expense) => {
+  if (validExpenseDate(expense?.occurredOn)) return expense.occurredOn;
+  const createdDate = String(expense?.createdAt || "").slice(0, 10);
+  return validExpenseDate(createdDate) ? createdDate : "";
+};
+const expenseDateLabel = (expense) => {
+  const date = expenseOccurredOn(expense);
+  if (!date) return "日期待補";
+  const tripDay = tripDayForDate(date);
+  const short = date.slice(5).replace("-", "/");
+  return tripDay ? `DAY ${tripDay.day} · ${short}` : short;
+};
+const expenseDateOptions = (selectedDate = preferredExpenseDate()) => {
+  const dates = tripDays.length ? tripDays.map((day) => ({ value:day.date, label:`DAY ${day.day} · ${day.date.slice(5).replace("-", "/")} · ${day.area}` })) : [{ value:preferredExpenseDate(), label:`今天 · ${preferredExpenseDate().slice(5).replace("-", "/")}` }];
+  if (validExpenseDate(selectedDate) && !dates.some((date) => date.value === selectedDate)) dates.unshift({ value:selectedDate, label:`${selectedDate.slice(5).replace("-", "/")} · 行程外` });
+  return dates.map((date) => `<option value="${safe(date.value)}"${date.value === selectedDate ? " selected" : ""}>${safe(date.label)}</option>`).join("");
+};
+const allExpenseCategories = () => [...new Set([...expenseCategories, ...state.expenses.map((expense) => expense.category).filter(Boolean)])];
+const expenseFilterOptions = () => ({
+  dates:[...tripDays.map((day) => ({ value:day.date, label:`DAY ${day.day} · ${day.date.slice(5).replace("-", "/")}` })), ...state.expenses.map((expense) => expenseOccurredOn(expense)).filter((date) => date && !tripDays.some((day) => day.date === date)).map((date) => ({ value:date, label:date.slice(5).replace("-", "/") }))],
+  categories:allExpenseCategories(),
+});
+const filteredExpenses = () => {
+  const query = expenseFilters.query.trim().toLocaleLowerCase("zh-TW");
+  const result = state.expenses.filter((expense) => {
+    const occurredOn = expenseOccurredOn(expense);
+    if (expenseFilters.date === "unassigned" && occurredOn) return false;
+    if (expenseFilters.date !== "all" && expenseFilters.date !== "unassigned" && occurredOn !== expenseFilters.date) return false;
+    if (expenseFilters.category !== "all" && expense.category !== expenseFilters.category) return false;
+    if (expenseFilters.payer !== "all" && expense.payer !== expenseFilters.payer) return false;
+    return !query || [expense.item, expense.category, expensePayerName(expense.payer), expenseDateLabel(expense)].join(" ").toLocaleLowerCase("zh-TW").includes(query);
+  });
+  return result.sort((left, right) => {
+    if (expenseFilters.sort === "amount-desc") return Number(right.amount) - Number(left.amount);
+    if (expenseFilters.sort === "amount-asc") return Number(left.amount) - Number(right.amount);
+    return `${expenseOccurredOn(right)}${right.createdAt || ""}`.localeCompare(`${expenseOccurredOn(left)}${left.createdAt || ""}`);
+  });
 };
 const expenseRateNote = (rate) => {
   if (!(rate > 0)) return exchangeStatus === "error" ? (exchangeError || "目前無法取得匯率，請連線後重試。") : "台幣匯率載入中，稍候即可切換。";
@@ -230,15 +289,51 @@ async function syncPendingExpenses({ preserveFormValues = true } = {}) {
   }
   renderWhenSafe({ preserveFormValues });
 }
+const totalExpenseAmount = (expenses) => expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+const sortedRecentExpenses = (expenses) => expenses.slice().sort((left, right) => `${expenseOccurredOn(right)}${right.createdAt || ""}`.localeCompare(`${expenseOccurredOn(left)}${left.createdAt || ""}`));
+const expenseViewSwitch = () => `<div class="expense-view-switch" role="tablist" aria-label="記帳檢視"><button class="${expenseView === "entry" ? "is-active" : ""}" data-action="expense-view" data-view="entry" type="button" role="tab" aria-selected="${expenseView === "entry"}">${icon("fa-solid fa-pen-to-square")} 記帳</button><button class="${expenseView === "analysis" ? "is-active" : ""}" data-action="expense-view" data-view="analysis" type="button" role="tab" aria-selected="${expenseView === "analysis"}">${icon("fa-solid fa-chart-column")} 分析</button></div>`;
+const expenseCurrencySwitch = (isTwd) => `<div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div>`;
+const expenseDetailList = (expenses, { emptyMessage = "還沒有符合條件的支出。", limit = 0 } = {}) => {
+  const visible = limit ? expenses.slice(0, limit) : expenses;
+  if (!visible.length) return `<div class="empty-state expense-empty"><span>${icon("fa-solid fa-receipt")}</span><p>${safe(emptyMessage)}</p></div>`;
+  return `<div class="expense-detail-list">${visible.map((expense) => `<details class="expense-detail-card" data-render-key="expense:${safe(expense.id)}"><summary><span class="ledger-dot">${icon(categoryIcon(expense.category))}</span><span class="expense-detail-card__main"><b>${safe(expense.item)}</b><small>${safe(expenseDateLabel(expense))} · ${safe(expense.category)}</small></span><strong>${money(expense.amount)}</strong><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><div class="expense-detail-card__body"><dl><div><dt>付款人</dt><dd>${safe(expensePayerName(expense.payer))}</dd></div><div><dt>消費日</dt><dd>${safe(expenseDateLabel(expense))}</dd></div><div><dt>分攤方式</dt><dd>全體均分</dd></div></dl><div class="ledger__actions"><button data-action="expense-edit" data-id="${safe(expense.id)}" type="button" aria-label="修改 ${safe(expense.item)}">${icon("fa-solid fa-pen")} 修改</button><button data-action="expense-delete" data-id="${safe(expense.id)}" type="button" aria-label="刪除 ${safe(expense.item)}">${icon("fa-solid fa-trash-can")} 刪除</button></div></div></details>`).join("")}</div>`;
+};
+const expenseFiltersPanel = () => {
+  const options = expenseFilterOptions();
+  const dateOptions = [...new Map(options.dates.map((date) => [date.value, date])).values()];
+  const hasUnassigned = state.expenses.some((expense) => !expenseOccurredOn(expense));
+  return `<form class="expense-filter-form" id="expense-filter-form" aria-label="篩選消費明細"><div class="expense-filter-form__head"><div><small>帳目檢索</small><h3>篩選與明細</h3></div><button class="expense-filter-clear" data-action="expense-filter-clear" type="button">清除篩選</button></div><label class="expense-filter-search">${icon("fa-solid fa-magnifying-glass")}<input id="expense-filter-query" name="query" type="search" value="${safe(expenseFilters.query)}" placeholder="搜尋項目、類別或付款人" /></label><div class="expense-filter-grid"><label><span>日期</span><select name="date"><option value="all"${expenseFilters.date === "all" ? " selected" : ""}>全部日期</option>${dateOptions.map((date) => `<option value="${safe(date.value)}"${expenseFilters.date === date.value ? " selected" : ""}>${safe(date.label)}</option>`).join("")}${hasUnassigned ? `<option value="unassigned"${expenseFilters.date === "unassigned" ? " selected" : ""}>日期待補</option>` : ""}</select></label><label><span>類別</span><select name="category"><option value="all"${expenseFilters.category === "all" ? " selected" : ""}>全部類別</option>${options.categories.map((category) => `<option value="${safe(category)}"${expenseFilters.category === category ? " selected" : ""}>${safe(category)}</option>`).join("")}</select></label><label><span>付款人</span><select name="payer"><option value="all"${expenseFilters.payer === "all" ? " selected" : ""}>全部付款人</option>${expenseMembers().map((member) => `<option value="${safe(member.id)}"${expenseFilters.payer === member.id ? " selected" : ""}>${safe(member.name)}</option>`).join("")}</select></label><label><span>排序</span><select name="sort"><option value="date-desc"${expenseFilters.sort === "date-desc" ? " selected" : ""}>日期：新到舊</option><option value="amount-desc"${expenseFilters.sort === "amount-desc" ? " selected" : ""}>金額：高到低</option><option value="amount-asc"${expenseFilters.sort === "amount-asc" ? " selected" : ""}>金額：低到高</option></select></label></div></form>`;
+};
+const expenseTrend = (expenses) => {
+  const dates = tripDays.length ? tripDays.map((day) => ({ date:day.date, label:`D${day.day}`, detail:day.date.slice(5).replace("-", "/") })) : [...new Set(expenses.map((expense) => expenseOccurredOn(expense)).filter(Boolean))].map((date) => ({ date, label:date.slice(5).replace("-", "/"), detail:"" }));
+  const points = dates.map((day) => ({ ...day, total:totalExpenseAmount(expenses.filter((expense) => expenseOccurredOn(expense) === day.date)) }));
+  const maximum = Math.max(...points.map((point) => point.total), 1);
+  if (!points.length) return `<div class="expense-chart-empty">先在每筆帳目選擇消費日期，即可看到花費趨勢。</div>`;
+  return `<div class="expense-trend-chart" role="img" aria-label="依旅行日呈現的消費趨勢">${points.map((point) => { const height = point.total ? Math.max(10, Math.round(point.total / maximum * 100)) : 3; return `<div class="expense-trend-chart__point"><span class="expense-trend-chart__amount">${point.total ? money(point.total) : ""}</span><span class="expense-trend-chart__bar" style="--bar-height:${height}%"></span><b>${safe(point.label)}</b><small>${safe(point.detail)}</small></div>`; }).join("")}</div>`;
+};
+const expenseCategoryBreakdown = (expenses) => {
+  const total = totalExpenseAmount(expenses);
+  const groups = [...expenses.reduce((map, expense) => map.set(expense.category || "其他", (map.get(expense.category || "其他") || 0) + Number(expense.amount || 0)), new Map()).entries()].sort((left, right) => right[1] - left[1]);
+  if (!groups.length) return `<div class="expense-chart-empty">篩選條件下還沒有可分析的類別。</div>`;
+  return `<div class="expense-category-chart">${groups.map(([category, amount]) => { const percent = total ? Math.round(amount / total * 100) : 0; return `<div class="expense-category-chart__row"><span class="ledger-dot">${icon(categoryIcon(category))}</span><div><div><b>${safe(category)}</b><small>${percent}% · ${money(amount)}</small></div><span class="expense-category-chart__track"><i style="--category-width:${percent}%"></i></span></div></div>`; }).join("")}</div>`;
+};
+const expenseEntryPanel = (currency, isTwd, rateReady, rateNote, total) => `<div class="expense-entry-panel">${expenseCurrencySwitch(isTwd)}<form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><label>消費日期<select name="occurredOn">${expenseDateOptions()}</select></label><div class="form-row"><label>類別<select name="category">${expenseCategoryOptions()}</select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>${icon("fa-solid fa-cloud-arrow-up")} 記下並儲存到資料庫</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div>${expenseDetailList(sortedRecentExpenses(state.expenses), { limit:6, emptyMessage:"第一筆旅行支出，從這裡開始。" })}</div>`;
+const expenseAnalysisPanel = () => {
+  const expenses = filteredExpenses();
+  const total = totalExpenseAmount(expenses);
+  const average = expenses.length ? total / expenses.length : 0;
+  const largest = expenses.reduce((current, expense) => Number(expense.amount) > Number(current?.amount || 0) ? expense : current, null);
+  return `<div class="expense-analysis-panel">${expenseFiltersPanel()}<div class="expense-analysis-summary"><article><small>篩選總額</small><strong>${money(total)}</strong><span>${expenses.length} / ${state.expenses.length} 筆</span></article><article><small>平均每筆</small><strong>${money(average)}</strong><span>依目前篩選</span></article><article><small>最大單筆</small><strong>${largest ? money(largest.amount) : "—"}</strong><span>${largest ? safe(largest.item) : "尚無紀錄"}</span></article></div><section class="expense-analysis-card"><div class="expense-analysis-card__head"><div><small>DAILY ROUTE</small><h3>消費趨勢</h3></div><span>${money(total)}</span></div>${expenseTrend(expenses)}</section><section class="expense-analysis-card"><div class="expense-analysis-card__head"><div><small>CATEGORY MAP</small><h3>類別分析</h3></div><span>${expenses.length} 筆</span></div>${expenseCategoryBreakdown(expenses)}</section><div class="ledger-title"><h3>消費明細</h3><span>${expenses.length} 筆</span></div>${expenseDetailList(expenses)}</div>`;
+};
 function syncedExpensePage() {
-  const total = state.expenses.reduce((sum, item) => sum + Number(item.amount), 0);
+  const total = totalExpenseAmount(state.expenses);
   const currency = currentExpenseCurrency();
   const isTwd = currency.code === "TWD";
   const rateReady = !isTwd || currency.rate > 0;
   const rateNote = isTwd ? expenseRateNote(currency.rate) : "以日圓記帳；台幣換算請切換至台幣。";
   const sync = expenseSyncSummary();
   const syncButton = expenseSyncState.phase === "syncing" ? "儲存中…" : expenseSyncQueue.length ? `立即儲存 ${expenseSyncQueue.length} 筆` : "確認資料庫";
-  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>每筆支出會個別寫入資料庫，不會用整份帳本覆蓋其他旅伴的資料。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><aside class="expense-sync expense-sync--${sync.tone}" role="status" aria-live="polite"><div><small>資料庫同步</small><strong>${safe(sync.title)}</strong><p>${safe(sync.detail)}</p></div><button class="expense-sync__button" data-action="expense-sync" type="button" ${expenseSyncState.phase === "syncing" ? "disabled" : ""}>${icon(expenseSyncState.phase === "syncing" ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-cloud-arrow-up")} ${syncButton}</button></aside><div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div><form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><div class="form-row"><label>類別<select name="category">${expenseCategoryOptions()}</select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>${icon("fa-solid fa-cloud-arrow-up")} 記下並儲存到資料庫</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div><div class="ledger">${state.expenses.length ? state.expenses.slice().reverse().map((item) => `<article data-render-key="expense:${safe(item.id)}"><span class="ledger-dot">${icon(categoryIcon(item.category))}</span><div><h4>${safe(item.item)}</h4><p>${safe(item.category)} · ${safe(expensePayerName(item.payer))} · ${currency.code}</p></div><strong>${money(item.amount)}</strong><div class="ledger__actions"><button data-action="expense-edit" data-id="${safe(item.id)}" type="button" aria-label="修改 ${safe(item.item)}">${icon("fa-solid fa-pen")}</button><button data-action="expense-delete" data-id="${safe(item.id)}" type="button" aria-label="刪除 ${safe(item.item)}">${icon("fa-solid fa-trash-can")}</button></div></article>`).join("") : `<div class="empty-state"><span>${icon("fa-solid fa-yen-sign")}</span><p>第一筆旅行支出，從這裡開始。</p></div>`}</div></section>`;
+  return `<section class="section expense-view"><div class="page-title"><p>旅行帳本</p><h2>一起記帳</h2><span>每筆支出都能連結到旅行日；在分析裡看見花費路線與類別分布。</span></div><article class="expense-dashboard"><div><span>總支出</span><strong>${money(total)}</strong><small>${currency.code} · ${currency.note}</small></div><div class="expense-dashboard__ring"><b>${state.expenses.length}</b><small>筆紀錄</small></div><p>大阪 11 日旅行</p></article><aside class="expense-sync expense-sync--${sync.tone}" role="status" aria-live="polite"><div><small>資料庫同步</small><strong>${safe(sync.title)}</strong><p>${safe(sync.detail)}</p></div><button class="expense-sync__button" data-action="expense-sync" type="button" ${expenseSyncState.phase === "syncing" ? "disabled" : ""}>${icon(expenseSyncState.phase === "syncing" ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-cloud-arrow-up")} ${syncButton}</button></aside>${expenseViewSwitch()}${expenseView === "analysis" ? expenseAnalysisPanel() : expenseEntryPanel(currency, isTwd, rateReady, rateNote, total)}</section>`;
 }
 
 const closeExpenseEditor = () => document.querySelector(".expense-editor-modal")?.remove();
@@ -247,7 +342,7 @@ const openExpenseEditor = (expense) => {
   const displayedAmount = currency.code === "TWD" ? (Number(expense.amount) * currency.rate).toFixed(2) : String(Math.round(Number(expense.amount)));
   const modal = document.createElement("div");
   modal.className = "edit-modal expense-editor-modal";
-  modal.innerHTML = `<div class="edit-modal__backdrop" data-expense-editor-close></div><section class="edit-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="expense-editor-title"><div class="edit-modal__head"><div><small>旅行帳本</small><h2 id="expense-editor-title">修改支出</h2></div><button type="button" data-expense-editor-close aria-label="關閉">×</button></div><p class="edit-modal__hint">儲存後會個別寫入資料庫；若暫時離線，記帳頁會顯示可重試的同步提示。</p><form class="expense-editor-form" id="expense-edit-form" data-expense-id="${safe(expense.id)}"><label class="edit-field"><span>金額（${currency.code}）</span><span class="edit-field__control"><b>${currency.code === "TWD" ? "NT$" : "¥"}</b><input name="amount" type="number" min="1" step="${currency.code === "TWD" ? "0.01" : "1"}" inputmode="${currency.code === "TWD" ? "decimal" : "numeric"}" value="${displayedAmount}" required /></span></label><label class="edit-field"><span>項目</span><input name="item" maxlength="36" value="${safe(expense.item)}" required /></label><div class="edit-grid"><label class="edit-field"><span>類別</span><select name="category">${expenseCategoryOptions(expense.category)}</select></label><label class="edit-field"><span>付款人</span><select name="payer">${expensePayerOptions(expense.payer)}</select></label></div><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-expense-editor-close>取消</button><button class="primary-button" type="submit">儲存變更</button></div></form></section>`;
+  modal.innerHTML = `<div class="edit-modal__backdrop" data-expense-editor-close></div><section class="edit-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="expense-editor-title"><div class="edit-modal__head"><div><small>旅行帳本</small><h2 id="expense-editor-title">修改支出</h2></div><button type="button" data-expense-editor-close aria-label="關閉">×</button></div><p class="edit-modal__hint">儲存後會個別寫入資料庫；若暫時離線，記帳頁會顯示可重試的同步提示。</p><form class="expense-editor-form" id="expense-edit-form" data-expense-id="${safe(expense.id)}"><label class="edit-field"><span>金額（${currency.code}）</span><span class="edit-field__control"><b>${currency.code === "TWD" ? "NT$" : "¥"}</b><input name="amount" type="number" min="1" step="${currency.code === "TWD" ? "0.01" : "1"}" inputmode="${currency.code === "TWD" ? "decimal" : "numeric"}" value="${displayedAmount}" required /></span></label><label class="edit-field"><span>項目</span><input name="item" maxlength="36" value="${safe(expense.item)}" required /></label><label class="edit-field"><span>消費日期</span><select name="occurredOn">${expenseDateOptions(expenseOccurredOn(expense) || preferredExpenseDate())}</select></label><div class="edit-grid"><label class="edit-field"><span>類別</span><select name="category">${expenseCategoryOptions(expense.category)}</select></label><label class="edit-field"><span>付款人</span><select name="payer">${expensePayerOptions(expense.payer)}</select></label></div><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-expense-editor-close>取消</button><button class="primary-button" type="submit">儲存變更</button></div></form></section>`;
   document.body.appendChild(modal);
   if (!window.matchMedia("(pointer: coarse)").matches) modal.querySelector("input[name='amount']")?.focus();
 };
@@ -856,6 +951,18 @@ app.addEventListener("click", (event) => {
   if (!button) return;
   if (button.dataset.day) { state.day = Number(button.dataset.day); save(); render(); refreshWeatherForDay(tripDays.find((item) => item.day === state.day)); return; }
   const { action, key, id, name, phraseId } = button.dataset;
+  if (action === "expense-view") {
+    expenseView = button.dataset.view === "analysis" ? "analysis" : "entry";
+    persistExpenseAnalysis();
+    render({ preserveScroll:false });
+    return;
+  }
+  if (action === "expense-filter-clear") {
+    expenseFilters = { date:"all", category:"all", payer:"all", sort:"date-desc", query:"" };
+    persistExpenseAnalysis();
+    render({ preserveScroll:true, preserveFormValues:false });
+    return;
+  }
   if (action === "expense-currency") {
     if (button.dataset.currency === "TWD" && !(activeExchangeRate() > 0)) { refreshExchangeRate(); return; }
     state.expenseCurrency = button.dataset.currency === "TWD" ? "TWD" : "JPY";
@@ -987,7 +1094,7 @@ document.addEventListener("submit", (event) => {
     if (!(displayedAmount > 0) || !item) { if (error) error.textContent = "請填寫有效的金額與項目。"; return; }
     const amount = currency.code === "TWD" ? Math.round(displayedAmount / currency.rate) : Math.round(displayedAmount);
     if (!(amount > 0)) { if (error) error.textContent = "目前無法換算這筆金額，請稍後再試。"; return; }
-    Object.assign(expense, { item:item.slice(0, 36), amount, category:String(data.get("category") || "餐飲"), payer:String(data.get("payer") || "") });
+    Object.assign(expense, { item:item.slice(0, 36), amount, occurredOn:validExpenseDate(data.get("occurredOn")) ? String(data.get("occurredOn")) : preferredExpenseDate(), category:String(data.get("category") || "餐飲"), payer:String(data.get("payer") || "") });
     closeExpenseEditor();
     queueExpenseUpdate(expense);
     persistLocalState();
@@ -1020,7 +1127,32 @@ document.addEventListener("keydown", (event) => {
   if (document.querySelector(".expense-editor-modal")) { closeExpenseEditor(); return; }
   if (document.querySelector(".planning-modal")) closePlanningModal();
 });
-app.addEventListener("input", (event) => { if (event.target.id === "exchange-amount") updateExchangeResult(); });
+let expenseFilterInputTimer;
+const updateExpenseFilters = (form) => {
+  const data = new FormData(form);
+  expenseFilters = {
+    date:String(data.get("date") || "all"),
+    category:String(data.get("category") || "all"),
+    payer:String(data.get("payer") || "all"),
+    sort:["date-desc", "amount-desc", "amount-asc"].includes(String(data.get("sort"))) ? String(data.get("sort")) : "date-desc",
+    query:String(data.get("query") || "").slice(0, 60),
+  };
+  persistExpenseAnalysis();
+};
+app.addEventListener("change", (event) => {
+  const form = event.target.closest("#expense-filter-form");
+  if (!form) return;
+  updateExpenseFilters(form);
+  render({ preserveScroll:true, preserveFormValues:true });
+});
+app.addEventListener("input", (event) => {
+  if (event.target.id === "exchange-amount") updateExchangeResult();
+  const form = event.target.closest("#expense-filter-form");
+  if (!form || event.target.name !== "query") return;
+  updateExpenseFilters(form);
+  clearTimeout(expenseFilterInputTimer);
+  expenseFilterInputTimer = setTimeout(() => render({ preserveScroll:true, preserveFormValues:true }), 140);
+});
 app.addEventListener("submit", async (event) => {
   const form = event.target;
   if (form.id === "phrase-editor-form") {
@@ -1071,7 +1203,7 @@ app.addEventListener("submit", async (event) => {
     const displayedAmount = Number(data.get("amount"));
     const amount = currency.code === "TWD" ? Math.round(displayedAmount / currency.rate) : Math.round(displayedAmount);
     if (!(amount > 0)) return;
-    const expense = { id:crypto.randomUUID(), item:String(data.get("item") || "").trim().slice(0, 36), amount, category:String(data.get("category") || "餐飲"), payer:String(data.get("payer") || "") };
+    const expense = { id:crypto.randomUUID(), item:String(data.get("item") || "").trim().slice(0, 36), amount, occurredOn:validExpenseDate(data.get("occurredOn")) ? String(data.get("occurredOn")) : preferredExpenseDate(), category:String(data.get("category") || "餐飲"), payer:String(data.get("payer") || "") };
     state.expenses.push(expense);
     queueExpenseCreate(expense);
     persistLocalState();
