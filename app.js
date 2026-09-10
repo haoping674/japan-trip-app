@@ -97,18 +97,34 @@ const EXPENSE_CURRENCIES = {
   TWD: { code: "TWD", label: "台幣", icon: "fa-solid fa-dollar-sign", rate: null, note: "尚未取得最新匯率" },
 };
 const expenseCategories = ["餐飲", "交通", "門票", "購物", "住宿", "保險", "網路/通訊"];
+const EXPENSE_DATE_PREFERENCE_KEY = "osaka-expense-date-preference-v1";
+let manuallySelectedExpenseDate = localStorage.getItem(EXPENSE_DATE_PREFERENCE_KEY) || "";
 const expenseCategoryOptions = (selectedCategory = "餐飲") => {
   const categories = expenseCategories.includes(selectedCategory) ? expenseCategories : [...expenseCategories, selectedCategory];
   return categories.map((category) => `<option${category === selectedCategory ? " selected" : ""}>${safe(category)}</option>`).join("");
 };
 const validExpenseDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+if (!validExpenseDate(manuallySelectedExpenseDate)) manuallySelectedExpenseDate = "";
 const localExpenseDate = () => {
   const parts = new Intl.DateTimeFormat("en", { timeZone:"Asia/Tokyo", year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(new Date());
   const get = (type) => parts.find((part) => part.type === type)?.value || "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 };
 const tripDayForDate = (date) => tripDays.find((day) => day.date === date);
-const preferredExpenseDate = () => tripDays.find((day) => day.day === state.day)?.date || localExpenseDate();
+const preferredExpenseDate = () => manuallySelectedExpenseDate || localExpenseDate();
+const saveExpenseDatePreference = (date) => {
+  manuallySelectedExpenseDate = validExpenseDate(date) ? date : "";
+  if (manuallySelectedExpenseDate) localStorage.setItem(EXPENSE_DATE_PREFERENCE_KEY, manuallySelectedExpenseDate);
+  else localStorage.removeItem(EXPENSE_DATE_PREFERENCE_KEY);
+};
+const expenseDatePreferenceHint = () => {
+  const date = preferredExpenseDate();
+  const tripDay = tripDayForDate(date);
+  const label = tripDay ? `DAY ${tripDay.day} · ${date.slice(5).replace("-", "/")}` : `${date.slice(5).replace("-", "/")}`;
+  return manuallySelectedExpenseDate
+    ? `已保留手動選擇的 ${label}。<button class="expense-date-reset" data-action="expense-date-auto" type="button">改回依日本時間</button>`
+    : `依日本時間自動選擇今天：${label}。`;
+};
 const expenseOccurredOn = (expense) => {
   if (validExpenseDate(expense?.occurredOn)) return expense.occurredOn;
   const createdDate = String(expense?.createdAt || "").slice(0, 10);
@@ -317,7 +333,7 @@ const expenseCategoryBreakdown = (expenses) => {
   if (!groups.length) return `<div class="expense-chart-empty">篩選條件下還沒有可分析的類別。</div>`;
   return `<div class="expense-category-chart">${groups.map(([category, amount]) => { const percent = total ? Math.round(amount / total * 100) : 0; return `<div class="expense-category-chart__row"><span class="ledger-dot">${icon(categoryIcon(category))}</span><div><div><b>${safe(category)}</b><small>${percent}% · ${money(amount)}</small></div><span class="expense-category-chart__track"><i style="--category-width:${percent}%"></i></span></div></div>`; }).join("")}</div>`;
 };
-const expenseEntryPanel = (currency, isTwd, rateReady, rateNote, total) => `<div class="expense-entry-panel">${expenseCurrencySwitch(isTwd)}<form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><label>消費日期<select name="occurredOn">${expenseDateOptions()}</select></label><div class="form-row"><label>類別<select name="category">${expenseCategoryOptions()}</select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>${icon("fa-solid fa-cloud-arrow-up")} 記下並儲存到資料庫</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div>${expenseDetailList(sortedRecentExpenses(state.expenses), { limit:6, emptyMessage:"第一筆旅行支出，從這裡開始。" })}</div>`;
+const expenseEntryPanel = (currency, isTwd, rateReady, rateNote, total) => `<div class="expense-entry-panel">${expenseCurrencySwitch(isTwd)}<form class="expense-form expense-form--compact" id="expense-form"><div class="expense-form__heading"><span>${icon("fa-solid fa-plus")}</span><h3>新增支出</h3></div><label class="amount-input">${icon(currency.icon)}<input name="amount" required type="number" min="1" step="${isTwd ? "0.01" : "1"}" inputmode="${isTwd ? "decimal" : "numeric"}" placeholder="${isTwd ? "0.00" : "0"}" autofocus ${!rateReady ? "disabled" : ""} /></label><p class="expense-rate-hint" role="status">${safe(rateNote)}</p><label>項目<input name="item" required maxlength="36" placeholder="例如：錦市場午餐" /></label><label>消費日期<select name="occurredOn">${expenseDateOptions()}</select></label><p class="expense-date-hint" role="status">${expenseDatePreferenceHint()}</p><div class="form-row"><label>類別<select name="category">${expenseCategoryOptions()}</select></label><label>付款人<select name="payer">${expensePayerOptions()}</select></label></div><div class="split-row"><span>分攤對象</span><div>${expenseSplitMembers()}<small>全體均分</small></div></div><button class="primary-button" type="submit" ${!rateReady ? "disabled" : ""}>${icon("fa-solid fa-cloud-arrow-up")} 記下並儲存到資料庫</button></form><div class="ledger-title"><h3>最近支出</h3><span>${money(total)}</span></div>${expenseDetailList(sortedRecentExpenses(state.expenses), { limit:6, emptyMessage:"第一筆旅行支出，從這裡開始。" })}</div>`;
 const expenseAnalysisPanel = () => {
   const expenses = filteredExpenses();
   const total = totalExpenseAmount(expenses);
@@ -970,6 +986,16 @@ app.addEventListener("click", (event) => {
     render();
     return;
   }
+  if (action === "expense-date-auto") {
+    saveExpenseDatePreference("");
+    const dateSelect = document.querySelector("#expense-form select[name='occurredOn']");
+    if (dateSelect) {
+      dateSelect.value = preferredExpenseDate();
+      [...dateSelect.options].forEach((option) => { option.defaultSelected = option.value === dateSelect.value; });
+    }
+    render({ preserveFormValues:true });
+    return;
+  }
   if (action === "expense-sync") { syncPendingExpenses(); return; }
   if (action === "stop") { state.done[key] = !state.done[key]; save(); render(); }
   if (action === "task") { state.tasks[key] = !state.tasks[key]; save(); render(); }
@@ -1140,6 +1166,11 @@ const updateExpenseFilters = (form) => {
   persistExpenseAnalysis();
 };
 app.addEventListener("change", (event) => {
+  if (event.target.matches("#expense-form select[name='occurredOn']")) {
+    saveExpenseDatePreference(event.target.value);
+    render({ preserveScroll:true, preserveFormValues:true });
+    return;
+  }
   const form = event.target.closest("#expense-filter-form");
   if (!form) return;
   updateExpenseFilters(form);

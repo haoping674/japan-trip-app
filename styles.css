@@ -443,7 +443,9 @@ body.has-voucher-preview { overflow:hidden; }
 @media (prefers-reduced-motion:reduce) {
   .tool-panel,.phrase-card,.phrase-card.is-speaking .phrase-play,.exchange-refresh.is-loading i { animation:none; transition:none; }
 }
-.expense-rate-hint { margin:0; color:var(--muted); font-size:.58rem; line-height:1.4; }
+.expense-rate-hint,.expense-date-hint { margin:0; color:var(--muted); font-size:.58rem; line-height:1.4; }
+.expense-date-hint { color:#67827d; }
+.expense-date-reset { margin-left:.32rem; border:0; border-bottom:1px solid currentColor; background:transparent; color:var(--teal-deep); padding:0; font:inherit; font-weight:900; }
 
 /* Expense analysis: keep the ledger tactile, then open into a compact travel spending map. */
 .expense-view-switch { display:grid; grid-template-columns:1fr 1fr; gap:.25rem; margin:1rem 0 .7rem; padding:.25rem; border:1px solid #e2ddd2; border-radius:1rem; background:#f0ece2; }
