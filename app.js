@@ -310,6 +310,13 @@ const totalExpenseAmount = (expenses) => expenses.reduce((sum, expense) => sum +
 const sortedRecentExpenses = (expenses) => expenses.slice().sort((left, right) => `${expenseOccurredOn(right)}${right.createdAt || ""}`.localeCompare(`${expenseOccurredOn(left)}${left.createdAt || ""}`));
 const expenseViewSwitch = () => `<div class="expense-view-switch" role="tablist" aria-label="記帳檢視"><button class="${expenseView === "entry" ? "is-active" : ""}" data-action="expense-view" data-view="entry" type="button" role="tab" aria-selected="${expenseView === "entry"}">${icon("fa-solid fa-pen-to-square")} 記帳</button><button class="${expenseView === "analysis" ? "is-active" : ""}" data-action="expense-view" data-view="analysis" type="button" role="tab" aria-selected="${expenseView === "analysis"}">${icon("fa-solid fa-chart-column")} 分析</button></div>`;
 const expenseCurrencySwitch = (isTwd) => `<div class="expense-switch" role="tablist" aria-label="記帳幣別"><button class="${!isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="JPY" type="button" role="tab" aria-selected="${!isTwd}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${isTwd ? "is-active" : ""}" data-action="expense-currency" data-currency="TWD" type="button" role="tab" aria-selected="${isTwd}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div>`;
+const expenseEditorCurrency = (code = state.expenseCurrency) => {
+  const currencyCode = code === "TWD" && activeExchangeRate() > 0 ? "TWD" : "JPY";
+  const currency = EXPENSE_CURRENCIES[currencyCode];
+  return { ...currency, rate:currencyCode === "TWD" ? activeExchangeRate() : 1 };
+};
+const expenseEditorRateHint = (currency) => currency.code === "TWD" ? `${expenseRateNote(currency.rate)}；儲存時會換算為日圓基準。` : "以日圓輸入；可切換台幣後依目前匯率換算。";
+const expenseEditorCurrencySwitch = (code) => `<div class="expense-switch expense-editor-currency__switch" role="tablist" aria-label="修改支出的幣別"><button class="${code === "JPY" ? "is-active" : ""}" data-action="expense-editor-currency" data-currency="JPY" type="button" role="tab" aria-selected="${code === "JPY"}">${icon("fa-solid fa-yen-sign")} 日幣 JPY</button><button class="${code === "TWD" ? "is-active" : ""}" data-action="expense-editor-currency" data-currency="TWD" type="button" role="tab" aria-selected="${code === "TWD"}" ${!activeExchangeRate() ? "disabled" : ""}>${icon("fa-solid fa-dollar-sign")} 台幣 TWD</button></div>`;
 const expenseDetailList = (expenses, { emptyMessage = "還沒有符合條件的支出。", limit = 0 } = {}) => {
   const visible = limit ? expenses.slice(0, limit) : expenses;
   if (!visible.length) return `<div class="empty-state expense-empty"><span>${icon("fa-solid fa-receipt")}</span><p>${safe(emptyMessage)}</p></div>`;
@@ -355,13 +362,38 @@ function syncedExpensePage() {
 
 const closeExpenseEditor = () => document.querySelector(".expense-editor-modal")?.remove();
 const openExpenseEditor = (expense) => {
-  const currency = currentExpenseCurrency();
+  const currency = expenseEditorCurrency();
   const displayedAmount = currency.code === "TWD" ? (Number(expense.amount) * currency.rate).toFixed(2) : String(Math.round(Number(expense.amount)));
   const modal = document.createElement("div");
   modal.className = "edit-modal expense-editor-modal";
-  modal.innerHTML = `<div class="edit-modal__backdrop" data-expense-editor-close></div><section class="edit-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="expense-editor-title"><div class="edit-modal__head"><div><small>旅行帳本</small><h2 id="expense-editor-title">修改支出</h2></div><button type="button" data-expense-editor-close aria-label="關閉">×</button></div><p class="edit-modal__hint">儲存後會個別寫入資料庫；若暫時離線，記帳頁會顯示可重試的同步提示。</p><form class="expense-editor-form" id="expense-edit-form" data-expense-id="${safe(expense.id)}"><label class="edit-field"><span>金額（${currency.code}）</span><span class="edit-field__control"><b>${currency.code === "TWD" ? "NT$" : "¥"}</b><input name="amount" type="number" min="1" step="${currency.code === "TWD" ? "0.01" : "1"}" inputmode="${currency.code === "TWD" ? "decimal" : "numeric"}" value="${displayedAmount}" required /></span></label><label class="edit-field"><span>項目</span><input name="item" maxlength="36" value="${safe(expense.item)}" required /></label><label class="edit-field"><span>消費日期</span><select name="occurredOn">${expenseDateOptions(expenseOccurredOn(expense) || preferredExpenseDate())}</select></label><div class="edit-grid"><label class="edit-field"><span>類別</span><select name="category">${expenseCategoryOptions(expense.category)}</select></label><label class="edit-field"><span>付款人</span><select name="payer">${expensePayerOptions(expense.payer)}</select></label></div><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-expense-editor-close>取消</button><button class="primary-button" type="submit">儲存變更</button></div></form></section>`;
+  modal.innerHTML = `<div class="edit-modal__backdrop" data-expense-editor-close></div><section class="edit-modal__sheet" role="dialog" aria-modal="true" aria-labelledby="expense-editor-title"><div class="edit-modal__head"><div><small>旅行帳本</small><h2 id="expense-editor-title">修改支出</h2></div><button type="button" data-expense-editor-close aria-label="關閉">×</button></div><p class="edit-modal__hint">儲存後會個別寫入資料庫；若暫時離線，記帳頁會顯示可重試的同步提示。</p><form class="expense-editor-form" id="expense-edit-form" data-expense-id="${safe(expense.id)}" data-currency="${currency.code}"><div class="expense-editor-currency"><span>幣別</span>${expenseEditorCurrencySwitch(currency.code)}<p class="expense-editor-rate-hint" data-expense-editor-rate-hint role="status">${safe(expenseEditorRateHint(currency))}</p></div><label class="edit-field"><span>金額（<span data-expense-editor-currency-label>${currency.code}</span>）</span><span class="edit-field__control"><b data-expense-editor-currency-symbol>${currency.code === "TWD" ? "NT$" : "¥"}</b><input name="amount" type="number" min="1" step="${currency.code === "TWD" ? "0.01" : "1"}" inputmode="${currency.code === "TWD" ? "decimal" : "numeric"}" value="${displayedAmount}" required /></span></label><label class="edit-field"><span>項目</span><input name="item" maxlength="36" value="${safe(expense.item)}" required /></label><label class="edit-field"><span>消費日期</span><select name="occurredOn">${expenseDateOptions(expenseOccurredOn(expense) || preferredExpenseDate())}</select></label><div class="edit-grid"><label class="edit-field"><span>類別</span><select name="category">${expenseCategoryOptions(expense.category)}</select></label><label class="edit-field"><span>付款人</span><select name="payer">${expensePayerOptions(expense.payer)}</select></label></div><p class="edit-error" aria-live="polite"></p><div class="edit-modal__actions"><button class="outline-action" type="button" data-expense-editor-close>取消</button><button class="primary-button" type="submit">儲存變更</button></div></form></section>`;
   document.body.appendChild(modal);
   if (!window.matchMedia("(pointer: coarse)").matches) modal.querySelector("input[name='amount']")?.focus();
+};
+const changeExpenseEditorCurrency = (form, nextCode) => {
+  const next = expenseEditorCurrency(nextCode);
+  if (next.code !== nextCode) return;
+  const previous = expenseEditorCurrency(form.dataset.currency);
+  const amountInput = form.querySelector("input[name='amount']");
+  if (!amountInput) return;
+  const typedAmount = Number(amountInput.value);
+  const hasTypedAmount = amountInput.value.trim() !== "" && Number.isFinite(typedAmount);
+  if (hasTypedAmount) {
+    const amountInJpy = previous.code === "TWD" ? typedAmount / previous.rate : typedAmount;
+    const nextAmount = next.code === "TWD" ? amountInJpy * next.rate : amountInJpy;
+    amountInput.value = next.code === "TWD" ? nextAmount.toFixed(2) : String(Math.round(nextAmount));
+  }
+  form.dataset.currency = next.code;
+  amountInput.step = next.code === "TWD" ? "0.01" : "1";
+  amountInput.inputMode = next.code === "TWD" ? "decimal" : "numeric";
+  form.querySelector("[data-expense-editor-currency-label]")?.replaceChildren(document.createTextNode(next.code));
+  form.querySelector("[data-expense-editor-currency-symbol]")?.replaceChildren(document.createTextNode(next.code === "TWD" ? "NT$" : "¥"));
+  form.querySelector("[data-expense-editor-rate-hint]")?.replaceChildren(document.createTextNode(expenseEditorRateHint(next)));
+  form.querySelectorAll("[data-action='expense-editor-currency']").forEach((button) => {
+    const active = button.dataset.currency === next.code;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
 };
 
 const knownPlaceLocations = Object.freeze({
@@ -1075,6 +1107,12 @@ app.addEventListener("click", (event) => {
 });
 document.addEventListener("click", (event) => {
   if (event.target.closest("[data-expense-editor-close]")) { closeExpenseEditor(); return; }
+  const expenseCurrencyButton = event.target.closest("[data-action='expense-editor-currency']");
+  if (expenseCurrencyButton) {
+    const form = expenseCurrencyButton.closest("#expense-edit-form");
+    if (form) changeExpenseEditorCurrency(form, expenseCurrencyButton.dataset.currency);
+    return;
+  }
   if (event.target.closest("[data-phrase-editor-close]")) { closePhraseEditor(); return; }
   if (event.target.closest("[data-planning-modal-close]")) { closePlanningModal(); return; }
   const option = event.target.closest("[data-planning-member-option]");
@@ -1116,7 +1154,7 @@ document.addEventListener("submit", (event) => {
     const data = new FormData(expenseForm);
     const item = String(data.get("item") || "").trim();
     const displayedAmount = Number(data.get("amount"));
-    const currency = currentExpenseCurrency();
+    const currency = expenseEditorCurrency(expenseForm.dataset.currency);
     const error = expenseForm.querySelector(".edit-error");
     if (!(displayedAmount > 0) || !item) { if (error) error.textContent = "請填寫有效的金額與項目。"; return; }
     const amount = currency.code === "TWD" ? Math.round(displayedAmount / currency.rate) : Math.round(displayedAmount);
