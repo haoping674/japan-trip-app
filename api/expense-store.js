@@ -1,24 +1,33 @@
 const { buildDefaultState } = require("./seed-data");
 
 const TRIP_ID = "osaka-2026";
-const EXPENSE_STORE_REVISION = 1;
+const EXPENSE_STORE_REVISION = 2;
 const isExpenseDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
 
 const normalizeExpense = (source, fallbackId = "") => {
   if (!source || typeof source !== "object") return null;
   const id = String(source.id || fallbackId).trim();
-  const amount = Math.round(Number(source.amount));
+  const currency = source.currency === "TWD" ? "TWD" : "JPY";
+  const inputAmount = Number(source.amount);
+  const amount = currency === "TWD" ? Math.round(inputAmount * 100) / 100 : Math.round(inputAmount);
+  const inputExchangeRate = Number(source.exchangeRate);
+  const exchangeRate = inputExchangeRate > 0 ? Math.round(inputExchangeRate * 1000000) / 1000000 : 0;
+  const suppliedAmountJpy = Math.round(Number(source.amountJpy));
+  const amountJpy = suppliedAmountJpy > 0 ? suppliedAmountJpy : currency === "TWD" && exchangeRate > 0 ? Math.round(amount / exchangeRate) : amount;
   const item = String(source.item || "").trim().slice(0, 36);
-  if (!id || !(amount > 0) || !item) return null;
+  if (!id || !(amount > 0) || !(amountJpy > 0) || !item) return null;
   const occurredOn = isExpenseDate(source.occurredOn) ? String(source.occurredOn) : "";
   const createdAtValue = source.createdAt || source.created_at;
   const createdAt = createdAtValue ? String(createdAtValue) : "";
   return {
     id,
     amount,
+    amountJpy,
+    currency,
     item,
     category:String(source.category || "餐飲").trim().slice(0, 24) || "餐飲",
     payer:String(source.payer || "").trim().slice(0, 80),
+    ...(currency === "TWD" && exchangeRate ? { exchangeRate } : {}),
     ...(occurredOn ? { occurredOn } : {}),
     ...(createdAt ? { createdAt } : {}),
   };
@@ -67,6 +76,21 @@ async function ensureExpenseStore(sql) {
     `;
   }
 
+  const existingExpenses = await sql`
+    select id, data from trip_expenses
+    where trip_id = ${TRIP_ID}
+  `;
+  for (const expense of existingExpenses) {
+    const normalized = normalizeExpense(expense.data, expense.id);
+    if (!normalized) continue;
+    const { createdAt:_createdAt, ...storedExpense } = normalized;
+    await sql`
+      update trip_expenses
+      set data = ${JSON.stringify(storedExpense)}::jsonb, updated_at = now()
+      where trip_id = ${TRIP_ID} and id = ${normalized.id}
+    `;
+  }
+
   const next = { ...current, expenseStoreRevision:EXPENSE_STORE_REVISION };
   const updated = await sql`
     update trip_state
@@ -105,7 +129,16 @@ async function createExpense(sql, expense) {
 }
 
 async function updateExpense(sql, expense) {
-  const normalized = normalizeExpense(expense);
+  const id = String(expense?.id || "").trim();
+  if (!id) return null;
+  const existing = await sql`
+    select data, created_at from trip_expenses
+    where trip_id = ${TRIP_ID} and id = ${id}
+  `;
+  if (!existing[0]?.data) return null;
+  const merged = { ...existing[0].data, ...expense };
+  if (!Object.prototype.hasOwnProperty.call(expense, "amountJpy")) delete merged.amountJpy;
+  const normalized = normalizeExpense(merged, id);
   if (!normalized) return null;
   const { createdAt:_createdAt, ...storedExpense } = normalized;
   const rows = await sql`
